@@ -12,7 +12,6 @@ What’s Not Included
 - No build/watch scripts
 
 How To Use
-Add files to a plugin project
 - Copy `code.ts` and `ui.html` into your plugin's source.
 
 Features
