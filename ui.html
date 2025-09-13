@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root {
+      color-scheme: light dark;    /* helps native controls match theme */
+
+      /* Spacing scale */
+      --size-1: 2px;   /* 2px */
+      --size-2: 4px;   /* 4px */
+      --size-3: 6px;   /* 6px */
+      --size-4: 8px;   /* 8px */
+      --size-5: 12px;  /* 12px */
+      --size-6: 16px;  /* 16px */
+      --size-7: 20px;  /* 20px */
+      --size-8: 24px;  /* 24px */
+      --size-9: 32px;  /* 32px */
+
+      /* Radius */
+      --radius-2: 1px;
+      --radius-4: 4px;
+      --radius-6: 6px;
+
+      /* Semantic tokens */
+      --field-bg: var(--figma-color-bg-secondary);
+      --field-border: var(--figma-color-border);
+      --field-text: var(--figma-color-text);
+      
+      /* Type scale */
+      --font-sm: 11px;
+      --font-md: 12px;
+
+      /* Icon sizing */
+      --icon-size: var(--size-5);
+
+      /* Figma-aligned control sizing */
+      --control-height: 32px;
+      --border-width: 1px;
+      --focus-ring-width: 1px;
+      --button-padding-x: var(--size-4);
+      --input-padding-x: var(--size-5);
+      --caret-size: 5px;
+      --resizer-size: 20px;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
+    /* Density toggles (override component tokens only) */
+    [data-density="compact"] {
+      --control-height: 28px;
+      --button-padding-x: var(--size-3);
+      --input-padding-x: var(--size-4);
+    }
+
+    [data-density="comfortable"] {
+      --control-height: 36px;
+      --button-padding-x: var(--size-5);
+      --input-padding-x: var(--size-6);
+    }
+    
+    /* Global box-sizing */
+    * { 
+      box-sizing: border-box; 
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-family);
+      background-color: var(--figma-color-bg);
+      transition: background-color 0.2s ease;
+      color: var(--figma-color-text);
+      position: relative;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    
+    .container {
+      padding: var(--size-6) var(--size-6) var(--size-6);
+    }
+    
+    .component-library {
+      /* Allow full plugin width and let inner groups wrap naturally */
+      max-width: none;
+      width: 100%;
+      margin: 0;
+    }
+    
+    .component-section {
+      margin-bottom: 0;
+    }
+    
+    .divider {
+      width: 100%;
+      height: var(--border-width);
+      background-color: var(--figma-color-border);
+      margin: 0;
+    }
+    
+    .category-label {
+      font-size: var(--font-md);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      color: var(--figma-color-text);
+      margin-bottom: var(--size-5);
+    }
+    
+    .group-label {
+      font-size: var(--font-sm);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      color: var(--figma-color-text-secondary);
+      margin-bottom: var(--size-4);
+      display: block;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: var(--size-4);
+      flex-wrap: wrap;
+    }
+    
+    /* Button styles */
+    .button {
+      height: var(--control-height);
+      padding: 0 var(--button-padding-x);
+      border-radius: var(--radius-6);
+      font-size: var(--font-sm);
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      border: none;
+      outline: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Button icon */
+    .button .icon {
+      width: var(--icon-size);
+      height: var(--icon-size);
+      margin-right: var(--size-4);
+      stroke-width: var(--border-width);
+      color: currentColor;
+      flex: 0 0 auto;
+    }
+    .button.icon-right .icon {
+      margin-right: 0;
+      margin-left: var(--size-4);
+    }
+    
+    .button-primary {
+      background-color: var(--figma-color-bg-brand);
+      color: var(--figma-color-text-onbrand);
+      border: var(--border-width) solid transparent;
+    }
+    
+    .button-primary:hover {
+      background-color: var(--figma-color-bg-brand-hover);
+    }
+    
+    .button-primary:active {
+      background-color: var(--figma-color-bg-brand-pressed);
+      border-color: var(--figma-color-border-brand-strong);
+    }
+    
+    .button-secondary {
+      background-color: var(--figma-color-bg);
+      color: var(--figma-color-text);
+      border: var(--border-width) solid var(--figma-color-border);
+    }
+    
+    .button-secondary:hover {
+      background-color: var(--figma-color-bg-hover);
+    }
+    
+    .button-secondary:active {
+      background-color: var(--figma-color-bg-pressed);
+      color: var(--figma-color-text);
+    }
+    
+    /* Focus-visible styles */
+    .button:focus-visible {
+      outline: var(--focus-ring-width) solid var(--figma-color-border-brand);
+      outline-offset: 0;
+    }
+    
+    /* Input field styles */
+    .input-field {
+      width: 100%;
+      height: var(--control-height);
+      padding: 0 var(--input-padding-x);
+      border: var(--border-width) solid var(--field-border);
+      border-radius: var(--radius-6);
+      font-size: var(--font-sm);
+      font-family: inherit;
+      line-height: calc(var(--control-height) - (var(--border-width) * 2));
+      background-color: var(--field-bg);
+      color: var(--field-text);
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      outline: none;
+      box-shadow: none;
+    }
+    
+    .input-field:hover {
+      border-color: var(--figma-color-border-selected);
+    }
+    
+    .input-field:focus {
+      border-color: var(--figma-color-border-brand);
+      box-shadow: none;
+    }
+    
+    .input-field:focus-visible {
+      outline: var(--focus-ring-width) solid var(--figma-color-border-brand);
+      outline-offset: 0;
+    }
+    
+    .input-field::placeholder {
+      color: var(--figma-color-text-tertiary);
+    }
+    
+    /* Input with icon styles */
+    .input-with-icon {
+      position: relative;
+      width: 100%;
+    }
+    
+    .input-with-icon .input-icon {
+      position: absolute;
+      left: var(--size-4);
+      top: 50%;
+      transform: translateY(-50%);
+      width: var(--icon-size);
+      height: var(--icon-size);
+      pointer-events: none;
+      opacity: 0.6;
+      stroke-width: var(--border-width);
+    }
+    
+    .input-with-icon .input-field {
+      padding-left: var(--size-9);
+    }
+    
+    /* Dropdown styles */
+    .dropdown {
+      position: relative;
+      width: 100%;
+    }
+    
+    .dropdown::after {
+      content: '';
+      position: absolute;
+      right: var(--size-4);
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: calc(var(--caret-size) - 1px) solid transparent;
+      border-right: calc(var(--caret-size) - 1px) solid transparent;
+      border-top: var(--caret-size) solid var(--figma-color-text-secondary);
+      pointer-events: none;
+    }
+    
+    .dropdown-select {
+      width: 100%;
+      height: var(--control-height);
+      padding: 0 var(--size-9) 0 var(--input-padding-x);
+      border: var(--border-width) solid var(--field-border);
+      border-radius: var(--radius-6);
+      font-size: var(--font-sm);
+      font-family: inherit;
+      line-height: calc(var(--control-height) - (var(--border-width) * 2));
+      background-color: var(--field-bg);
+      color: var(--field-text);
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      box-shadow: none;
+    }
+    
+    .dropdown-select:hover {
+      border-color: var(--figma-color-border-selected);
+    }
+    
+    .dropdown-select:focus {
+      border-color: var(--figma-color-border-brand);
+      box-shadow: none;
+    }
+    
+    .dropdown-select:focus-visible {
+      outline: var(--focus-ring-width) solid var(--figma-color-border-brand);
+      outline-offset: 0;
+    }
+    
+    /* Resize handle styles */
+    .resize-handle {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: var(--resizer-size);
+      height: var(--resizer-size);
+      cursor: se-resize;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+    
+    .resize-handle::after {
+      content: '';
+      width: var(--size-1);
+      height: var(--size-5);
+      background-color: var(--figma-color-text-tertiary);
+      border-radius: var(--radius-2);
+      opacity: 0.5;
+      transform: rotate(45deg);
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+    }
+    
+    .resize-handle:hover::after {
+      background-color: var(--figma-color-text-secondary);
+      opacity: 0.7;
+    }
+    
+    .resize-handle.resizing::after {
+      background-color: var(--figma-color-text);
+      opacity: 1;
+    }
+    /* Keyboard focus style for resizer */
+    .resize-handle:focus-visible {
+      outline: var(--focus-ring-width) solid var(--figma-color-border-brand);
+      outline-offset: calc(var(--focus-ring-width) * -1);
+    }
+
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="component-library">
+      <div class="category-label">Component library</div>
+      <div class="component-section">
+        <div class="group-label">Buttons</div>
+        <div class="button-group">
+          <button class="button button-primary">Primary</button>
+          <button class="button button-secondary">Secondary</button>
+          <button class="button button-primary">
+            <svg class="icon" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-linecap="round"/>
+            </svg>
+            Primary with icon
+          </button>
+          <button class="button button-secondary">
+            <svg class="icon" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M2 6h8M6 2v8" stroke="currentColor" stroke-linecap="round"/>
+            </svg>
+            Secondary with icon
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="divider"></div>
+  
+  <div class="container">
+    <div class="component-library">
+      <div class="component-section">
+        <label for="basic-input" class="group-label">Input field</label>
+        <input type="text" id="basic-input" class="input-field" placeholder="Enter text here...">
+      </div>
+    </div>
+  </div>
+  
+  <div class="divider"></div>
+  
+  <div class="container">
+    <div class="component-library">
+      <div class="component-section">
+        <label for="search-input" class="group-label">Input field with icon</label>
+        <div class="input-with-icon">
+          <svg class="input-icon" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="5" cy="5" r="3.5" stroke="currentColor" />
+            <path d="M7.5 7.5L10 10" stroke="currentColor" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="search-input" class="input-field" placeholder="Search..." aria-label="Search input">
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="divider"></div>
+  
+  <div class="container">
+    <div class="component-library">
+      <div class="component-section">
+        <label for="dropdown-select" class="group-label">Dropdown</label>
+        <div class="dropdown">
+          <select id="dropdown-select" class="dropdown-select">
+            <option>Option 1</option>
+            <option>Option 2</option>
+            <option>Option 3</option>
+            <option>Option 4</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div
+    class="resize-handle"
+    id="resizeHandle"
+    tabindex="0"
+    role="separator"
+    aria-label="Resize panel"
+    title="Drag to resize. Use arrow keys to resize; Enter/Space to snap."
+  ></div>
+  
+  <script>
+    const resizeHandle = document.getElementById('resizeHandle');
+    let isResizing = false;
+    let startX = 0;
+    let startY = 0;
+    let startWidth = 0;
+    let startHeight = 0;
+    let rafId = 0;
+    let nextSize = null; // { width, height }
+    let lastSentW = window.innerWidth;
+    let lastSentH = window.innerHeight;
+    let lastClickTime = 0;
+    let persistTimer = null;
+    const snapSizes = [320, 480, 640];
+    // (removed) currentSnapIndex was unused
+    // Size bounds (keep in sync with main thread)
+    const MIN_W = 280, MAX_W = 900, MIN_H = 200, MAX_H = 800;
+    // Init handshake state
+    let hasSavedSize = false;
+    let initWidth = window.innerWidth;
+    let initHeight = window.innerHeight;
+    let persistenceEnabled = true;
+
+    // Throttled resize: coalesces to one send per animation frame
+    function throttledResize(width, height) {
+      nextSize = { width, height };
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (!nextSize) return;
+        const w = Math.round(Math.max(MIN_W, Math.min(MAX_W, nextSize.width)));
+        const h = Math.round(Math.max(MIN_H, Math.min(MAX_H, nextSize.height)));
+        nextSize = null;
+        if (w !== lastSentW || h !== lastSentH) {
+          lastSentW = w;
+          lastSentH = h;
+          sendResize(w, h);
+        }
+      });
+    }
+    
+    function sendResize(width, height) {
+      // Clamp to sensible bounds
+      const clampedWidth = Math.max(MIN_W, Math.min(MAX_W, width));
+      const clampedHeight = Math.max(MIN_H, Math.min(MAX_H, height));
+      
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          pluginMessage: {
+            type: 'resize',
+            width: clampedWidth,
+            height: clampedHeight
+          }
+        }, '*');
+      }
+    }
+
+    function persistSize(width, height) {
+      if (!persistenceEnabled) return;
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          pluginMessage: {
+            type: 'persist-size',
+            width,
+            height
+          }
+        }, '*');
+      }
+    }
+
+    // Auto-size helpers
+    function computeContentHeight() {
+      const elements = Array.from(document.querySelectorAll('.container, .divider'));
+      let maxBottom = 0;
+      for (const el of elements) {
+        const rect = el.getBoundingClientRect();
+        if (rect && isFinite(rect.bottom)) {
+          maxBottom = Math.max(maxBottom, rect.bottom);
+        }
+      }
+      // Add small padding so content doesn't touch the bottom edge
+      return Math.ceil(maxBottom + 8);
+    }
+
+    function resizeToContent() {
+      const width = window.innerWidth;
+      const desiredHeight = computeContentHeight();
+      const clampedHeight = Math.max(MIN_H, Math.min(MAX_H, desiredHeight));
+      throttledResize(width, clampedHeight);
+      if (persistTimer) clearTimeout(persistTimer);
+      persistTimer = setTimeout(() => {
+        persistSize(width, clampedHeight);
+      }, 150);
+    }
+
+    // Handshake: UI ready -> main responds with init (hasSavedSize + current size)
+    window.addEventListener('load', () => {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ pluginMessage: { type: 'ready' } }, '*');
+      }
+    });
+
+    window.addEventListener('message', (event) => {
+      const data = event.data && event.data.pluginMessage;
+      if (!data) return;
+      if (data.type === 'init') {
+        hasSavedSize = !!data.hasSavedSize;
+        initWidth = data.width || initWidth;
+        initHeight = data.height || initHeight;
+        persistenceEnabled = data.persistenceEnabled !== undefined ? !!data.persistenceEnabled : true;
+        // Auto-size only when no saved size
+        const desiredHeight = computeContentHeight();
+        if (!hasSavedSize) {
+          const clampedHeight = Math.max(MIN_H, Math.min(MAX_H, desiredHeight));
+          throttledResize(initWidth, clampedHeight);
+          if (persistTimer) clearTimeout(persistTimer);
+          persistTimer = setTimeout(() => {
+            persistSize(initWidth, clampedHeight);
+          }, 150);
+        }
+      }
+    });
+    
+    function snapToSize(width) {
+      const height = Math.max(MIN_H, Math.min(MAX_H, window.innerHeight));
+      sendResize(width, height);
+      persistSize(width, height);
+    }
+    
+    // Double-click to snap between sizes
+    resizeHandle.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      const currentWidth = window.innerWidth;
+      
+      // Find the next snap size
+      let nextSize = snapSizes[0];
+      for (let i = 0; i < snapSizes.length; i++) {
+        if (currentWidth < snapSizes[i]) {
+          nextSize = snapSizes[i];
+          break;
+        }
+      }
+      
+      // If we're at or past the largest, go back to smallest
+      if (currentWidth >= snapSizes[snapSizes.length - 1]) {
+        nextSize = snapSizes[0];
+      }
+      
+      snapToSize(nextSize);
+    });
+    
+    resizeHandle.addEventListener('pointerdown', (e) => {
+      // Prevent double-click from triggering resize start
+      const now = Date.now();
+      if (now - lastClickTime < 300) return;
+      lastClickTime = now;
+
+      isResizing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = window.innerWidth;
+      startHeight = window.innerHeight;
+      activePointerId = e.pointerId;
+      resizeHandle.classList.add('resizing');
+      document.body.style.cursor = 'se-resize';
+      document.body.style.userSelect = 'none';
+      resizeHandle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+
+      let canceled = false;
+
+      const onMove = (ev) => {
+        if (!isResizing) return;
+        const deltaX = ev.clientX - startX;
+        const deltaY = ev.clientY - startY;
+        const newWidth = startWidth + deltaX;
+        const newHeight = startHeight + deltaY;
+        throttledResize(newWidth, newHeight);
+      };
+
+      const onKeydown = (ev) => {
+        if (ev.key === 'Escape') {
+          canceled = true;
+          isResizing = false;
+          resizeHandle.classList.remove('resizing');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          // Revert to start size without persisting
+          sendResize(startWidth, startHeight);
+          try { if (activePointerId != null) resizeHandle.releasePointerCapture(activePointerId); } catch {}
+          resizeHandle.removeEventListener('pointermove', onMove);
+          document.removeEventListener('keydown', onKeydown);
+        }
+      };
+
+      document.addEventListener('keydown', onKeydown);
+
+      const endResize = () => {
+        if (!isResizing) return;
+        isResizing = false;
+        resizeHandle.classList.remove('resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        const finalWidth = Math.max(MIN_W, Math.min(MAX_W, window.innerWidth));
+        const finalHeight = Math.max(MIN_H, Math.min(MAX_H, window.innerHeight));
+        if (!canceled) {
+          persistSize(finalWidth, finalHeight);
+        }
+        resizeHandle.removeEventListener('pointermove', onMove);
+        document.removeEventListener('keydown', onKeydown);
+      };
+
+      resizeHandle.addEventListener('pointermove', onMove);
+      resizeHandle.addEventListener('pointerup', endResize, { once: true });
+      resizeHandle.addEventListener('pointercancel', endResize, { once: true });
+    });
+
+    // Keyboard accessibility for resizer
+    resizeHandle.addEventListener('keydown', (e) => {
+      let stepW = 16; // width step
+      let stepH = 12; // height step
+      if (e.shiftKey) { stepW *= 4; stepH *= 4; }
+      let dw = 0;
+      let dh = 0;
+
+      switch (e.key) {
+        case 'ArrowRight':
+          dw = stepW; break;
+        case 'ArrowLeft':
+          dw = -stepW; break;
+        case 'ArrowDown':
+          dh = stepH; break;
+        case 'ArrowUp':
+          dh = -stepH; break;
+        case 'Enter':
+        case ' ': // Space
+          e.preventDefault();
+          // Snap to next preset width
+          const currentWidth = window.innerWidth;
+          const currentIndex = snapSizes.findIndex(s => Math.abs(s - currentWidth) < 8);
+          const nextIndex = currentIndex === -1
+            ? snapSizes.findIndex(s => s > currentWidth)
+            : (currentIndex + 1) % snapSizes.length;
+          const nextWidth = nextIndex === -1 ? snapSizes[0] : snapSizes[nextIndex];
+          snapToSize(nextWidth);
+          return;
+        default:
+          return; // ignore other keys
+      }
+
+      e.preventDefault();
+      const w = Math.max(MIN_W, Math.min(MAX_W, window.innerWidth + dw));
+      const h = Math.max(MIN_H, Math.min(MAX_H, window.innerHeight + dh));
+      throttledResize(w, h);
+
+      if (persistTimer) clearTimeout(persistTimer);
+      persistTimer = setTimeout(() => {
+        persistSize(w, h);
+      }, 200);
+    });
+    
+    // End of resize logic
+  </script>
+</body>
+</html>
+
