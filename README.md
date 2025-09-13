@@ -1,4 +1,5 @@
-Figplug UI Kit — theme-aware, resizable plugin UI you can drop into your own Figma plugin. This repo intentionally ships without build tooling or a manifest so it can be used as a lightweight reference or copied into an existing plugin setup.
+<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/5141e9a8-0063-44e8-8015-bb61941c5d7f" />
+Figplug UI Kit - theme-aware, resizable plugin UI you can drop into your own Figma plugin. This repo intentionally ships without build tooling or a manifest so it can be used as a lightweight reference or copied into an existing plugin setup.
 
 What’s Included
 - `code.ts`: Main thread logic (window resize + persistence)
