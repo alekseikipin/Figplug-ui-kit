@@ -1,0 +1,5 @@
+# PII scan reports (do not commit)
+PII-REPORT_*.md
+
+# Compiled plugin entry (built from code.ts in consumers)
+code.js
