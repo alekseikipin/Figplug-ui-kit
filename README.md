@@ -5,6 +5,8 @@
 **Make Figma plugins that look like Figma. Describe your plugin, and an AI agent builds it.**<br>
 Free starter code for Figma plugins (not a design file), with 20 ready-made interface parts. It runs in the Figma desktop app with no setup.
 
+**[See every part live in your browser →](https://alekseikipin.github.io/Figplug-ui-kit/)**
+
 [![CI status](https://github.com/alekseikipin/Figplug-ui-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/alekseikipin/Figplug-ui-kit/actions/workflows/ci.yml) [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue)](LICENSE) [![Kit v0.4.0](https://img.shields.io/badge/kit-v0.4.0-0d99ff)](CHANGELOG.md)
 
 <picture>
@@ -13,9 +15,6 @@ Free starter code for Figma plugins (not a design file), with 20 ready-made inte
 </picture>
 
 </div>
-
-> [!TIP]
-> **Need a small plugin just for yourself?** [Figma can make one for you](https://help.figma.com/hc/en-us/articles/43028920030743-Generate-plugins-with-the-Figma-agent). Use this kit when you want to sell your plugin, connect it to online services, use it in FigJam or Dev Mode, or control every detail of its look.
 
 ## Try it
 
@@ -207,9 +206,7 @@ npm run build && npm run audit && npm run check:ui
 ## Learn more
 
 - [Install](docs/install.md) · [Your first plugin](docs/first-plugin.md) · [Prompts](docs/prompts.md) · [Components](docs/components.md) · [Publishing to Figma Community](docs/publishing.md)
-- [All docs](docs/index.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
-
-Not related to [rsms/figplug](https://github.com/rsms/figplug), a plugin build tool with a similar name.
+- [Live preview](https://alekseikipin.github.io/Figplug-ui-kit/) · [All docs](docs/index.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
 ## Licence
 
