@@ -38,7 +38,7 @@ Paste as is. Every claim is from [the tour's README](../examples/kit-tour/README
 > - Dropdowns use the native `<select>` popup of your operating system, not Figma's dark menu.
 > - FigJam is light only (FigJam has no dark mode); its brand colour is purple.
 > - Menus and tooltips can't be UI3's always-dark style with plugin tokens; they follow your theme instead.
-> - Text uses Inter when the plugin window has it, otherwise your system font; the plugin loads no web fonts.
+> - Text uses the Inter that Figma supplies to every plugin window, or your system font if it is missing. Figma's Inter has fixed weights, so text can look a touch bolder than Figma's own panels. The plugin itself loads no web fonts.
 > - It runs in Figma Design, FigJam, Slides and Buzz. In Slides and Buzz, Create adds the shapes to the page, not to a slide or the asset grid. Buzz shows plugins in a docked panel that sets its own size, so there is no resize grip there.
 > - Dev Mode needs a separate plugin with its own manifest; this one is not offered there.
 >
