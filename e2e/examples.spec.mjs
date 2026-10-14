@@ -6,7 +6,10 @@
 // no WCAG 2.1 A/AA violation in its window, empty and with the stub's sample selection, except
 // 'color-contrast' (decision in docs/accessibility.md, as in e2e/a11y.spec.mjs). Between them the
 // examples use all three modes, so this is also PLAN.md's "every mode has a demo".
-// Each example's own behaviour is pinned by its golden tests in test/example-<name>.test.mjs.
+// Each example's own behaviour is pinned by its golden tests in examples/<name>/example.test.mjs.
+// examples/ is optional: you may delete it, or any one example, when you start your own plugin.
+// The tests of a missing example skip (with the reason), and the Plugin picker checks adapt to
+// the examples that are there.
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { AxeBuilder } from '@axe-core/playwright';
@@ -28,7 +31,14 @@ const FOLLOWS_SELECTION = new Set(['a11y-contrast', 'content-fill', 'export-sele
 
 const ROOT = new URL('../', import.meta.url);
 const manifestOf = (name) => JSON.parse(readFileSync(new URL(`examples/${name}/manifest.json`, ROOT), 'utf8'));
-const FOLDERS = readdirSync(new URL('examples/', ROOT)).filter((name) => existsSync(new URL(`examples/${name}/manifest.json`, ROOT))).sort();
+/** The examples/ folders with a manifest.json in this repo (none once examples/ is deleted). */
+const FOLDERS = existsSync(new URL('examples/', ROOT))
+  ? readdirSync(new URL('examples/', ROOT)).filter((name) => existsSync(new URL(`examples/${name}/manifest.json`, ROOT))).sort()
+  : [];
+const PRESENT = Object.keys(EXAMPLES).filter((name) => FOLDERS.includes(name));
+const gone = (name) => `examples/${name} is not in this repo (deleted when starting a plugin), so its tests are skipped`;
+/** The picker's values, '' being the starter. */
+const offered = (page) => page.locator('#live-plugin option').evaluateAll((options) => options.map((o) => /** @type {HTMLOptionElement} */ (o).value));
 
 const axe = (page) => new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).disableRules(['color-contrast']);
 const summary = (violations) => violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
@@ -65,12 +75,16 @@ async function selectSample(page, name) {
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-test('the examples cover every window mode, and the preview offers each of them', async ({ page }) => {
-  expect(FOLDERS, 'every examples/ folder with a manifest has a row in EXAMPLES').toEqual(Object.keys(EXAMPLES).sort());
+test('the known examples cover every window mode, and every examples/ folder is one of them', () => {
   expect([...new Set(Object.values(EXAMPLES))].sort()).toEqual(['fit-content', 'fixed', 'resizable']);
+  expect(FOLDERS.filter((name) => !(name in EXAMPLES)), 'every examples/ folder with a manifest has a row in EXAMPLES (and in preview.html\'s picker)').toEqual([]);
+});
+
+test('the preview offers the starter and each example that is there', async ({ page }) => {
   await openPreview(page);
-  const offered = await page.locator('#live-plugin option').evaluateAll((options) => options.map((o) => /** @type {HTMLOptionElement} */ (o).value));
-  expect(offered, 'the Plugin picker lists the starter and every example').toEqual(['', ...FOLDERS.map((name) => `examples/${name}`)]);
+  expect(await offered(page), 'the Plugin picker lists the starter and the examples in this repo').toEqual(['', ...FOLDERS.map((name) => `examples/${name}`)]);
+  // With no example left there is nothing to pick, so the field goes.
+  expect(await page.locator('#live-plugin').isVisible()).toBe(FOLDERS.length > 0);
   // The starter keeps running from the repo root, and the address only ever picks a listed plugin.
   expect(await host(page, () => window.kitPreviewHost.plugin())).toBe('');
   await page.goto('/preview.html?plugin=../package.json');
@@ -78,19 +92,42 @@ test('the examples cover every window mode, and the preview offers each of them'
   expect(await host(page, () => window.kitPreviewHost.plugin())).toBe('');
 });
 
-test('the Plugin picker switches plugins, keeps the address in step, and the mode switch still forces a mode', async ({ page }) => {
+test('the Plugin picker leaves out examples the server does not have, and an address naming one runs the starter', async ({ page }) => {
+  // As if examples/content-fill had been deleted: its files answer 404 (the probe's 404 in the
+  // console is expected: helpers.mjs's isMissingExample lets exactly that one through).
+  await page.route('**/examples/content-fill/**', (route) => route.fulfill({ status: 404, contentType: 'text/plain', body: 'Not found' }));
+  await openPreview(page, { plugin: 'examples/content-fill' });
+  expect(await offered(page)).toEqual(['', ...FOLDERS.filter((name) => name !== 'content-fill').map((name) => `examples/${name}`)]);
+  expect(await host(page, () => window.kitPreviewHost.plugin())).toBe('');
+  expect(new URL(page.url()).searchParams.get('plugin'), 'the address drops the missing example').toBe(null);
+  await expect(page.locator('#live-note')).toBeHidden();
+  expect(await hostErrors(page)).toEqual([]);
+  // As if examples/ had been deleted: only the starter is left and the field goes.
+  await page.route('**/examples/**', (route) => route.fulfill({ status: 404, contentType: 'text/plain', body: 'Not found' }));
   await openPreview(page);
-  await page.locator('#live-plugin').selectOption('examples/content-fill');
+  expect(await offered(page)).toEqual(['']);
+  await expect(page.locator('#live-plugin')).toBeHidden();
+  expect(await host(page, () => window.kitPreviewHost.plugin())).toBe('');
+});
+
+test('the Plugin picker switches plugins, keeps the address in step, and the mode switch still forces a mode', async ({ page }) => {
+  // content-fill (fixed) when it is there, else whichever example is left.
+  const name = PRESENT.includes('content-fill') ? 'content-fill' : PRESENT[0];
+  test.skip(!name, 'no examples/ folder is left, so there is nothing to switch to');
+  const own = EXAMPLES[name];
+  const forced = own === 'resizable' ? 'fixed' : 'resizable';
+  await openPreview(page);
+  await page.locator('#live-plugin').selectOption(`examples/${name}`);
   await waitForPlugin(page);
-  expect(new URL(page.url()).searchParams.get('plugin')).toBe('examples/content-fill');
-  await expect(page.locator('#live-title')).toHaveText(manifestOf('content-fill').name);
-  expect((await kitInit(page)).mode).toBe('fixed');
-  await expect(page.locator('#live-status')).toHaveText("editorType figma · mode fixed (the plugin's own)");
+  expect(new URL(page.url()).searchParams.get('plugin')).toBe(`examples/${name}`);
+  await expect(page.locator('#live-title')).toHaveText(manifestOf(name).name);
+  expect((await kitInit(page)).mode).toBe(own);
+  await expect(page.locator('#live-status')).toHaveText(`editorType figma · mode ${own} (the plugin's own)`);
   // A forced mode still wins over the plugin's own, as for the starter.
-  await page.locator('#live-mode').selectOption('resizable');
+  await page.locator('#live-mode').selectOption(forced);
   await waitForPlugin(page);
-  expect((await kitInit(page)).mode).toBe('resizable');
-  expect(new URL(page.url()).searchParams.get('mode')).toBe('resizable');
+  expect((await kitInit(page)).mode).toBe(forced);
+  expect(new URL(page.url()).searchParams.get('mode')).toBe(forced);
   await page.locator('#live-mode').selectOption('own');
   await page.locator('#live-plugin').selectOption('');
   await waitForPlugin(page);
@@ -100,6 +137,10 @@ test('the Plugin picker switches plugins, keeps the address in step, and the mod
 });
 
 for (const [name, mode] of Object.entries(EXAMPLES)) {
+  if (!PRESENT.includes(name)) {
+    test(`examples/${name} (${mode})`, () => test.skip(true, gone(name)));
+    continue;
+  }
   const manifest = manifestOf(name);
 
   test.describe(`examples/${name} (${mode})`, () => {

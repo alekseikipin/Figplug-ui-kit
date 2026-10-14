@@ -28,14 +28,19 @@ jobs:
       - run: npm ci
 
       # code.js is committed so the folder imports into Figma with no terminal. It must be exactly
-      # what tsc makes from code.ts, or the plugin people import is not the code under review.
+      # what tsc makes from code.ts, or the plugin people import is not the code under review. That
+      # holds for the root, every examples/<name>/ and every contrib/<project>/<sample>/ with a
+      # tsconfig.json (contrib is not part of the kit, but its code.js is sent to other projects).
       - name: Build, and check that every committed code.js matches its code.ts
         run: |
           npm run build
           npm run build:examples
+          for config in contrib/*/*/tsconfig.json; do
+            if [ -f "$config" ]; then npx tsc -p "$(dirname "$config")"; fi
+          done
           if ! git diff --exit-code || [ -n "$(git status --porcelain)" ]; then
             git status --short
-            echo "::error::the build changed or added files. Run npm run build and npm run build:examples locally and commit the result (code.js)."
+            echo "::error::the build changed or added files. Run npm run build, npm run build:examples and, for a contrib sample, npx tsc -p contrib/<project>/<sample> locally, and commit the result (code.js)."
             exit 1
           fi
 

@@ -11,7 +11,7 @@ Each pitfall below lists the **symptom** you see, the **cause**, the **fix**, an
 | `npm run build` | Compiles `code.ts` to `code.js` with `tsc -p tsconfig.json`. Catches DOM or `Blob` use in the main thread (as long as `tsconfig.json` keeps `"lib": ["es2020"]`, see [pitfall 3](#3-no-dom-lib-in-codets)), wrong types and bad kit calls. |
 | `npm run audit` | `node scripts/audit.mjs [--json] [dir ...]`. The kit's rules on `manifest.json`, `ui.html`, `code.ts`, `code.js` and, for drift between copies of the kit, `kit.d.ts` and `preview.html` ([rule reference](#audit-rules)). |
 | `npm run check:ui` | `node scripts/check-ui.mjs [dir ...]`. Type-checks the inline classic `<script>`s in `ui.html` against `kit.d.ts`: the kit runtime in strict mode, your own scripts non-strict. Also fails on APIs and syntax newer than ES2020 (`.at()`, `??=`, class fields), a ui file without `<script data-kit="runtime">`, and a folder with no ui file to check. `type="module"` scripts get a warning and are not checked (they have their own scope; the kit's scripts are classic). |
-| `npm run check` | All of the above plus `npm test`, which also checks that `tsconfig.json` keeps `"lib": ["es2020"]`. |
+| `npm run check` | `npm run build`, then `npm run build:examples` (compiles whichever `examples/` folders exist), the audit and `check:ui` above, then `npm test`, which also checks that `tsconfig.json` keeps `"lib": ["es2020"]`. |
 
 The audit and `check:ui` look at `.` plus every `examples/*` folder that has a `manifest.json`, or the folders you name; `tools/` and `test/fixtures/` only when you name them. The audit prints one line per finding, then a summary:
 
@@ -22,7 +22,7 @@ manifest.json:1  manifest-network-access  missing "networkAccess"; add { "allowe
 audit: 2 error(s), 1 warning(s) in 1 plugin folder; see docs/pitfalls.md
 ```
 
-It exits 1 if any finding is an error (warnings never fail it), and `--json` prints the findings as an array of `{ file, line, rule, message, severity }`. `check:ui` prints `ui.html:123  TS2345  message`, with the line in `ui.html` as your editor counts it (the code is `ES2020` for newer syntax and `check-ui` for a missing runtime or ui file), and exits 1 on any error.
+It exits 1 if any finding is an error (warnings never fail it), and `--json` prints the findings as an array of `{ file, line, rule, message, severity }`. `check:ui` prints `ui.html:123  TS2345  message`, with the line in `ui.html` as your editor counts it (the code is `ES2020` for newer syntax and `check-ui` for a missing folder, runtime or ui file), and exits 1 on any error. A `type="module"` script it skipped prints `ui.html:123  module  warning: ...`, which doesn't fail it.
 
 ### Audit rules
 
@@ -48,7 +48,7 @@ Fix every error; read every warning (a warning marks something that is often wro
 | `onmessage-assign` | warning | `figma.ui.onmessage = ...` in `code.ts` (also through a name for `figma`). A warning until `tools/probe` measures whether it removes the kit's listener. | `figma.ui.on('message', (msg) => { ... })`. | [13](#13-postmessage-shapes-differ-on-each-side) |
 | `protocol-mismatch` | error | `KIT_PROTOCOL` differs between `code.ts` (or the main `.js`) and the `ui.html` runtime, or only one side has it; or the compiled `code.js` says something other than `code.ts` (it is stale: run `npm run build`). Comments and strings are ignored. | Re-paste the kit blocks of both files from one release; `npm run build`. | [16](#16-kit-blocks-from-two-releases) |
 | `section-drift` | error | A copy of the kit that differs from its source, reported at the first differing line: the three `data-kit` blocks of `preview.html` against `ui.html` (in the folder that has a `preview.html`, the repo root); and in each `examples/<name>`, its `ui.html` blocks, its `code.ts` `kit:window` block and its `kit.d.ts` against the root's. A missing or doubled block counts; line endings don't (a CRLF copy is the same kit), other whitespace does. | Paste the block (or copy `kit.d.ts`) from the root again, unchanged; your own code goes outside the blocks. | [16](#16-kit-blocks-from-two-releases) |
-| `budget` | warning | An HTML ui file at 1,600 lines or more, or 64 KB (65,536 bytes) or more; fonts in `data:` URLs inside `url()` are not counted (images are). The message says how much of it the kit blocks are. | Keep your own markup, CSS and scripts lean. | [20](#20-the-size-budget) |
+| `budget` | warning | Two cases, each with its own message. **The kit blocks:** the three `data-kit` blocks of an HTML ui file together over 60 KB (61,440 bytes), reported at the first block: a release's blocks stay under that, so more means a block pasted twice or edited, or code of your own inside one. **The whole file:** over 3,200 lines or 128 KB (131,072 bytes), reported at line 1, with how much of it is the kit and how much your own code. Fonts in `data:` URLs inside `url()` count in neither (images do). | Kit blocks: paste all three again, unchanged, from one release, and keep your CSS and scripts in your own elements after them. Whole file: reuse kit classes, keep your own markup, CSS and scripts lean, and move work to `code.ts`. | [20](#20-the-size-budget) |
 
 #### What the JavaScript rules read, and miss
 
@@ -358,13 +358,13 @@ All of these: not yet checked (no audit rule; a static check can't tell when `cl
 
 ## 20. The size budget
 
-**Symptom.** `ui.html` keeps growing until an agent can no longer read it in one go, upgrades become hard to review, and the plugin is slow to open.
+**Symptom.** `ui.html` keeps growing until an agent can no longer read it in one go: its edits start to miss parts of the file, upgrades become hard to review, and the plugin is slow to open. Or the kit's own blocks are suddenly larger than a release's.
 
-**Cause.** Everything in a plugin's UI lives in one file: the kit blocks, your markup, CSS and scripts. The kit budgets `ui.html` at under 1,600 lines and 64 KB (65,536 bytes) including its starter markup, so that the kit plus a real plugin stays small. Fonts embedded as `data:` URLs ([tokens.md](tokens.md), `scripts/make-fonts-css.mjs`) are outside the budget.
+**Cause.** Everything in a plugin's UI lives in one file: the kit blocks, your markup, CSS and scripts. The kit keeps its own part small: the starter `ui.html`, kit blocks and demo together, is under 64 KB (65,536 bytes) and 1,600 lines, which `test/budget.test.mjs` checks in this repo, and the three blocks alone stay under 60 KB. Your plugin's code is yours to size, but past about 128 KB or 3,200 lines the whole file no longer fits comfortably in an agent's context. Kit blocks that grow past 60 KB were pasted twice, edited, merged by hand from two releases, or hold code of your own. Fonts embedded as `data:` URLs ([tokens.md](tokens.md), `scripts/make-fonts-css.mjs`) are outside every budget.
 
-**Fix.** Reuse kit classes instead of writing CSS, keep scripts to what the plugin does, and move work that belongs to the main thread into `code.ts`. Prefer inline SVG icons with `currentColor` over base64 images, which count against the budget; fonts made with `scripts/make-fonts-css.mjs` do not.
+**Fix.** For the kit blocks: paste all three again, unchanged, from one release, and move anything of your own into a plain `<style>` or `<script>` after them. For the whole file: reuse kit classes instead of writing CSS, keep scripts to what the plugin does, and move work that belongs to the main thread into `code.ts`. Prefer inline SVG icons with `currentColor` over base64 images, which count against the budget; fonts made with `scripts/make-fonts-css.mjs` do not.
 
-**Caught by.** `budget`, a warning that also says how much of the file the kit blocks are.
+**Caught by.** `budget`, a warning in two cases, each with its own message: the kit blocks over 60 KB (at the first block), and the whole file over 3,200 lines or 128 KB (at line 1, with the kit's share and yours). Before kit 0.4.0 it warned at 64 KB or 1,600 lines for the whole file, which a plugin's own code reached quickly; that limit is now the kit's own test for the starter.
 
 ## What the Phase 1 one-shot runs found
 

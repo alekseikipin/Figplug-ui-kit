@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Themed resizable window</title>
+    <style>
+      /* With themeColors: true, Figma defines the --figma-color-* variables and
+         switches them with the theme, so this file never names a colour. */
+      :root.figma-dark { color-scheme: dark; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: var(--figma-color-bg);
+        color: var(--figma-color-text);
+        font: 11px/16px Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main { box-sizing: border-box; height: 100%; overflow: auto; padding: 16px 16px 24px; }
+      h1 { margin: 0 0 8px; font-size: 13px; font-weight: 600; line-height: 24px; }
+      p { margin: 0 0 12px; color: var(--figma-color-text-secondary); }
+      #size { color: var(--figma-color-text); font-variant-numeric: tabular-nums; }
+      button:focus-visible { outline: 2px solid var(--figma-color-border-selected); outline-offset: -2px; }
+      #reset {
+        height: 24px;
+        padding: 0 8px;
+        border: 0;
+        border-radius: 5px;
+        background: var(--figma-color-bg-brand);
+        color: var(--figma-color-text-onbrand);
+        font: inherit;
+        font-weight: 500;
+      }
+      #reset:hover { background: var(--figma-color-bg-brand-hover); }
+      #reset:active { background: var(--figma-color-bg-brand-pressed); }
+      #handle {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--figma-color-icon-secondary);
+        cursor: nwse-resize;
+        touch-action: none;
+      }
+      #handle:hover { color: var(--figma-color-icon); }
+      .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Themed resizable window</h1>
+      <p>
+        Drag the bottom-right corner, or focus it and press the arrow keys
+        (Shift for bigger steps). Escape cancels a drag. The size is kept for
+        the next run.
+      </p>
+      <p>Window size: <span id="size"></span></p>
+      <button id="reset" type="button">Reset size</button>
+    </main>
+    <button id="handle" type="button" aria-label="Resize window" title="Drag, or use the arrow keys">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M13 6 6 13M13 10l-3 3" stroke="currentColor" stroke-linecap="round" />
+      </svg>
+    </button>
+    <div id="announcer" class="visually-hidden" aria-live="polite"></div>
+    <script>
+      const STEP = 8;
+      const BIG_STEP = 32;
+      const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+      const handle = document.getElementById("handle");
+      const sizeLabel = document.getElementById("size");
+      const announcer = document.getElementById("announcer");
+      let drag = null; // { pointerId, x, y, width, height, last }
+      let announceTimer;
+
+      // code.ts validates, clamps and saves the size; the UI only asks.
+      function requestResize(width, height, save) {
+        const message = { type: "resize", width: Math.round(width), height: Math.round(height), save };
+        parent.postMessage({ pluginMessage: message }, "*");
+      }
+
+      handle.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0 || drag) return;
+        // Capture keeps the moves coming when the pointer leaves the handle.
+        handle.setPointerCapture(event.pointerId);
+        // No text selection while dragging; focus by hand so Escape reaches the handle.
+        event.preventDefault();
+        handle.focus();
+        drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, width: innerWidth, height: innerHeight, last: null };
+      });
+
+      handle.addEventListener("pointermove", (event) => {
+        if (!drag || event.pointerId !== drag.pointerId) return;
+        // The window grows from its top-left corner, so the pointer's travel is the size change.
+        drag.last = { width: drag.width + event.clientX - drag.x, height: drag.height + event.clientY - drag.y };
+        requestResize(drag.last.width, drag.last.height, false);
+      });
+
+      // pointerup and pointercancel both end in lostpointercapture: save where the drag stopped.
+      handle.addEventListener("lostpointercapture", () => {
+        const ended = drag;
+        drag = null;
+        if (ended && ended.last) requestResize(ended.last.width, ended.last.height, true);
+      });
+
+      handle.addEventListener("keydown", (event) => {
+        if (drag) {
+          if (event.key !== "Escape") return;
+          // Cancel: back to the size the drag started at, not saved.
+          event.preventDefault();
+          const cancelled = drag;
+          drag = null;
+          handle.releasePointerCapture(cancelled.pointerId);
+          requestResize(cancelled.width, cancelled.height, false);
+          return;
+        }
+        const arrow = ARROWS[event.key];
+        if (!arrow || event.altKey || event.ctrlKey || event.metaKey) return;
+        event.preventDefault();
+        const step = event.shiftKey ? BIG_STEP : STEP;
+        requestResize(innerWidth + arrow[0] * step, innerHeight + arrow[1] * step, true);
+        // Screen readers hear the new size once the keys stop.
+        clearTimeout(announceTimer);
+        announceTimer = setTimeout(() => (announcer.textContent = `Window ${innerWidth} by ${innerHeight}`), 300);
+      });
+
+      document.getElementById("reset").addEventListener("click", () => {
+        parent.postMessage({ pluginMessage: { type: "reset" } }, "*");
+      });
+
+      function showSize() {
+        sizeLabel.textContent = `${innerWidth} × ${innerHeight}`;
+      }
+      addEventListener("resize", showSize);
+      showSize();
+    </script>
+  </body>
+</html>

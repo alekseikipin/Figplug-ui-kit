@@ -136,6 +136,17 @@ const addStyle = (d, css) => patchText(d, 'ui.html', '</head>', `<style>${css}</
 const addMarkup = (d, html) => patchText(d, 'ui.html', '</main>', `${html}</main>`);
 const addScript = (d, js) => patchText(d, 'ui.html', '</body>', `<script>\n${js}\n</script></body>`);
 const addMain = (d, ts) => writeFileSync(join(d, 'code.ts'), `${readFileSync(join(d, 'code.ts'), 'utf8')}\n${ts}\n`);
+// For budget: empty lines before </main> until ui.html has `lines` lines (it ends in a newline), and
+// a CSS comment in the components block until the three data-kit blocks hold `bytes` bytes.
+const padLines = (d, lines) => {
+  const text = readFileSync(join(d, 'ui.html'), 'utf8');
+  writeFileSync(join(d, 'ui.html'), text.replace('</main>', `${'\n'.repeat(lines - (text.split('\n').length - 1))}</main>`));
+};
+const padKitBlock = (d, bytes) => {
+  const text = readFileSync(join(d, 'ui.html'), 'utf8');
+  const kit = [...text.matchAll(/<(style|script) data-kit="[a-z]+">([\s\S]*?)<\/\1>/g)].reduce((n, m) => n + Buffer.byteLength(m[2]), 0);
+  patchText(d, 'ui.html', '<style data-kit="components">', `<style data-kit="components">/*${'x'.repeat(bytes - kit - 4)}*/`);
+};
 // A disabled button the host styles with .row, for the missing-disabled cases (the rule only
 // looks at pages that disable something), and a style next to some disabled control.
 const rowButton = (d, css) => { addMarkup(d, '<button class="row" type="button" disabled>Frame 1</button>'); addStyle(d, css); };
@@ -448,22 +459,31 @@ const VARIANTS = [
   }],
   ['a .kit-help inside a <template> is wired by script', null, (d) => addMarkup(d, '<template><p class="kit-help"></p></template>')],
 
-  // budget (a warning): lines and bytes, with data: fonts outside it.
-  ['exactly 1,599 lines is within budget', null, (d) => {
-    const text = readFileSync(join(d, 'ui.html'), 'utf8');
-    const lines = text.split('\n').length - 1;
-    writeFileSync(join(d, 'ui.html'), text.replace('</main>', `${'\n'.repeat(1599 - lines)}</main>`));
+  // budget (warnings): the kit blocks over 60 KB, or the whole file over 3,200 lines or 128 KB, with
+  // data: fonts outside both. A plugin's own code alone only ever trips the second.
+  ['exactly 3,200 lines is within budget', null, (d) => padLines(d, 3200)],
+  ['3,201 lines is over budget', ['budget'], (d) => padLines(d, 3201)],
+  ['1,600 lines and 64 KB of your own markup are within budget', null, (d) => {
+    addMarkup(d, `<p>${'x'.repeat(64 * 1024)}</p>`);
+    padLines(d, 1600);
   }],
-  ['1,600 lines is over budget', ['budget'], (d) => {
+  ['over 128 KB is over budget', ['budget'], (d) => addMarkup(d, `<p>${'x'.repeat(128 * 1024)}</p>`)],
+  ['a 200 KB data: font is outside the budget', null,
+    (d) => addStyle(d, `@font-face { font-family: Inter; src: url("data:font/woff2;base64,${'A'.repeat(200_000)}") format("woff2"); }`)],
+  ['a 130 KB data: image is inside it', ['budget'],
+    (d) => addStyle(d, `.logo { background-image: url(data:image/png;base64,${'A'.repeat(130_000)}); }`)],
+  ['kit blocks of 60 KB are within budget', null, (d) => padKitBlock(d, 60 * 1024)],
+  ['kit blocks over 60 KB are over budget, even in a small file', ['budget'], (d) => padKitBlock(d, 60 * 1024 + 1)],
+  ['a kit block pasted twice counts twice', ['budget'], (d) => {
+    padKitBlock(d, 33 * 1024); // most of it in the components block, which then appears twice
     const text = readFileSync(join(d, 'ui.html'), 'utf8');
-    const lines = text.split('\n').length - 1;
-    writeFileSync(join(d, 'ui.html'), text.replace('</main>', `${'\n'.repeat(1600 - lines)}</main>`));
+    const block = /<style data-kit="components">[\s\S]*?<\/style>/.exec(text)[0];
+    writeFileSync(join(d, 'ui.html'), text.replace(block, `${block}\n${block}`));
   }],
-  ['64 KB is over budget', ['budget'], (d) => addMarkup(d, `<p>${'x'.repeat(64 * 1024)}</p>`)],
-  ['a 100 KB data: font is outside the budget', null,
-    (d) => addStyle(d, `@font-face { font-family: Inter; src: url("data:font/woff2;base64,${'A'.repeat(100_000)}") format("woff2"); }`)],
-  ['a 100 KB data: image is inside it', ['budget'],
-    (d) => addStyle(d, `.logo { background-image: url(data:image/png;base64,${'A'.repeat(100_000)}); }`)],
+  ['both at once: two budget warnings', ['budget', 'budget'], (d) => {
+    padKitBlock(d, 61 * 1024);
+    addMarkup(d, `<p>${'x'.repeat(128 * 1024)}</p>`);
+  }],
 
   // js-color-literal: literals set from host scripts; colours from data and tokens are fine.
   ...[
@@ -521,6 +541,16 @@ for (const [label, rule, edit] of VARIANTS) {
   });
 }
 
+test('budget: each warning says which cause it is, and where', () => {
+  const ui = readFileSync(join(FIXTURES, 'clean', 'ui.html'), 'utf8');
+  const [kit] = auditVariant((d) => padKitBlock(d, 61 * 1024));
+  assert.deepEqual([kit.rule, kit.severity, kit.line], ['budget', 'warning', lineOf(ui, '<style data-kit="tokens">')]);
+  assert.match(kit.message, /^the data-kit blocks of ui\.html are 61\.0 KB, over the 60\.0 KB a kit release stays under: a block was pasted twice or edited, or holds code of your own\. Paste all three again/);
+  const [file] = auditVariant((d) => addMarkup(d, `<p>${'x'.repeat(128 * 1024)}</p>`));
+  assert.deepEqual([file.rule, file.severity, file.line], ['budget', 'warning', 1]);
+  assert.match(file.message, /^ui\.html is \d+ lines and 13\d\.\d KB, over 3,200 lines or 128\.0 KB; the kit blocks are \d+\.\d KB of it, your own code \d+\.\d KB\. A file this size no longer fits whole in an agent's context/);
+});
+
 test('a finding in a decoded attribute value points at its line in the file', () => {
   const [f] = auditVariant((d) => addMarkup(d, '<p style="\n  padding: 0;\n  color: &#x23;fff;\n">x</p>'));
   const ui = readFileSync(join(FIXTURES, 'clean', 'ui.html'), 'utf8');
@@ -567,7 +597,7 @@ test('js-color-literal points at the literal in the script, and unawaited-async 
 // section-drift across a kit root and its examples: the root holds a kit:window block in code.ts
 // and a kit.d.ts, examples/demo is a byte copy, then one file of the copy is changed.
 const KIT_WINDOW = [
-  '// ==== kit:window:start · kit v0.3.0 · protocol 1 · paste this block unchanged ====',
+  '// ==== kit:window:start · kit v0.4.0 · protocol 1 · paste this block unchanged ====',
   'const KIT_PROTOCOL = 1;',
   'function installKitWindow(): void { figma.showUI(__html__, { themeColors: true }); }',
   '// ==== kit:window:end ====',
@@ -581,7 +611,7 @@ function auditKit(edit, dirs = ['.', 'examples/demo']) {
   try {
     cpSync(join(FIXTURES, 'clean'), root, { recursive: true });
     writeFileSync(join(root, 'code.ts'), KIT_WINDOW);
-    writeFileSync(join(root, 'kit.d.ts'), '// kit.d.ts · kit v0.3.0\ninterface KitSize { width: number; height: number }\n');
+    writeFileSync(join(root, 'kit.d.ts'), '// kit.d.ts · kit v0.4.0\ninterface KitSize { width: number; height: number }\n');
     writeFileSync(join(root, 'preview.html'), readFileSync(join(root, 'ui.html'), 'utf8'));
     const demo = join(root, 'examples', 'demo');
     mkdirSync(demo, { recursive: true });

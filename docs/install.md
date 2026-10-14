@@ -34,7 +34,7 @@ The download also holds [examples/](../examples/): five finished plugins built o
 
 Each README has the prompt, the agent's first result and what was changed after it. The editors each example runs in differ: [surfaces.md](surfaces.md#the-examples).
 
-**Delete them freely.** Your plugin uses nothing in `examples/`. When you start your own plugin, delete the whole folder or any one example: `npm run build` compiles only the root's `code.ts`. The examples have their own `npm run build:examples`, which compiles whichever are left. After editing one example's `code.ts`, `npx tsc -p examples/<name>` rebuilds just that one ([loop.md](loop.md#codets-needs-tsc)).
+**Delete them freely.** Your plugin uses nothing in `examples/`. When you start your own plugin, delete the whole folder or any one example: `npm run build` compiles only the root's `code.ts`. The examples have their own `npm run build:examples`, which compiles whichever are left, and the checks, the tests and the preview's *Plugin* picker follow what is left ([loop.md](loop.md#codets-needs-tsc)). After editing one example's `code.ts`, `npx tsc -p examples/<name>` rebuilds just that one ([loop.md](loop.md#codets-needs-tsc)).
 
 ## The terminal path (optional)
 

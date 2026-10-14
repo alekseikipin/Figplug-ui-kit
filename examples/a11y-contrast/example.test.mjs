@@ -5,8 +5,9 @@
 // audit can check: a frame's or group's opacity fading the group as a whole, overlapping text
 // that is not a backdrop, layers above the text that cover it, clipping, masks, gradients,
 // images and unreadable layers, mixed styles and figma.mixed, large text, Display P3, the
-// selection round trip and the message contract. Expected ratios come from an independent WCAG
-// implementation below, not from the plugin.
+// 250-layer cap and the time a check takes there, far-off layers left unread, the selection round
+// trip and the message contract. Expected ratios come from an independent WCAG implementation
+// below, not from the plugin.
 // Run: node_modules/.bin/tsc -p examples/a11y-contrast && node --test examples/a11y-contrast/example.test.mjs
 
 import { test } from 'node:test';
@@ -256,16 +257,20 @@ test('the AA line sits between #777777 (4.48:1, fails) and #767676 (4.54:1, pass
   assert.deepEqual(app.last().summary, { tone: 'danger', text: '1 of 2 text layers is below WCAG AA.' });
 });
 
-test('large text needs 3:1: 24px, or 18.67px bold, but not 18px bold', () => {
+test('large text needs 3:1: 24px, or 18.67px bold, but not 23px, 18.67px semibold or 18px bold', () => {
   const g = [solid('#949494')]; // about 3.03:1 on white
   const big = text({ x: 0, y: 0, name: 'big' }, [['Title', g, 24, 400]]);
   const bold = text({ x: 0, y: 30, name: 'bold' }, [['Title', g, 18.67, 700]]);
   const small = text({ x: 0, y: 60, name: 'small' }, [['Title', g, 18, 700]]);
-  const app = run([card([big, bold, small])], { select: [big, bold, small] });
+  const under = text({ x: 100, y: 0, name: 'under' }, [['Title', g, 23, 400]]); // 17.25pt
+  const semibold = text({ x: 100, y: 30, name: 'semibold' }, [['Title', g, 18.67, 600]]); // bold is 700
+  const app = run([card([big, bold, small, under, semibold])], { select: [big, bold, small, under, semibold] });
   const by = Object.fromEntries(app.last().results.map((r) => [r.name, r]));
   assert.deepEqual([by.big.status, by.big.required, by.big.large], ['pass', 3, true]);
   assert.deepEqual([by.bold.status, by.bold.required], ['pass', 3]);
   assert.deepEqual([by.small.status, by.small.required, by.small.large], ['fail', 4.5, false]);
+  assert.deepEqual([by.under.status, by.under.required, by.under.large], ['fail', 4.5, false]);
+  assert.deepEqual([by.semibold.status, by.semibold.required, by.semibold.large], ['fail', 4.5, false]);
 });
 
 test('the fill behind is the sibling rectangle, not the frame', () => {
@@ -413,6 +418,25 @@ test('clipping: a clipped-away rectangle is not behind the text, and clipped-awa
   assert.deepEqual(hidden.notes, ['Not visible on the canvas: the layer or a parent is hidden, clipped or masked.']);
 });
 
+test('text half outside a clipping frame is measured on its inside half only', () => {
+  // #333333 text runs off a white card onto a black page. The clipped half never shows: measuring
+  // it would compare #333333 with black, 1.66:1, a false failure.
+  const t = text({ x: 150, y: 40, width: 100, height: 20 }, [['Half clipped label', [solid('#333333')]]]);
+  const r = only(run([card([t])], { select: [t], background: '#000000' }));
+  assert.equal(r.status, 'pass');
+  close(r.ratio, ratio('#333333', '#FFFFFF'), 'ratio');
+  assert.equal(r.backgroundHex, '#FFFFFF');
+  assert.deepEqual(r.notes, []);
+
+  // The same at a rounded corner, inside the frame's box but outside its shape.
+  const corner = text({ x: 0, y: 0, width: 60, height: 20 }, [['Corner label', [solid('#333333')]]]);
+  const round = node('FRAME', { width: 200, height: 100, cornerRadius: 50, fills: [solid('#FFFFFF')] }, [corner]);
+  const r2 = only(run([round], { select: [corner], background: '#000000' }));
+  assert.equal(r2.status, 'pass');
+  close(r2.ratio, ratio('#333333', '#FFFFFF'), 'corner');
+  assert.equal(r2.backgroundHex, '#FFFFFF');
+});
+
 test('a mask hides the layers above it outside its shape', () => {
   const mask = node('RECTANGLE', { x: 300, y: 0, width: 50, height: 50, fills: [solid('#000000')], isMask: true });
   const dark = node('RECTANGLE', { x: 0, y: 0, width: 400, height: 100, fills: [solid('#000000')] });
@@ -443,6 +467,14 @@ test('an image behind the text cannot be measured, unless something opaque cover
   const t2 = text({ x: 10, y: 10 });
   const covered = only(run([node('RECTANGLE', { width: 200, height: 100, fills: [image(), solid('#FFFFFF')] }), t2], { select: [t2] }));
   assert.equal(covered.status, 'pass');
+
+  // A 50% white veil over a photo still lets the photo through: check by eye, not a pass.
+  const t3 = text({ x: 10, y: 40 });
+  const veiled = node('FRAME', { width: 200, height: 100, fills: [image()] }, [node('RECTANGLE', { width: 200, height: 100, fills: [solid('#FFFFFF', 0.5)] }), t3]);
+  const r3 = only(run([veiled], { select: [t3] }));
+  assert.equal(r3.status, 'unknown');
+  assert.equal(r3.ratio, null);
+  assert.deepEqual(r3.notes, ['The text or what is behind it is an image, video or shader fill. Check it by eye.']);
 });
 
 test('media, embeds and widgets are opaque and unreadable: check by eye behind, not visible under', () => {
@@ -500,6 +532,16 @@ test("a drop shadow's wider render bounds don't move the samples off the text", 
   close(r.ratio, 21, 'white on the black card');
 });
 
+test('glyphs that overhang the text box (a tight line height) are measured where they show', () => {
+  // The box is y 40 to 50; the glyphs' ink runs from y 30 to 60, over a black band at y 30 to 40.
+  const t = text({ x: 10, y: 40, width: 80, height: 10, renderBounds: { x: 10, y: 30, width: 80, height: 30 } });
+  const band = node('RECTANGLE', { x: 0, y: 30, width: 200, height: 10, fills: [solid('#000000')] });
+  const r = only(run([card([band, t])], { select: [t] }));
+  assert.equal(r.status, 'fail', 'black glyphs on the black band');
+  close(r.ratio, 1, 'ratio');
+  assert.equal(r.backgroundHex, '#000000');
+});
+
 test('Display P3 files use P3 luminance', () => {
   const make = () => text({ x: 10, y: 10 }, [['Body', [solid('#00AA00')]]]);
   const t1 = make();
@@ -509,6 +551,65 @@ test('Display P3 files use P3 luminance', () => {
   close(srgb.ratio, ratio('#00AA00', '#FFFFFF'), 'sRGB');
   close(p3.ratio, ratio('#00AA00', '#FFFFFF', true), 'P3');
   assert.ok(p3.ratio > srgb.ratio, "P3's green primary carries less luminance than sRGB's");
+});
+
+// ---- Big selections and big pages ---------------------------------------------------------------------
+
+/** A list of rows in one white frame: each row a group of a light rectangle and a #666666 label. */
+const rows = (count) => node('FRAME', { width: 300, height: count * 32, fills: [solid('#FFFFFF')] }, Array.from({ length: count }, (_, i) =>
+  node('GROUP', { x: 0, y: i * 32, width: 300, height: 32 }, [
+    node('RECTANGLE', { x: 0, y: i * 32, width: 300, height: 32, fills: [solid('#F5F5F5')] }),
+    text({ x: 8, y: i * 32 + 6, width: 120, height: 20, name: `Row ${i}` }, [[`Row label ${i}`, [solid('#666666')]]]),
+  ])));
+
+test('260 text layers: the first 250 are checked, in well under a second', () => {
+  // Each sample renders only the layers near its own text. Rendering every sample through the
+  // whole list took about 1.9 s for 250 rows, and grew with the square of the selection.
+  let best = Infinity;
+  let msg;
+  for (let i = 0; i < 2; i++) {
+    const list = rows(260);
+    const started = performance.now();
+    msg = run([list], { select: [list] }).last();
+    best = Math.min(best, performance.now() - started);
+  }
+  assert.equal(msg.found, 260);
+  assert.equal(msg.results.length, 250);
+  assert.ok(msg.results.every((r) => r.status === 'pass'), '#666666 on #F5F5F5 is about 5.3:1');
+  assert.deepEqual(msg.summary, { tone: 'success', text: 'All 250 text layers meet WCAG AA. Checked the first 250 of 260.' });
+  // A budget, not a benchmark: about 45 ms alone, and 300 ms with ten test runs side by side.
+  assert.ok(best < 1000, `a check of 250 rows took ${best.toFixed(0)} ms`);
+});
+
+test('a far-off board is not opened, on a check or on an edit; the layers holding the text always are', () => {
+  // 200 groups of 10 rectangles far from the text, in the same section: opening each of them would
+  // be wasted work on every check, and any edit on the page re-checks.
+  let opened = 0;
+  const counted = (n) => {
+    const shown = n.visible;
+    Object.defineProperty(n, 'visible', { get: () => { opened++; return shown; } });
+    return n;
+  };
+  const board = Array.from({ length: 200 }, (_, g) => node('GROUP', { x: 5000 + g * 40, y: 5000, width: 50, height: 10 },
+    Array.from({ length: 10 }, (_, k) => counted(node('RECTANGLE', { x: 5000 + g * 40 + k, y: 5000, width: 10, height: 10, fills: [solid('#EEEEEE')] })))));
+  const t = text({ x: 10, y: 10 });
+  const app = run([node('SECTION', { width: 20000, height: 10000 }, [card([t]), ...board])], { select: [t] });
+  assert.equal(only(app).status, 'pass');
+  const checks = app.results().length;
+  app.pageHandlers.nodechange({ nodeChanges: [] });
+  app.flush();
+  assert.equal(app.results().length, checks + 1, 'the edit re-checked');
+  assert.equal(opened, 0, 'no rectangle of the board was read');
+
+  // A vertical label: rotated 90 degrees, its box runs from y 0 to 200 but its glyphs sit at the
+  // far end, y 0 to 10. It hangs out of a small frame that doesn't clip, in a group, so neither the
+  // group's bounds nor its render bounds reach the sample points. It is measured all the same.
+  const label = text({ x: 100, y: 200, width: 200, height: 20, rotate: 90, renderBounds: { x: 100, y: 0, width: 20, height: 10 } }, [['Up', [solid('#FFFFFF')]]]);
+  const holder = node('GROUP', { width: 10, height: 10, renderBounds: { x: 0, y: 0, width: 120, height: 10 } }, [node('FRAME', { width: 10, height: 10, clipsContent: false }, [label])]);
+  const strip = node('RECTANGLE', { x: 90, y: 0, width: 40, height: 200, fills: [solid('#000000')] });
+  const r = only(run([strip, holder], { select: [label] }));
+  assert.equal(r.status, 'pass');
+  close(r.ratio, 21, 'white on the black strip');
 });
 
 // ---- Selection, summary and messages ------------------------------------------------------------------

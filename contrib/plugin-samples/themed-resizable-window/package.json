@@ -1,0 +1,19 @@
+{
+  "name": "themed-resizable-window",
+  "version": "1.0.0",
+  "description": "A plugin window that follows the Figma theme, resizes from its corner with the mouse or the keyboard, and remembers its size.",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/figma/plugin-samples/issues"
+  },
+  "homepage": "https://github.com/figma/plugin-samples#readme",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.141.0",
+    "typescript": "^5.9.3"
+  }
+}

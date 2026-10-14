@@ -11,6 +11,7 @@
 import {
   test, expect, openPreview, pluginFrame, waitForPlugin, mark, messagesSince, resizesSince, writesSince,
   callsSince, waitForFinal, frameSize, contentHeight, drag, handleCenter, listenerCounter, host, patchFile, useKitFixture,
+  isMissingExample,
 } from './helpers.mjs';
 
 test.beforeEach(async ({ page }) => { await useKitFixture(page); });
@@ -52,7 +53,7 @@ test.describe('fit-content (the starter default)', () => {
     }));
     expect(ui).toEqual({
       origin: 'null', cls: 'figma-light', figmaStyle: true, chrome: 'on', mode: 'fit-content', handleHidden: false,
-      kit: { version: '0.3.0', protocol: 1, frozen: true },
+      kit: { version: '0.4.0', protocol: 1, frozen: true },
     });
   });
 
@@ -679,7 +680,7 @@ test.describe('fixed, and no host at all', () => {
       handleHidden: /** @type {HTMLElement} */ (document.querySelector('[data-kit-resize]')).hidden, version: window.kit.version,
     }));
     expect(ui.at, 'the runtime waited for kit:init first').toBeGreaterThanOrEqual(500);
-    expect(ui).toMatchObject({ chrome: 'off', mode: 'fit-content', handleHidden: true, version: '0.3.0' });
+    expect(ui).toMatchObject({ chrome: 'off', mode: 'fit-content', handleHidden: true, version: '0.4.0' });
     // No chrome: the grip corner is not reserved.
     expect(await page.evaluate(() => getComputedStyle(/** @type {Element} */ (document.querySelector('.kit-app'))).paddingBottom)).toBe('0px');
     await page.waitForTimeout(200);
@@ -689,7 +690,7 @@ test.describe('fixed, and no host at all', () => {
 
 test('a whole session logs no errors and no warnings', async ({ page }) => {
   const noise = [];
-  page.on('console', (m) => { if (m.type() === 'warning' || m.type() === 'error') noise.push(`${m.type()}: ${m.text()}`); });
+  page.on('console', (m) => { if ((m.type() === 'warning' || m.type() === 'error') && !isMissingExample(m)) noise.push(`${m.type()}: ${m.text()}`); });
   await openPreview(page);
   const frame = pluginFrame(page);
   const at = await mark(page);

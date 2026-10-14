@@ -5,17 +5,29 @@
 // the starter's demo; specs about the demo itself skip when it is gone (HAS_DEMO, NO_DEMO).
 
 import { readFileSync } from 'node:fs';
+import { extname } from 'node:path';
 import { test as base, expect } from '@playwright/test';
+import { MIME } from '../scripts/serve.mjs';
+
+/**
+ * Whether a console message is the browser's 404 for an examples/<name>/manifest.json that is not
+ * there: preview.html asks for each example's manifest to list only the examples in the repo (you
+ * may delete any of them), so that error is expected. Console checks let exactly this one through.
+ * @param {import('@playwright/test').ConsoleMessage} m
+ */
+export const isMissingExample = (m) => m.type() === 'error'
+  && /^Failed to load resource: the server responded with a status of 404\b/.test(m.text())
+  && /\/examples\/[a-z0-9-]+\/manifest\.json$/.test(m.location().url);
 
 /**
  * `test` with one automatic check: no console error and no uncaught exception, in the preview page
- * or in the plugin iframe, for the whole test. That is also where a 'use strict' slip (an
- * undeclared variable, a write to a frozen object) would surface.
+ * or in the plugin iframe, for the whole test (except isMissingExample). That is also where a
+ * 'use strict' slip (an undeclared variable, a write to a frozen object) would surface.
  */
 export const test = base.extend({
   consoleErrors: [async ({ page }, use) => {
     const errors = [];
-    page.on('console', (m) => { if (m.type() === 'error') errors.push(`console.error: ${m.text()}`); });
+    page.on('console', (m) => { if (m.type() === 'error' && !isMissingExample(m)) errors.push(`console.error: ${m.text()}`); });
     page.on('pageerror', (e) => errors.push(`uncaught: ${e.message}`));
     await use(errors);
     expect(errors, 'console errors or uncaught exceptions').toEqual([]);
@@ -37,11 +49,15 @@ export const NO_DEMO = 'the starter\'s Create-shapes demo is not in code.js and 
 const served = new WeakMap();
 
 async function serve(page, file, body) {
-  // The newest route wins, so a later patch of the same file replaces an earlier one.
-  await page.route(`**/${file}`, async (route) => {
-    const response = await route.fetch();
-    await route.fulfill({ response, body });
-  });
+  // The newest route wins, so a later patch of the same file replaces an earlier one. Answered
+  // here, without a round trip to scripts/serve.mjs: the body is all that is needed, and a
+  // route.fetch() on a keep-alive socket the server has just closed fails the test with ECONNRESET.
+  await page.route(`**/${file}`, (route) => route.fulfill({
+    status: 200,
+    contentType: MIME[extname(file).toLowerCase()] ?? 'text/plain; charset=utf-8', // as scripts/serve.mjs labels it
+    headers: { 'cache-control': 'no-store' },
+    body,
+  }));
 }
 
 /**

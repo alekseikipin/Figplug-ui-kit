@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/serve.mjs · kit v0.3.0 · zero dependencies, Node 24
+// scripts/serve.mjs · kit v0.4.0 · zero dependencies, Node 24
 // A static file server for the repo root, so preview.html can fetch ui.html and code.js (browsers
 // block fetch() on file:// pages). Development only: it listens on 127.0.0.1, never on the network.
 //
@@ -11,7 +11,13 @@
 // Requests must name this machine in their Host header (localhost, *.localhost, 127.0.0.1, [::1]),
 // so a web page that rebinds its own domain to 127.0.0.1 cannot read the repo. A malformed
 // request gets a 400 and an unexpected failure a 500; neither stops the server.
+//
+// GET /__kit-root?id=<rootId()> answers 200 when id names the folder this server serves and 409
+// otherwise. playwright.config.mjs uses it as its webServer check, so `npm run test:e2e` reuses a
+// running server only when it serves the same checkout (KIT_PREVIEW_PORT picks one port per
+// checkout or worktree). The id is a hash, so the server never sends the folder's path.
 
+import { createHash } from 'node:crypto';
 import { createReadStream, realpathSync } from 'node:fs';
 import { realpath, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -50,6 +56,10 @@ export const MIME = {
 };
 
 const inside = (root, path) => path === root || path.startsWith(root + sep);
+const idOf = (realRoot) => createHash('sha256').update(realRoot).digest('hex');
+
+/** The id /__kit-root expects for a served folder: the SHA-256 (hex) of its real path. */
+export const rootId = (root = REPO) => idOf(realpathSync(root));
 
 /**
  * Maps a request path to a file under root, or null. Decoding happens once, here; any "." or ".."
@@ -115,6 +125,11 @@ async function handle(root, req, res) {
     res.end();
     return;
   }
+  if (url.pathname === '/__kit-root') {
+    const same = url.searchParams.get('id') === idOf(await realpath(root));
+    sendText(res, same ? 200 : 409, same ? 'This server serves the folder that id names\n' : 'This server serves another folder\n');
+    return;
+  }
   const file = await resolveFile(root, url.pathname);
   if (!file) {
     sendText(res, 404, 'Not found\n');
@@ -165,7 +180,7 @@ function main(argv) {
   const server = createPreviewServer(REPO);
   server.on('error', (error) => {
     console.error(error.code === 'EADDRINUSE'
-      ? `serve: port ${port} is in use; stop the other server or pass --port <number>`
+      ? `serve: port ${port} is in use (another program, or the preview server of another checkout); stop it or pass --port <number> (for npm run test:e2e, set KIT_PREVIEW_PORT=<number>)`
       : `serve: ${error.message}`);
     process.exitCode = 1;
   });

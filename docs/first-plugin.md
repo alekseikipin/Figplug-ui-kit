@@ -174,7 +174,7 @@ npm run build
 npm run audit && npm run check:ui
 ```
 
-Expect `audit: no problems in ... plugin folder(s)` and `check-ui: no type errors in ...`. Fix every finding and run them again: each audit line names a rule, explained in [pitfalls.md](pitfalls.md#audit-rules). `npm run check` runs the build, both checks and the unit tests in one go; the starter demo's own tests skip themselves now that the demo is gone ([loop.md](loop.md#check-before-you-rerun)).
+Expect `audit: no problems in ... plugin folder(s)` and `check-ui: no type errors in ...`. Fix every finding and run them again: each audit line names a rule, explained in [pitfalls.md](pitfalls.md#audit-rules). `npm run check` runs both builds (`build`, then `build:examples` for any examples you kept), both checks and the unit tests in one go; the starter demo's own tests skip themselves now that the demo is gone ([loop.md](loop.md#check-before-you-rerun)).
 
 To try it before Figma: `npm run preview`, open http://localhost:4173/preview.html, pick **3 layers** under *Set the selection* in the live panel, type `Icon/` and press Add prefix ([loop.md](loop.md#preview-in-a-browser)). The stub is a stand-in, not Figma.
 

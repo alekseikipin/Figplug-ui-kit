@@ -68,11 +68,11 @@ Every colour is one of Figma's `--figma-color-*` tokens, which Figma injects and
 
 ### Components
 
-18 components as CSS classes on plain HTML: buttons and icon buttons; text, textarea, number and colour fields; select, checkbox and radio; tabs, tooltip and menu; list, empty state, notice, section header, sticky footer and the resize handle. Layout primitives and `kit-scroll` arrange them. States are attributes (`disabled`, `aria-invalid`, `aria-busy` ...), never classes, and `preview.html` shows every component in every state. [docs/components.md](docs/components.md)
+20 components as CSS classes on plain HTML: buttons and icon buttons; text, textarea, number and colour fields; select, checkbox and radio; tabs, tooltip and menu; dialog and toast; list, empty state, notice, section header, sticky footer and the resize handle. Layout primitives and `kit-scroll` arrange them. States are attributes (`disabled`, `aria-invalid`, `aria-busy` ...), never classes, and `preview.html` shows every component in every state. New in kit 0.4.0 (Phase 3): a modal `dialog.kit-dialog` that you open with `data-kit-dialog-open="id"` or `await kit.dialog('id')`, which resolves with the `value` of the button that closed it (`''` after Escape), and `kit.toast('Renamed 3 layers', { tone: 'success' })`, one short message at a time at the bottom of the window. [docs/components.md](docs/components.md)
 
 ### Window chrome
 
-`installKitWindow({ mode })` in `code.ts` opens the window: `fit-content` (the default; the height follows the content), `resizable` or `fixed`. The corner grip drags, snaps on double-click and works from the keyboard, with a screen-reader announcement; what the person chose is remembered per editor (the width, in `fit-content`). [docs/window-chrome.md](docs/window-chrome.md)
+`installKitWindow({ mode })` in `code.ts` opens the window: `fit-content` (the default; the height follows the content), `resizable` or `fixed`. The corner grip drags, snaps on double-click and works from the keyboard, with a screen-reader announcement; what the person chose is remembered per editor (the width, in `fit-content`). A dialog never resizes the window: it opens above the page and scrolls inside itself when the window is shorter. [docs/window-chrome.md](docs/window-chrome.md)
 
 ### Messages
 
@@ -80,7 +80,7 @@ Every colour is one of Figma's `--figma-color-*` tokens, which Figma injects and
 
 ### Accessibility
 
-Native elements, visible labels, help and error text wired with `aria-describedby`, a focus ring for keyboard focus, keyboard resizing with one announcement, and no animation but a spinner that stops under reduced motion. axe-core checks the gallery and the plugin window in light, dark and FigJam. Contrast follows Figma's own token pairs: reported, not enforced. The known gaps, forced colours among them, are listed too: [docs/accessibility.md](docs/accessibility.md).
+Native elements, visible labels, help and error text wired with `aria-describedby`, a focus ring for keyboard focus, keyboard resizing with one announcement, and no motion but a spinner and the toast's slide-in, both off under reduced motion. Since kit 0.4.0 the dialog is a native modal (focus moves into it, the page behind is inert, Escape closes it and focus returns to the opener), toasts are read by a polite live region (danger ones at once), and Escape hides a tooltip. axe-core checks the gallery and the plugin window in light, dark and FigJam, with a dialog and a toast open too. Contrast follows Figma's own token pairs: reported, not enforced. The known gaps, forced colours among them, are listed too: [docs/accessibility.md](docs/accessibility.md).
 
 ### Surfaces
 
@@ -88,7 +88,7 @@ One manifest covers Figma Design, FigJam, Slides and Buzz; Dev Mode needs its ow
 
 ### UI3 mapping
 
-A table from each component of Figma's official UI3 kit to the kit markup that replaces it, plus text styles and colour variables, so a Figma frame becomes `ui.html` without guessing. The `kit-frame-to-markup` skill reads a frame through the Figma MCP server (`get_design_context`) and applies the table; you can use it by hand too. The UI3 component names in it are still UNVERIFIED against the Community file. [docs/ui3-mapping.md](docs/ui3-mapping.md)
+A table from each component of Figma's official UI3 kit to the kit markup that replaces it (since kit 0.4.0 the dialog and the toast too), plus text styles and colour variables, so a Figma frame becomes `ui.html` without guessing. The `kit-frame-to-markup` skill reads a frame through the Figma MCP server (`get_design_context`) and applies the table; you can use it by hand too. The UI3 component names in it are still UNVERIFIED against the Community file. [docs/ui3-mapping.md](docs/ui3-mapping.md)
 
 The mapping names components of [UI3: Figma's UI Kit](https://www.figma.com/community/file/1486123838948777078/ui3-figmas-ui-kit) by Figma, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The kit copies no artwork, icons or components from it.
 
@@ -98,7 +98,7 @@ Before you submit to the Community: a name without "Fig" in it, a 128 × 128 ico
 
 ### Upgrade
 
-There is no package to bump: re-paste the three `data-kit` blocks in `ui.html`, the `kit:window` block in `code.ts` and `kit.d.ts` from one release, then build and check. No public name is renamed before 1.0. The version strings in those files tell you which release you have; the audit can't compare your plugin with a release. [docs/upgrade.md](docs/upgrade.md)
+There is no package to bump: re-paste the three `data-kit` blocks in `ui.html`, the `kit:window` block in `code.ts` and `kit.d.ts` from one release, then build and check. No public name is renamed before 1.0: 0.3.0 and 0.4.0 only add, and [docs/stability.md](docs/stability.md) lists every public name with the release that added it. The version strings in those files tell you which release you have; the audit can't compare your plugin with a release. [docs/upgrade.md](docs/upgrade.md)
 
 ## Examples
 
@@ -114,7 +114,7 @@ Five finished plugins in [`examples/`](examples/), one per [archetype task](docs
 
 ## More
 
-[All docs](docs/index.md) · [Pitfalls](docs/pitfalls.md) · [Prompts](docs/prompts.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
+[All docs](docs/index.md) · [Pitfalls](docs/pitfalls.md) · [Prompts](docs/prompts.md) · [Changelog](CHANGELOG.md) · [Stability](docs/stability.md) · [Roadmap status](docs/roadmap-status.md) · [Contributing](CONTRIBUTING.md)
 
 Official Figma docs: [plugin quickstart](https://developers.figma.com/docs/plugins/plugin-quickstart-guide/), [CSS variables](https://developers.figma.com/docs/plugins/css-variables/).
 

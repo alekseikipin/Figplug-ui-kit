@@ -5,13 +5,14 @@
 // Covers: open and close by click, light dismiss, ArrowDown on the invoker, Enter on the invoker,
 // roving focus with wrap, Home/End, disabled items skipped, Escape (focus back to the invoker, the
 // host's own Escape handler untouched), Tab, item clicks (after the host's handler; preventDefault
-// keeps it open), aria-expanded on every invoker, a second menu closing the first, placement (under
+// keeps it open), aria-expanded on every invoker, the clicked invoker without ToggleEvent.source, a
+// second menu closing the first, placement (under
 // the invoker, flipped above near the bottom, shifted in from the right, re-placed when the window
 // resizes or the page scrolls, inside the viewport), listener counts back at baseline, and the
 // live demo in preview.html's gallery. Behaviour notes: docs/components.md, "Menu".
 
 import { AxeBuilder } from '@axe-core/playwright';
-import { test, expect, openPreview, pluginFrame, mark, messagesSince, listenerCounter, host, useKitFixture } from './helpers.mjs';
+import { test, expect, openPreview, pluginFrame, mark, messagesSince, listenerCounter, host, patchFile, useKitFixture } from './helpers.mjs';
 
 test.beforeEach(async ({ page }) => { await useKitFixture(page); });
 
@@ -169,6 +170,27 @@ test.describe('menu', () => {
     // With no menu open, Escape belongs to the plugin again.
     await page.keyboard.press('Escape');
     expect(await frame.evaluate(() => /** @type {any} */ (window).__hostEscapes)).toBe(1);
+  });
+
+  test('without ToggleEvent.source (older engines) a menu opened from its second button sits under that button, and Escape focuses it', async ({ page }) => {
+    // Hide the engine's ToggleEvent.source, as a browser from before it would.
+    await patchFile(page, 'ui.html', [['<script data-kit="runtime">', `<script>if (window.ToggleEvent) Object.defineProperty(ToggleEvent.prototype, 'source', { get() { return undefined; } });</${'script'}>\n<script data-kit="runtime">`]]);
+    const frame = await openWithMenu(page, { where: 'top' });
+    for (const how of ['click', 'Enter']) {
+      for (const id of ['menu-button-2', 'menu-button']) {
+        if (how === 'click') await frame.click(`#${id}`);
+        else {
+          await frame.focus(`#${id}`);
+          await page.keyboard.press('Enter');
+        }
+        await expectOpen(frame);
+        const s = await state(frame);
+        expect(s.box.left, `${how} ${id}: under its own button`).toBe(Math.max(8, Math.min(Math.round((await rect(frame, id)).left), s.viewport.width - 8 - s.box.width)));
+        await page.keyboard.press('Escape');
+        await expectClosed(frame);
+        expect((await state(frame)).focus, `${how} ${id}`).toBe(id);
+      }
+    }
   });
 
   test('a second menu opening closes the first; Escape then closes the second and focuses its own invoker', async ({ page }) => {

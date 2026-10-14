@@ -3,7 +3,8 @@
 // aria-describedby hint, the one polite live region and its debounced announcement (one per burst
 // of keys, 150 ms after the last; drags and double-clicks are not announced), End (the widest
 // usable snap), the new CONFIG.strings keys, and kit:fit from the main thread (KitWindow.fit() and
-// the raw message) in each mode. docs/window-chrome.md describes the behaviour checked here;
+// the raw message) in each mode, dropped during a resizable drag. docs/window-chrome.md describes the
+// behaviour checked here;
 // e2e/chrome.spec.mjs covers the rest of the chrome.
 
 import {
@@ -285,6 +286,30 @@ test.describe('kit:fit from the main thread', () => {
     expect(await resizesSince(page, at)).toEqual([{ type: 'kit:resize', width: 400, height: h, user: false, final: false }]);
     expect(await frameSize(page)).toEqual({ width: 400, height: h, state: 'shown' });
     expect(await writesSince(page, at), 'a fit is never saved').toEqual([]);
+  });
+
+  test('resizable: a kit:fit that arrives during a drag is dropped, so the window never jumps under the pointer and the drag\'s size stays', async ({ page }) => {
+    await openPreview(page, { mode: 'resizable' });
+    const frame = pluginFrame(page);
+    expect(await frameSize(page)).toEqual({ width: 320, height: 360, state: 'shown' });
+    const at = await mark(page);
+    await drag(page, frame, 40, 120, {
+      beforeUp: async () => {
+        await page.waitForTimeout(100); // held still at 360 x 480
+        await host(page, () => window.kitPreviewHost.postToUi({ type: 'kit:fit' }));
+        await page.waitForTimeout(200);
+      },
+    });
+    await waitForFinal(page, at);
+    const sent = await resizesSince(page, at);
+    expect(sent.filter((m) => !m.user), 'no fit while the pointer is down').toEqual([]);
+    expect(sent[sent.length - 1]).toEqual({ type: 'kit:resize', width: 360, height: 480, user: true, final: true });
+    expect(await frameSize(page)).toEqual({ width: 360, height: 480, state: 'shown' });
+    // After the drag, kit:fit works again.
+    const after = await mark(page);
+    await host(page, () => window.kitPreviewHost.postToUi({ type: 'kit:fit' }));
+    const h = await contentHeight(frame);
+    await expect.poll(() => resizesSince(page, after)).toEqual([{ type: 'kit:resize', width: 360, height: Math.max(120, h), user: false, final: false }]);
   });
 
   test('fit-content: kit:fit refits even when nothing else would (no ResizeObserver)', async ({ page }) => {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/audit.mjs · kit v0.3.0 · zero dependencies, Node 24
+// scripts/audit.mjs · kit v0.4.0 · zero dependencies, Node 24
 // Checks a plugin folder against the kit's rules, so an agent (or CI) verifies generated code
 // instead of trusting it. Every rule is explained, with its fix, in docs/pitfalls.md.
 //
@@ -668,26 +668,41 @@ function jsColorLiteral({ ui }) {
   return out;
 }
 
-// The kit's size budget for a ui file. Fonts embedded as data: URLs (scripts/make-fonts-css.mjs)
-// sit outside it, as docs/tokens.md says; images in data: URLs count like any other bytes.
-const BUDGET_LINES = 1600;
-const BUDGET_BYTES = 64 * 1024;
+// The size budget of a ui file, two warnings for two causes. The three data-kit blocks of a
+// release stay under 60 KB, so more means a doubled, edited or half-merged paste. Past 128 KB or
+// 3,200 lines the whole file is more than an agent reads in one go, kit or not. A plugin's own
+// code never trips the first one. Fonts embedded as data: URLs (scripts/make-fonts-css.mjs) count
+// in neither, as docs/tokens.md says; images in data: URLs count like any other bytes. The kit's
+// own budget for the starter (under 64 KB and 1,600 lines) is test/budget.test.mjs, not a rule.
+const BUDGET_KIT_BYTES = 60 * 1024;
+const BUDGET_BYTES = 128 * 1024;
+const BUDGET_LINES = 3200;
 const KB = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
 const isHtml = (path) => /\.html?$/i.test(path);
 const FONT_DATA = /url\(\s*(['"]?)(data:(?:font\/|application\/(?:x-)?font)[^'")]*)\1\s*\)/gi;
 const fontBytes = (s) => [...s.matchAll(FONT_DATA)].reduce((n, m) => n + Buffer.byteLength(m[2]), 0);
 function budget({ ui }) {
   return ui.filter((f) => isHtml(f.path)).flatMap(({ path, text, html }) => {
+    const out = [];
+    const blocks = [...html.styles, ...html.scripts].filter((b) => b.attrs['data-kit']).sort((a, b) => a.offset - b.offset);
+    const kit = blocks.reduce((n, b) => n + Buffer.byteLength(b.body) - fontBytes(b.body), 0);
+    if (kit > BUDGET_KIT_BYTES) {
+      out.push(finding(path, text, blocks[0].offset, 'budget',
+        `the data-kit blocks of ${basename(path)} are ${KB(kit)}, over the ${KB(BUDGET_KIT_BYTES)} a kit release stays under: `
+        + 'a block was pasted twice or edited, or holds code of your own. Paste all three again, unchanged, from one release, '
+        + 'and keep your own CSS and scripts in plain <style> and <script> elements after them (see docs/pitfalls.md, "The size budget")', 'warning'));
+    }
     const lines = text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
     const fonts = fontBytes(text);
     const bytes = Buffer.byteLength(text) - fonts;
-    if (lines < BUDGET_LINES && bytes < BUDGET_BYTES) return [];
-    const kit = [...html.styles, ...html.scripts].filter((b) => b.attrs['data-kit'])
-      .reduce((n, b) => n + Buffer.byteLength(b.body) - fontBytes(b.body), 0);
-    return [finding(path, text, 0, 'budget',
-      `${basename(path)} is ${lines} lines and ${KB(bytes)}${fonts ? ' (fonts in data: URLs not counted)' : ''}; the kit's budget is under `
-      + `${BUDGET_LINES.toLocaleString('en')} lines and 64 KB (the kit blocks are ${KB(kit)} of this file, the rest ${KB(bytes - kit)}): `
-      + 'keep your own markup, CSS and scripts lean (see docs/pitfalls.md, "The size budget")', 'warning')];
+    if (lines > BUDGET_LINES || bytes > BUDGET_BYTES) {
+      out.push(finding(path, text, 0, 'budget',
+        `${basename(path)} is ${lines.toLocaleString('en')} lines and ${KB(bytes)}${fonts ? ' (fonts in data: URLs not counted)' : ''}, `
+        + `over ${BUDGET_LINES.toLocaleString('en')} lines or ${KB(BUDGET_BYTES)}; the kit blocks are ${KB(kit)} of it, your own code ${KB(bytes - kit)}. `
+        + 'A file this size no longer fits whole in an agent\'s context, so edits start to miss parts of it: reuse kit classes, '
+        + 'keep your markup, CSS and scripts lean, and move work to code.ts (see docs/pitfalls.md, "The size budget")', 'warning'));
+    }
+    return out;
   });
 }
 

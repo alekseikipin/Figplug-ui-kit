@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/make-fonts-css.mjs · kit v0.3.0 · zero dependencies, no network
+// scripts/make-fonts-css.mjs · kit v0.4.0 · zero dependencies, no network
 // Opt-in helper: turns local Inter font files into @font-face rules with base64 data: URIs.
 // The kit's font stack is "Inter, system-ui, …" and ships no font. Data URIs need no
 // networkAccess domain, so the plugin can keep "allowedDomains": ["none"].

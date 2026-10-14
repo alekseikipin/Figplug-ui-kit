@@ -1,4 +1,4 @@
-// kit.d.ts · kit v0.3.0 · protocol 1
+// kit.d.ts · kit v0.4.0 · protocol 1
 // Shared types for the kit window protocol between code.ts (main thread) and ui.html (iframe).
 // Export-free on purpose: code.ts is a plain script (any import/export breaks the no-bundler
 // build), so everything here is global. ui.html's runtime mirrors these names in JSDoc and
@@ -121,9 +121,40 @@ interface KitWindow {
 
 // ---- UI-side API (window.kit, created by the runtime in ui.html) ----
 
+/** Options for kit.toast(). Added in kit 0.4.0. */
+interface KitToastOptions {
+  /** The leading icon; 'danger' is also announced at once (role="alert"). Default: no icon. */
+  tone?: 'info' | 'success' | 'warning' | 'danger';
+  /** Milliseconds shown, not counting time under the pointer or with focus inside. Default 4000; 0 keeps it until dismissed. */
+  duration?: number;
+  /** One button in the toast: onClick runs, then the toast is dismissed. */
+  action?: { label: string; onClick(): void };
+}
+
+/** What kit.toast() returns. */
+interface KitToastHandle {
+  /** Removes the toast, or takes it out of the queue if it has not been shown yet. Safe to call twice. */
+  dismiss(): void;
+}
+
+/** The part of a <dialog> element that kit.dialog() uses (kept DOM-free so code.ts compiles this file). */
+interface KitDialogLike {
+  showModal(): void;
+  close(returnValue?: string): void;
+  readonly returnValue: string;
+}
+
 interface KitUiApi {
   readonly version: string;
   readonly protocol: number;
   /** Re-measure [data-kit-root] and fit the window height to it (fit-content and resizable). */
   fit(): void;
+  /**
+   * Opens a <dialog class="kit-dialog"> (its id, or the element) as a modal and resolves with its
+   * returnValue when it closes: a [data-kit-dialog-close] button's value, or '' after Escape. Rejects
+   * when there is no such dialog. Added in kit 0.4.0.
+   */
+  dialog(target: string | KitDialogLike): Promise<string>;
+  /** Queues a toast at the bottom of the window; one shows at a time. Added in kit 0.4.0. */
+  toast(message: string, options?: KitToastOptions): KitToastHandle;
 }

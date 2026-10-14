@@ -1,0 +1,12 @@
+{
+  "id": "themed-resizable-window-sample",
+  "name": "Themed resizable window",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma", "figjam"],
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  },
+  "documentAccess": "dynamic-page"
+}

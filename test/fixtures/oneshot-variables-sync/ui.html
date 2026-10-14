@@ -73,7 +73,7 @@
         }
       });
       document.addEventListener('DOMContentLoaded', () => post({ type: 'kit:ready', protocol: KIT_PROTOCOL }));
-      window.kit = Object.freeze({ version: '0.2.0', protocol: KIT_PROTOCOL, fit });
+      window.kit = Object.freeze({ version: '0.2.0', protocol: KIT_PROTOCOL, fit, dialog: () => Promise.resolve(''), toast: () => ({ dismiss() {} }) });
     })();
   </script>
 <style>

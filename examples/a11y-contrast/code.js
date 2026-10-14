@@ -1,5 +1,5 @@
 "use strict";
-// ==== kit:window:start · kit v0.3.0 · protocol 1 · paste this block unchanged · https://github.com/alekseikipin/Figplug-ui-kit ====
+// ==== kit:window:start · kit v0.4.0 · protocol 1 · paste this block unchanged · https://github.com/alekseikipin/Figplug-ui-kit ====
 // Main-thread half of the kit window: opens the UI, keeps the window inside per-editor bounds,
 // remembers the size the person chose, and answers the runtime in ui.html (docs/messages.md,
 // docs/window-chrome.md). Paste the whole block above your own code and call installKitWindow()
@@ -560,6 +560,31 @@ function contrastInvert(m) {
         return null;
     return [d / det, -b / det, -c / det, a / det, (c * f - d * e) / det, (b * e - a * f) / det];
 }
+/**
+ * The page box of a w x h layer placed by transform m, padded by a thousandth of a pixel so that
+ * rounding at an exact edge never skips a layer the exact test in contrastInside would keep.
+ */
+function contrastCorners(m, w, h) {
+    const [[a, c, e], [b, d, f]] = m;
+    const xs = [e, a * w + e, c * h + e, a * w + c * h + e];
+    const ys = [f, b * w + f, d * h + f, b * w + d * h + f];
+    const pad = 0.001;
+    return { left: Math.min(...xs) - pad, top: Math.min(...ys) - pad, right: Math.max(...xs) + pad, bottom: Math.max(...ys) + pad };
+}
+function contrastRectBox(rect) {
+    return { left: rect.x, top: rect.y, right: rect.x + rect.width, bottom: rect.y + rect.height };
+}
+function contrastJoin(one, two) {
+    const { min, max } = Math;
+    return { left: min(one.left, two.left), top: min(one.top, two.top), right: max(one.right, two.right), bottom: max(one.bottom, two.bottom) };
+}
+/** Written as "not clearly apart", so a box that isn't a number keeps its layer rather than dropping it. */
+function contrastOverlaps(one, two) {
+    return !(one.left > two.right || two.left > one.right || one.top > two.bottom || two.top > one.bottom);
+}
+function contrastOutside(box, x, y) {
+    return x < box.left || x > box.right || y < box.top || y > box.bottom;
+}
 function contrastRadii(node, w, h) {
     let radii = [0, 0, 0, 0];
     if ('topLeftRadius' in node)
@@ -573,11 +598,25 @@ function contrastRadii(node, w, h) {
 /**
  * Copies the page into plain layers, keeping only what can paint at the sample areas: a layer
  * whose bounds miss every area is dropped, and so is a clipping frame's whole subtree. Children of
- * frames that don't clip are always visited, since they can hang outside their parent. Masks are
- * always kept: dropping one would unmask the layers above it.
+ * layers that don't clip can hang outside them, so they are visited too, unless the layer's render
+ * bounds (everything it draws, overhanging children included) also miss every area: a far-off
+ * group or board is then skipped whole. Layers that hold a checked text are always visited. Masks
+ * are always kept: dropping one would unmask the layers above it.
  */
-function contrastSnapshot(page, targets, areas) {
+function contrastSnapshot(page, plans) {
+    const areas = plans.map((plan) => plan.area);
+    const targets = new Map(plans.map((plan) => [plan.node.id, contrastRectBox(plan.area)]));
+    const holders = new Set();
+    for (const { node } of plans) {
+        for (let n = node.parent; n && !holders.has(n.id); n = n.parent)
+            holders.add(n.id);
+    }
     const hits = (box) => box !== null && areas.some((r) => box.x <= r.x + r.width && r.x <= box.x + box.width && box.y <= r.y + r.height && r.y <= box.y + box.height);
+    // A layer without render bounds (the API gives sections none) counts as a hit: its children are visited.
+    const draws = (node) => {
+        const drawn = 'absoluteRenderBounds' in node ? node.absoluteRenderBounds : null;
+        return !drawn || hits(drawn);
+    };
     const copy = (nodes) => {
         const layers = [];
         for (const node of nodes) {
@@ -596,7 +635,8 @@ function contrastSnapshot(page, targets, areas) {
         if (!node.visible || CONTRAST_SKIP_TYPES.has(node.type))
             return null;
         const mask = 'isMask' in node && node.isMask;
-        const target = node.type === 'TEXT' && targets.has(node.id);
+        const area = node.type === 'TEXT' ? targets.get(node.id) : undefined;
+        const target = area !== undefined;
         // Other text, on a path too: its glyphs are too sparse to be a backdrop (or a cover).
         if ((node.type === 'TEXT' || node.type === 'TEXT_PATH') && !target && !mask)
             return null;
@@ -604,7 +644,8 @@ function contrastSnapshot(page, targets, areas) {
         const hit = hits(node.absoluteBoundingBox);
         const clip = 'clipsContent' in node && node.clipsContent === true;
         const kids = 'children' in node && node.type !== 'BOOLEAN_OPERATION' ? node.children : [];
-        const children = kids.length > 0 && (hit || !clip) ? copy(kids) : [];
+        const visit = kids.length > 0 && (hit || (!clip && (holders.has(node.id) || draws(node))));
+        const children = visit ? copy(kids) : [];
         if (!hit && !mask && children.length === 0)
             return null;
         const inverse = contrastInvert(node.absoluteTransform);
@@ -612,9 +653,18 @@ function contrastSnapshot(page, targets, areas) {
             return null;
         const w = node.width;
         const h = node.height;
+        // A text is checked at its own sample points even where they fall outside its box (its ink).
+        let box = contrastCorners(node.absoluteTransform, w, h);
+        if (area)
+            box = contrastJoin(box, area);
+        if (!clip)
+            for (const child of children)
+                if (!child.mask)
+                    box = contrastJoin(box, child.box);
         return {
             id: node.id,
             target,
+            box,
             outline: node.type === 'ELLIPSE' ? 'ellipse' : opaque ? 'rect' : CONTRAST_BOX_TYPES.has(node.type) ? 'box' : 'rect',
             inverse,
             w,
@@ -729,7 +779,10 @@ function contrastFillsAt(fills, u, v) {
     }
     return color;
 }
-/** Paints layers back to front over under. A mask hides the siblings above it outside its shape. */
+/**
+ * Paints layers back to front over under. A mask hides the siblings above it outside its shape.
+ * A layer whose box misses the point paints nothing there and is skipped without being opened.
+ */
 function contrastRenderLayers(layers, x, y, pass, under) {
     let color = under;
     let masked = false;
@@ -739,7 +792,7 @@ function contrastRenderLayers(layers, x, y, pass, under) {
             masked = !contrastInside(layer, m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]);
             continue;
         }
-        if (!masked)
+        if (!masked && !contrastOutside(layer.box, x, y))
             color = contrastOver(contrastRenderLayer(layer, x, y, pass), color);
     }
     return color;
@@ -764,6 +817,25 @@ function contrastRenderLayer(layer, x, y, pass) {
     if (layer.outline === 'box' && own.a > 0)
         own = { ...own, approx: true };
     return contrastFade(contrastRenderLayers(layer.children, x, y, pass, own), layer.opacity, layer.blend);
+}
+/**
+ * The part of the scene that can paint inside area. One text's samples all fall in its area, so
+ * its 60 or so renders go through this alone: a few layers near the text, not a whole list of
+ * rows each time. Masks stay, to keep masking the layers above them.
+ */
+function contrastCull(scene, area) {
+    const box = contrastRectBox(area);
+    const cull = (layers) => {
+        const kept = [];
+        for (const layer of layers) {
+            if (layer.mask)
+                kept.push(layer);
+            else if (contrastOverlaps(layer.box, box))
+                kept.push(layer.children.length > 0 ? { ...layer, children: cull(layer.children) } : layer);
+        }
+        return kept;
+    };
+    return { background: scene.background, children: cull(scene.children) };
 }
 /** The colour the page shows at point, opaque. */
 function contrastRenderAt(scene, point, pass) {
@@ -1014,11 +1086,14 @@ function contrastMeasure(texts) {
     if (texts.length === 0)
         return [];
     const p3 = contrastIsP3();
-    const plans = texts.map((node) => ({ node, points: contrastSamplePoints(node) }));
-    const scene = contrastSnapshot(figma.currentPage, new Set(texts.map((node) => node.id)), plans.map((plan) => contrastArea(plan.points)));
-    const results = plans.map(({ node, points }) => {
+    const plans = texts.map((node) => {
+        const points = contrastSamplePoints(node);
+        return { node, points, area: contrastArea(points) };
+    });
+    const scene = contrastSnapshot(figma.currentPage, plans);
+    const results = plans.map(({ node, points, area }) => {
         try {
-            return contrastMeasureText(node, scene, points, p3);
+            return contrastMeasureText(node, contrastCull(scene, area), points, p3);
         }
         catch (error) {
             const result = contrastBlank(node);

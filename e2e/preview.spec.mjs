@@ -1,7 +1,8 @@
 // preview.html itself: the three themes, the gallery's components and forced states, real
 // keyboard focus on invalid and aria-disabled fields, search fields, the live frame booting and
-// fitting, the "Simulate no Inter" toggle, the editor and mode switches, the figma stub, the
-// file:// note, and the copied kit blocks staying byte-identical to ui.html's. Nothing here needs
+// fitting, the window as wide as the frame at 240px, the "Simulate no Inter" toggle, the editor and mode switches, the figma stub, the
+// file:// note, the copied kit blocks staying byte-identical to ui.html's, and every control in the
+// gallery's default cells being what a click at its centre hits. Nothing here needs
 // the starter's demo: the live-frame tests run the kit fixture (useKitFixture) or only read what
 // any kit plugin has.
 
@@ -38,6 +39,9 @@ const COMPONENTS = {
   tooltip: ['default', 'hover', 'focus', 'active', 'disabled', 'open'],
   tabs: ['default', 'hover', 'focus', 'active', 'disabled', 'selected'],
   menu: ['default', 'hover', 'focus', 'active', 'disabled', 'open'],
+  // Phase 3
+  dialog: ['default', 'hover', 'focus', 'active', 'disabled', 'open'],
+  toast: ['default', 'hover', 'focus', 'active', 'disabled', 'danger'],
 };
 
 const BG = { light: 'rgb(255, 255, 255)', dark: 'rgb(44, 44, 44)', figjam: 'rgb(255, 255, 255)' };
@@ -117,6 +121,47 @@ test('every gallery component is present in all six states', async ({ page }) =>
   expect(inBox).toBe(true);
 });
 
+// A layout slip can leave a control looking right but out of reach of the pointer: a pseudo-element
+// or a sibling painted over it, or a box squashed to nothing (a bad merge once made .kit-select's
+// <select> unclickable, and every other check stayed green). So each interactive control in the
+// gallery's default cells must have a size and be what a click at its own centre lands on.
+for (const theme of ['light', 'dark']) {
+  test(`every interactive control in the gallery's default cells has a size and is topmost at its centre (${theme})`, async ({ page }) => {
+    await openPreview(page, { theme });
+    const report = await page.evaluate(() => {
+      const describe = (/** @type {Element | null} */ el) => {
+        if (!el) return 'nothing';
+        const cls = typeof el.className === 'string' && el.className ? `.${el.className.trim().split(/\s+/).join('.')}` : '';
+        return `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}${cls}`;
+      };
+      const checked = [];
+      const problems = [];
+      for (const cell of document.querySelectorAll('[data-preview-component] > [data-state="default"]')) {
+        const row = /** @type {Element} */ (cell.closest('[data-preview-component]')).getAttribute('data-preview-component');
+        for (const el of cell.querySelectorAll('button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')) {
+          // Not live in the cell: inert demo copies (the toast), closed popovers and dialogs.
+          if (el.closest('[inert], [hidden], [popover], dialog')) continue;
+          const name = `${row}: ${describe(el)}${el.getAttribute('aria-label') ? ` "${el.getAttribute('aria-label')}"` : ''}`;
+          el.scrollIntoView({ block: 'center', inline: 'center' });
+          const r = el.getBoundingClientRect();
+          checked.push(name);
+          if (r.width < 1 || r.height < 1) { problems.push(`${name}: ${r.width}x${r.height}`); continue; }
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          // A hit on the control's own content (an icon inside a button) still clicks the control.
+          if (!hit || !el.contains(hit)) problems.push(`${name}: covered by ${describe(hit)}`);
+        }
+      }
+      return { checked, problems };
+    });
+    expect(report.problems, 'controls a click at their centre would miss').toEqual([]);
+    // Every row's default cell has a control except the static ones (empty state, notice, toast copy).
+    expect(report.checked.length, report.checked.join('\n')).toBeGreaterThanOrEqual(25);
+    for (const row of ['select', 'input', 'checkbox', 'radio', 'tabs', 'number', 'color', 'tooltip', 'menu', 'dialog']) {
+      expect(report.checked.some((name) => name.startsWith(`${row}: `)), `the ${row} row was checked`).toBe(true);
+    }
+  });
+}
+
 test('keyboard focus shows the focus ring on invalid and aria-disabled fields too; search fields draw no native clear button', async ({ page }) => {
   await openPreview(page);
   // aria-disabled keeps a control focusable (components.md), so it needs the ring as much as any.
@@ -163,6 +208,28 @@ test('the live frame boots, fits its content and shows the handle', async ({ pag
   expect(await frameSize(page)).toEqual({ width: 480, height: await contentHeight(frame), state: 'shown' });
   expect(await page.evaluate(() => window.kitPreviewHost.calls().filter((c) => c.name === 'clientStorage.setAsync'))).toEqual([]);
 });
+
+// The window around the live frame is as wide as the frame at every width: a long plugin name in
+// the title bar must not widen it (it ends in an ellipsis), or a 240px plugin shows a blank strip.
+const EXAMPLES = ['rename-layers', 'export-selection', 'content-fill', 'variables-sync', 'a11y-contrast']
+  .filter((name) => { try { read(`../examples/${name}/manifest.json`); return true; } catch { return false; } });
+for (const name of ['', ...EXAMPLES]) {
+  test(`the preview window is exactly as wide as the plugin frame at the narrowest width (${name || 'kit fixture'})`, async ({ page }) => {
+    if (!name) await useKitFixture(page);
+    await openPreview(page, name ? { plugin: `examples/${name}` } : {});
+    await page.evaluate(() => { /** @type {HTMLElement} */ (document.getElementById('live-title')).textContent = 'A plugin with a name far too long for a narrow window'; });
+    await page.locator('#live-width').fill('240');
+    await page.waitForTimeout(400);
+    const w = await page.evaluate(() => ({
+      window: /** @type {Element} */ (document.getElementById('live-window')).getBoundingClientRect().width,
+      frame: /** @type {Element} */ (document.getElementById('live-frame')).getBoundingClientRect().width,
+      titleClipped: (() => { const t = /** @type {Element} */ (document.getElementById('live-title')); return t.scrollWidth > t.clientWidth; })(),
+    }));
+    expect(w.frame, 'the frame took a width').toBeGreaterThan(0);
+    expect(w.window, `the window hugs the ${w.frame}px frame`).toBeCloseTo(w.frame, 0);
+    expect(w.titleClipped, 'the long title ends in an ellipsis instead').toBe(true);
+  });
+}
 
 test('"Simulate no Inter" drops Inter from the font stack in the gallery and in the plugin', async ({ page }) => {
   await openPreview(page);

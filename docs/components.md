@@ -1,13 +1,14 @@
 # Components
 
-The kit's components are CSS classes on plain HTML elements, defined in `<style data-kit="components">` in `ui.html`, plus the [layout primitives](#layout-primitives) that arrange them. Dialog and toast arrive in Phase 3; this page grows with them.
+The kit's components are CSS classes on plain HTML elements, defined in `<style data-kit="components">` in `ui.html`, plus the [layout primitives](#layout-primitives) that arrange them: 20 components in all.
 
 | Phase | Components |
 |---|---|
 | 1 | [Button](#button), [text input](#text-input), [select](#select), [resize handle](#resize-handle) |
 | 2 | [Textarea](#textarea), [checkbox](#checkbox), [radio](#radio), [number field](#number-field), [colour field](#colour-field), [icon button](#icon-button), [section header](#section-header), [list](#list), [empty state](#empty-state), [inline notice](#inline-notice), [sticky footer](#sticky-footer), [tabs](#tabs), [tooltip](#tooltip), [menu](#menu) |
+| 3 | [Dialog](#dialog), [toast](#toast) |
 
-Every colour they use is a `--figma-color-*` token, so they follow light, dark and FigJam on their own ([tokens.md](tokens.md)). Every control is 24px tall (32px large), the size of Figma's own UI3 controls; list rows are 32px, like UI3's panel rows. `preview.html` shows each component in every state, in light, dark and FigJam. Only tooltips, tabs and menus need more than CSS, and only the menu needs the runtime: tooltips and tabs are CSS-only.
+Every colour they use is a `--figma-color-*` token, so they follow light, dark and FigJam on their own ([tokens.md](tokens.md)). Every control is 24px tall (32px large), the size of Figma's own UI3 controls; list rows are 32px, like UI3's panel rows. `preview.html` shows each component in every state, in light, dark and FigJam. Only the menu, the dialog and the toast need the runtime; tabs are CSS-only, and tooltips are CSS-only apart from Escape, which the runtime handles.
 
 ## States are attributes
 
@@ -506,7 +507,7 @@ Do:
 
 Don't:
 - Use a notice for field errors: those go in the field's `.kit-help` with `aria-invalid`.
-- Stack more than one or two; for "it worked" feedback after an action, `figma.notify` in `code.ts` (or the Phase 3 toast) is lighter.
+- Stack more than one or two; for "it worked" feedback after an action, a [toast](#toast) is lighter (or `figma.notify` in `code.ts` when the window is about to close).
 
 Contrast: the fallback palette's dark `bg-warning-tertiary` (`#c58011`) is a strong orange, and white text on it is about 2.9:1. Figma's live dark value is a dim brown (`#5c4100`); the kit reads whichever Figma injects ([accessibility.md](accessibility.md)).
 
@@ -543,14 +544,14 @@ States are those of its buttons. Do: keep one primary action, last. Don't: put f
     <label class="kit-tab"><input type="radio" name="format" value="png" checked>PNG</label>
     <label class="kit-tab"><input type="radio" name="format" value="svg">SVG</label>
   </div>
-  <div class="kit-tabpanel">PNG options…</div>
-  <div class="kit-tabpanel">SVG options…</div>
+  <div>PNG options…</div>
+  <div>SVG options…</div>
 </div>
 ```
 
 CSS-only tabs for switching between up to six panels: each tab is a hidden radio inside a label, and panel N shows while tab N is checked. No script, and the browser handles the keys: Tab reaches the checked tab, arrow keys move between tabs (and switch panels), and the chosen value is a normal radio value your script can read (`querySelector('input[name="format"]:checked').value`).
 
-Rules the CSS depends on: the `.kit-tablist` is the first child of `.kit-tabs`; the panels follow it directly, in the same order as the tabs; each tab's radio is its label's only element; one radio is `checked` from the start (with none checked, every panel hides).
+Rules the CSS depends on: the `.kit-tablist` is the first child of `.kit-tabs`; the panels follow it directly, in the same order as the tabs; each tab's radio is its label's only element; one radio is `checked` from the start (with none checked, every panel hides). A panel is any element (a plain `<div>`, a `.kit-stack`, a `<section>`) and needs no class: the CSS picks panels by position, not by name. The 0.3.0 docs showed a `kit-tabpanel` class on them; it never had a CSS rule, so markup that keeps it works the same.
 
 | State | Look | Written as |
 |---|---|---|
@@ -578,7 +579,7 @@ Don't:
 </span>
 ```
 
-A CSS-only tooltip: a `bg-inverse` label with `text-oninverse`, 4px/8px padding, radius 5px and `--kit-shadow-tooltip`, 4px under its control. It appears 400ms (`--kit-duration-large`) after the pointer rests on the host, at once when the control gets keyboard focus, and hides as soon as both leave. It never takes focus. Long text wraps at 200px.
+A CSS tooltip (the runtime only adds Escape dismissal, see Accessibility below): a `bg-inverse` label with `text-oninverse`, 4px/8px padding, radius 5px and `--kit-shadow-tooltip`, 4px under its control. It appears 400ms (`--kit-duration-large`) after the pointer rests on the host, at once when the control gets keyboard focus, and hides as soon as both leave. Escape hides it while the pointer or focus is still there (see Accessibility below). It never takes focus. Long text wraps at 200px.
 
 **Placement.** By default it is centred under the control. Near a window edge it would be cut off, so add one class: `kit-tooltip-start` (aligned with the control's left edge, for controls near the left), `kit-tooltip-end` (right edge, for icon buttons in a section header) or `kit-tooltip-above` (for controls in the last row or the footer). Hidden tooltips take no room, so they never widen or lengthen the page.
 
@@ -587,6 +588,7 @@ A CSS-only tooltip: a `bg-inverse` label with `text-oninverse`, 4px/8px padding,
 | Hidden | not shown (scaled to nothing) |
 | Hover | shown after 400ms |
 | Focus | shown at once (`:focus-visible` inside the host) |
+| Dismissed | hidden after Escape until both the pointer and keyboard focus have left the host; the runtime sets and clears `data-kit-tooltip-dismissed` on the host (never write it yourself) |
 | Disabled control | still shown: use `aria-disabled="true"` on the control (not `disabled`) so keyboard users can reach it and read why |
 
 Do:
@@ -598,7 +600,7 @@ Don't:
 - Wrap a field in a host inside a `.kit-row` and expect it to share the width; hosts are for buttons and icon buttons.
 - Use it inside an element with `overflow: hidden` or `auto`, which would clip it.
 
-Accessibility: the pointer can move from the control onto the tooltip without losing it (WCAG 1.4.13 "hoverable"), and it stays until the pointer or focus leaves ("persistent"). A CSS-only tooltip can't be dismissed with Escape while focus stays on the control ("dismissible"); this is a known gap. Keep tooltips short and below or beside what they describe so they don't cover anything the person needs.
+Accessibility: the pointer can move from the control onto the tooltip without losing it (WCAG 1.4.13 "hoverable"), and it stays until the pointer or focus leaves ("persistent"). Since kit 0.4.0, Escape hides a shown tooltip without moving the pointer or focus ("dismissible"): it stays hidden while the pointer or focus remains on its control, and the next hover or focus after both have left shows it again. The runtime doesn't take that Escape: your own Escape handlers still get it, and a modal dialog it sits in still closes. An open menu is the exception it always was: its Escape closes the menu and stops there ([Menu](#menu)). Since 0.4.0 this also works in a browser without the popover API ([Implementation notes](#implementation-notes)). If your `ui.html` carries the Escape workaround from the 0.3.0 docs, you can delete it; keeping it does no harm. Keep tooltips short and below or beside what they describe so they don't cover anything the person needs.
 
 ## Menu
 
@@ -612,7 +614,7 @@ Accessibility: the pointer can move from the control onto the tooltip without lo
 </div>
 ```
 
-A command menu, the kit's first stateful component. The browser's popover API opens and closes it (click the button; click outside or press Escape to close) and puts it in the top layer, above everything; the runtime does the rest: it places the menu 4px under its button (above it when there is more room there, always inside the window), keeps `aria-expanded` in sync on every button that opens it, focuses the first enabled item when it opens, and handles the keys: ArrowDown and ArrowUp move between items (wrapping), Home and End jump, ArrowDown on the closed button opens it, Tab closes it, Escape closes it and returns focus to the button. Clicking an item runs your `click` handler on it, then closes the menu (call `event.preventDefault()` in the handler to keep it open). Disabled items are skipped.
+A command menu, the kit's first stateful component. The browser's popover API opens and closes it (click the button; click outside or press Escape to close) and puts it in the top layer, above everything; the runtime does the rest: it places the menu 4px under its button (above it when there is more room there, always inside the window), keeps `aria-expanded` in sync on every button that opens it (a menu with several buttons opens under the one that was used, and Escape returns focus there), focuses the first enabled item when it opens, and handles the keys: ArrowDown and ArrowUp move between items (wrapping), Home and End jump, ArrowDown on the closed button opens it, Tab closes it, Escape closes it and returns focus to the button. Clicking an item runs your `click` handler on it, then closes the menu (call `event.preventDefault()` in the handler to keep it open). Disabled items are skipped.
 
 ```js
 document.getElementById('layer-menu').addEventListener('click', (event) => {
@@ -642,6 +644,102 @@ Don't:
 - Expect UI3's dark menus: Figma draws its own menus dark in both themes, which needs literal colours. The kit's menu is light in the light theme and dark in the dark one ([tokens.md](tokens.md#ui3s-dark-menus-are-not-reproducible)).
 
 In Windows High Contrast, where fills disappear, the highlighted item gets an outline instead.
+
+## Dialog
+
+```html
+<button class="kit-button kit-button-secondary" type="button" data-kit-dialog-open="rename">Rename layers…</button>
+
+<dialog class="kit-dialog" id="rename" aria-labelledby="rename-title">
+  <header class="kit-dialog-header">
+    <h2 id="rename-title">Rename layers</h2>
+    <button class="kit-icon-button" type="button" data-kit-dialog-close aria-label="Close"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button>
+  </header>
+  <div class="kit-dialog-body kit-stack">
+    <div class="kit-field"><label class="kit-label" for="prefix">Prefix</label><input class="kit-input" id="prefix" type="text"></div>
+  </div>
+  <footer class="kit-dialog-footer">
+    <button class="kit-button kit-button-secondary" type="button" data-kit-dialog-close value="cancel">Cancel</button>
+    <button class="kit-button kit-button-primary" type="button" data-kit-dialog-close value="rename">Rename</button>
+  </footer>
+</dialog>
+```
+
+```js
+const choice = await kit.dialog('rename'); // 'rename', 'cancel', or '' (Escape, the close button, a backdrop click)
+if (choice === 'rename') parent.postMessage({ pluginMessage: { type: 'rename', prefix: prefix.value } }, '*');
+```
+
+A modal dialog, the kit's second stateful component. The browser's `showModal()` does the modal part: the dialog goes to the top layer, above everything (the resize handle too), the rest of the page becomes inert, Tab and Shift+Tab move through the dialog's controls and never reach the page behind it, Escape closes it, and focus goes back to the element that had it before. The runtime adds the rest:
+
+- **Opening**: any element with `data-kit-dialog-open="ID"` (one delegated click listener), or `kit.dialog(id)` / `kit.dialog(element)` from your script. An opener acts after your own click handlers, so `event.preventDefault()` in one of them cancels the opening. `kit.dialog()` returns a promise for the dialog's `returnValue`. It rejects with a `TypeError` when the id names no `<dialog>`; an opener with a wrong id logs one `[kit]` warning instead. Called on a dialog that is already open, it returns a promise for the same close. A promise settles only when the dialog has closed: if your code closes a dialog and opens it again in one go, the promises from both opens settle at the next close, with that close's value. Calling `kit.dialog()` from a menu item's `click` handler is fine: the runtime closes the menu first, so focus goes back to the menu's button when the dialog closes.
+- **Closing**: a `[data-kit-dialog-close]` button closes the dialog with its `value` attribute (`''` without one), also after your click handlers, so `event.preventDefault()` keeps the dialog open (to show a validation error, say). Escape resolves `''`: the runtime clears `returnValue` on every open, so an earlier button's value never leaks into a later Escape. Openers and close buttons with `aria-disabled="true"` do nothing.
+- **The backdrop**: clicks on it are ignored, unless the dialog has `data-kit-dialog-light-dismiss`; then a click outside the dialog's box closes it with `''`. Keep light dismiss for dialogs with nothing to lose (no typed input): a drag that starts in a field and ends on the backdrop counts as a backdrop click.
+- **First focus**: the element with `autofocus` if there is one; else the first element in `.kit-dialog-body` that takes focus (an enabled input, select, textarea or button, a link, or an element with a `tabindex` of 0 or more; a hidden one is passed over); else the close button.
+- **Tab at the edges**: past the dialog's last control (or before its first), the browser may move focus out of the plugin's frame into Figma's own UI, as it does for any iframe; the dialog stays open, and Shift+Tab or a click brings focus back. Nothing in the page behind the dialog takes focus.
+- **Nested**: an opener inside an open dialog opens a second modal on top. Escape closes the top one, and focus goes back one step at a time.
+- **The window**: it is not resized for a dialog (the top layer changes no layout, so a `fit-content` window does not refit). A dialog taller than the window scrolls inside itself (at most the window height minus 16px), with its header and footer staying in view; it is never wider than the window minus 16px.
+
+The look, measured from UI3: a `bg` surface with radius 13px (`--kit-radius-large`), `--kit-shadow-dialog` (elevation 500) and no border, over a `--kit-scrim` backdrop (black at 50%). It is 352px wide; `kit-dialog-small` makes it 288px, `kit-dialog-large` 448px. The 40px header has the title (11px on 16px, weight 550, cut with an ellipsis) and its close button, padded 16px on the left and 8px on the right like a [section header](#section-header), with a 1px `border` line below. The body has 16px padding (8px at the bottom); the footer's buttons sit at the end, 8px apart, with 8px above and 16px around.
+
+| State | Look | Written as |
+|---|---|---|
+| Closed | only the opener | `<dialog>` without `open` |
+| Open | the dialog in the top layer, over the scrim | `kit.dialog()` or an opener (never the `open` attribute: that is a non-modal dialog) |
+| Close button hover, focus, pressed | the icon button's own states | |
+| Field focus | the field's focus ring; the first field has focus when the dialog opens | |
+| Disabled action | a disabled footer button | `disabled` on the button |
+| Small, large | 288px or 448px wide | `kit-dialog-small`, `kit-dialog-large` |
+
+Do:
+- Name it: `aria-labelledby` pointing at its `<h2>`.
+- Keep one primary button, and put a destructive choice in `kit-button-danger`.
+- Read the result from the promise, or from the dialog's `close` event and its `returnValue`.
+
+Don't:
+- Open it with the `open` attribute or `show()`: that dialog is not modal, and the runtime's promise and focus rules don't apply.
+- Use `<form method="dialog">`: the kit uses no `<form>` ([pitfalls.md](pitfalls.md#17-smaller-traps)).
+- Put a dialog inside a menu.
+
+In Windows High Contrast the dialog gets a 1px outline, because its shadow disappears.
+
+## Toast
+
+```js
+kit.toast('Renamed 3 layers', { tone: 'success' });
+const undo = kit.toast('Deleted 2 layers', { duration: 0, action: { label: 'Undo', onClick: () => parent.postMessage({ pluginMessage: { type: 'undo' } }, '*') } });
+undo.dismiss(); // take it away early (also while it is still queued)
+```
+
+A short message at the bottom of the window, the kit's third stateful component. There is no markup to write: `kit.toast(message, { tone, duration, action })` builds it and returns `{ dismiss() }`. Types: `KitToastOptions` and `KitToastHandle` in `kit.d.ts`.
+
+- **Queue**: one toast shows at a time, first in, first out. `duration` is how long it stays, in milliseconds (default 4000). `0` keeps it until it is dismissed, and so does a value too large for a timer (`Infinity`); a negative one falls back to 4000. The timer pauses while the pointer is on the toast or focus is inside it, then goes on with the time that was left.
+- **Dismissing**: the close button, which is named by `CONFIG.strings.dismiss` (default "Dismiss"; translate it with `data-kit-config` `{"strings": {"dismiss": "…"}}`, [window-chrome.md](window-chrome.md#customising-config)); Escape while focus is inside the toast (your own Escape handler does not see that key, and a dialog the toast sits in stays open); the action button, whose `onClick` runs first; or `handle.dismiss()`, which is safe to call twice. If focus was inside the toast (Tab reaches its buttons), it goes back to where it came from, so a keyboard user doesn't lose their place.
+- **Where**: in a `div.kit-toast-region` with `aria-live="polite"`, created at the first toast, fixed at the bottom centre 8px from the edge, above the resize handle (`--kit-z-toast` 11 over `--kit-z-handle` 10), and at most the window width minus 16px; while the window chrome is on, minus 64px, so a wide toast stays clear of the resize handle in the corner. While a modal dialog is open the region moves into it (into the top one when dialogs are nested), because everything outside a modal dialog is inert (hidden from screen readers and unclickable), and back to `<body>` when the dialog closes.
+- **Announcements**: the polite region reads each toast when it shows; a `danger` toast has `role="alert"` and is read at once. The first toast waits 100ms after the region is created, because a live region only announces changes made after it exists.
+- **The message is text**: it is set with `textContent`, so HTML in it shows as written. So is the action's label.
+- **It covers the bottom of the window**: a shown toast lies over the bottom 40px or so, the buttons of a [sticky footer](#sticky-footer) included, so a `duration: 0` toast keeps them out of reach until it is dismissed. Keep `duration: 0` for a toast whose action the person needs (Undo), and dismiss it from your code when they move on.
+
+The look: `bg-inverse` with `text-oninverse`, like the [tooltip](#tooltip) (dark in the light theme, light in the dark theme), radius 5px, at least 32px tall, 8px side padding, `--kit-shadow-tooltip`. A tone adds a leading icon, told apart by its shape as well as its colour: `info` an "i" in a circle and `warning` a "!" in a triangle, both in `icon-oninverse`; `success` a check in a circle, in `icon-success`; `danger` a "!" in a circle, in `icon-danger`. Without a tone there is no icon. `icon-brand` and `icon-warning` are not used on the inverse surface because, with the preview's fallback palette, they fall below 3:1 in one theme or the other (`icon-brand` 3.30:1 light, 1.89:1 dark; `icon-warning` 9.32:1 light, 1.69:1 dark), while `icon-success` and `icon-danger` keep at least 3.8:1 in both. A toast slides up 8px and fades in over 200ms, and simply appears with `prefers-reduced-motion: reduce`.
+
+| State | Look |
+|---|---|
+| Shown | the toast in the region |
+| Action hover, pressed | a fill mixed from the text colour, light on the dark toast and dark on the light one |
+| Close button focus | the focus ring; the timer waits |
+| Disabled | none: a toast that cannot act is plain text |
+| Danger | the danger icon; `role="alert"` |
+
+Do:
+- Keep the message short: one line in a 320px window.
+- Announce results ("Renamed 3 layers"), not progress, and give a toast one action at most.
+- Use `figma.notify()` from `code.ts` instead when the window may be hidden or about to close.
+
+Don't:
+- Use a toast for an error the person must fix: put it in the field's `.kit-help` with `aria-invalid`.
+- Stack toasts to show progress, or put links or fields in the message.
+
+In Windows High Contrast a toast gets a 1px outline, and its tone icon takes the toast's text colour, so the tones differ by the icon's shape and the words.
 
 ## Layout primitives
 
@@ -744,7 +842,7 @@ Run `npm run audit` after every change; [pitfalls.md](pitfalls.md) explains each
 
 ## Implementation notes
 
-The components block keeps only a few short comments. These notes explain the CSS behind the components above: read them before you change the block (in a fork, or in a pull request). Order matters in several places, so keep rules where they are.
+The components block keeps no comments beyond its header and one `/* == name == */` marker per component. These notes explain the CSS behind the components above: read them before you change the block (in a fork, or in a pull request). Order matters in several places, so keep rules where they are.
 
 - **Base.** `[hidden]` gets `display: none !important`: the runtime toggles `hidden` on the resize handle, and without `!important` a kit `display` rule would undo it. Buttons, inputs, selects and textareas get `font: inherit`, because form controls don't inherit type and would fall back to the browser's 13px.
 - **Layout.** `.kit-app` is `display: flow-root`, so its last child's bottom margin stays inside the root and the runtime's fit counts it. In a `.kit-row`, fields, inputs, selects, number and colour fields share the width and may shrink (`flex: 1 1 0; min-width: 0`); buttons keep their width and wrap.
@@ -757,6 +855,12 @@ The components block keeps only a few short comments. These notes explain the CS
 - **List.** The disabled row rule ends in `:is(*, :hover)` only to raise its specificity above `button.kit-list-row:hover`, so a disabled row never highlights.
 - **Tabs.** Panel N is hidden unless the tab list's Nth radio is checked: one `:has()` selector per panel, six in all.
 - **Tooltip.** A hidden tooltip is `scale: 0` and `visibility: hidden`, so it never widens or lengthens the page. The hover delay is a `transition-delay` on `visibility` (keyboard focus shows it at once), and its `::before` reaches 4px past the tooltip so the pointer can cross the gap from the control without losing it (WCAG 1.4.13, "hoverable").
+- **Tooltip, Escape (since 0.4.0).** The menus' capture `keydown` listener on `document` also handles it, so there is no new `document` listener. On Escape it marks every `.kit-tooltip-host` that matches `:hover` or `:has(:focus-visible)` (exactly when its tooltip shows) with `data-kit-tooltip-dismissed`, and gives that host two listeners, `pointerleave` and `focusout`, under one `AbortController`. They remove the attribute, and themselves, once the pointer has left with no keyboard focus inside, or focus has moved outside the host while the pointer isn't over it. The hiding rule comes after the two showing rules with the same specificity, and sets `transition: none`, so the tooltip hides at once; when the attribute goes under a resting pointer, the usual hover delay applies. The runtime never calls `preventDefault()` or `stopPropagation()` for it. Since 0.4.0 the capture `keydown` listener is added with or without the popover API; without it, the listener does only this (the menu keys need popovers). `e2e/components.spec.mjs` covers hover, keyboard focus, the leave listeners, a host Escape handler and a tooltip inside a modal dialog.
 - **Menu.** `position: fixed; inset: auto; margin: 0` cancels the browser's centring of popovers; the runtime sets `left` and `top` ([window-chrome.md](window-chrome.md#implementation-notes), Menus).
 - **Sticky footer.** `:root:has(.kit-footer)` sets `scroll-padding-bottom: 40px`, so Tab never scrolls a field under the bar.
-- **Forced colours.** High-contrast modes drop fills, so selected list rows and the highlighted menu item get an outline instead.
+- **Dialog.** `.kit-dialog` shares the panel surface rule with `.kit-menu` (no border, radius 13px, `bg` and `text`, never larger than the window minus 16px, `overflow: auto`) and its header rules with `.kit-section-header`. The header and the footer are `position: sticky` with a `bg` fill and `z-index: 1`: kit buttons are `position: relative` and would otherwise paint over a scrolled header. `::backdrop` reads `var(--kit-scrim)`, but `::backdrop` inherits custom properties from its dialog only in newer engines (Chromium 122 and later, as far as is known; checked on Chromium 151); an older one shows no scrim, and the dialog is still modal.
+- **Dialog, runtime.** `kit.dialog()` sets `returnValue = ''` and calls `showModal()` inside the promise's executor, so a throw rejects the promise, and listens once for `close`. The browser dispatches `close` a task after `close()`, so a close event can arrive after host code has opened the dialog again; the listener ignores a `close` that finds the dialog open and waits for the next one. Without an `[autofocus]` it tries the body's focusable elements in order and stops at the first that takes focus (a `hidden` field doesn't): `showModal()` has already focused the first focusable element, the close button, which keeps focus when nothing in the body takes it. Focus return is the browser's (a dialog gives focus back to the element focused before it opened). That is why `kit.dialog()` first hides an open menu: `hidePopover()` gives focus back to the menu's button, and `showModal()` then records the button; left to `showModal()`, the menu would close with focus on its hidden item, and focus would end on `<body>`. Openers, close buttons and light dismiss share the menu's capture `click` listener on `document` and act in a `setTimeout(0)`, after every click handler, so `preventDefault()` cancels them, as for menu items. Light dismiss checks that the click's target is the dialog itself and that the point is outside its box (a click on the dialog's own padding or scrollbar is inside). Since 0.4.0 the `click` and `keydown` listeners are added with or without the popover API, and only their menu parts need it, so openers, close buttons and a tooltip's Escape work without it; `beforetoggle`, `toggle` and `scroll` are still added only where popovers exist.
+- **Toast.** `.kit-toast` shares the inverse surface with `.kit-tooltip` and the text rule with `.kit-notice-text`. Figma has no hover token for the inverse surface, so the buttons in a toast set `--kit-button-bg-hover` (and pressed) to `color-mix(in srgb, currentColor 16%, transparent)`: their own `text-oninverse` at 16%, a colour derived from a token rather than a literal ([tokens.md](tokens.md#the-colour-rule-and-its-only-exceptions)). The close button keeps `text-oninverse` under the pointer; as an icon button it would turn `icon-hover`, which disappears on the inverse surface. The slide is applied only under `prefers-reduced-motion: no-preference`.
+- **Toast, runtime.** One queue of `show` functions and one shown toast. Each toast builds its fixed parts with `innerHTML` and sets the message, the action's label and the close button's `aria-label` with `textContent` and `setAttribute`, so no HTML from the host is ever parsed. Its six listeners (`mouseenter`, `mouseleave`, `focusin`, `focusout`, `keydown`, `click`) sit on the toast element under one `AbortController`, which `dismiss()` aborts, clearing the timer too. The timer keeps the time left across pauses. `focusin` remembers where focus came from (its `relatedTarget`, when that is outside the toast), and `dismiss()` focuses that element again before it removes a toast that holds focus; otherwise focus would fall to `<body>` and the next Tab would start from the top. `placeToasts()` puts the region in the modal dialog that holds focus, else the dialog `kit.dialog()` opened last that is still modal (the top one: the top layer's order is not exposed, and the first `dialog:modal` in document order may be a lower, inert one), else the first open modal dialog, else `<body>`; it runs when a toast shows and when a kit dialog opens or closes. While the chrome is on, the region's `max-width` keeps 32px free on each side, which clears the 24px handle.
+- **Listener budget.** Dialogs, toasts and the tooltips' Escape add no `document`, `window` or handle listeners: the baseline stays the five capture listeners on `document` from startup (`e2e/menu.spec.mjs` counts them, [window-chrome.md](window-chrome.md#gestures-and-keys)); in a browser without the popover API there are two (`keydown` and `click`). An open dialog holds one `close` listener until it closes; a toast's listeners go with it; a dismissed tooltip's host holds two until it clears.
+- **Forced colours.** High-contrast modes drop fills and shadows, so selected list rows and the highlighted menu item get an outline instead, and dialogs and toasts a 1px outline around them. Every `.kit-icon` gets `color: inherit !important` there: an SVG keeps a `color` the kit gives it (SVG defaults to `forced-color-adjust: preserve-parent-color`), so a toast's info icon stayed white on a white toast, while inheriting takes the forced colour of what the icon sits in (`GrayText` in a disabled button).

@@ -1,5 +1,5 @@
 "use strict";
-// ==== kit:window:start · kit v0.3.0 · protocol 1 · paste this block unchanged · https://github.com/alekseikipin/Figplug-ui-kit ====
+// ==== kit:window:start · kit v0.4.0 · protocol 1 · paste this block unchanged · https://github.com/alekseikipin/Figplug-ui-kit ====
 // Main-thread half of the kit window: opens the UI, keeps the window inside per-editor bounds,
 // remembers the size the person chose, and answers the runtime in ui.html (docs/messages.md,
 // docs/window-chrome.md). Paste the whole block above your own code and call installKitWindow()

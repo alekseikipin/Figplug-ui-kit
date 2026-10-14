@@ -2,7 +2,7 @@
 
 Which kit markup to write for each component of Figma's official UI3 kit, so a frame designed with that kit (or one that only looks like UI3) becomes `ui.html` markup without guessing. The [`kit-frame-to-markup` skill](../.claude/skills/kit-frame-to-markup/SKILL.md) reads a frame through the Figma MCP server and uses this page to translate it; you can use the tables by hand too.
 
-**Status (2026-10-14): the UI3 component names are UNVERIFIED.** The Figma MCP tools only open files with a `/design/` link, and the Community file is not in the account's libraries (searched 2026-10-14), so the file's own component names, pages and variant properties have not been read. The left column is built from what the research could read: the two maintained UI3 replicas (figma-kit and FigUI3) and the class names in Figma's production CSS (`raw_components--label`, `basic_form--btn` ...), the sources listed under [Measured metrics](tokens.md#measured-metrics) as FK, FUI3 and FAPP. Read every name in it as *name to verify against the Community file*. The kit columns are checked against the kit 0.3.0 files. [Finish the verification](#finish-the-verification) says how to replace the guesses.
+**Status (2026-10-14): the UI3 component names are UNVERIFIED.** The Figma MCP tools only open files with a `/design/` link, and the Community file is not in the account's libraries (searched 2026-10-14), so the file's own component names, pages and variant properties have not been read. The left column is built from what the research could read: the two maintained UI3 replicas (figma-kit and FigUI3) and the class names in Figma's production CSS (`raw_components--label`, `basic_form--btn` ...), the sources listed under [Measured metrics](tokens.md#measured-metrics) as FK, FUI3 and FAPP. Read every name in it as *name to verify against the Community file*. The kit columns are checked against the kit 0.4.0 files. [Finish the verification](#finish-the-verification) says how to replace the guesses.
 
 **Attribution.** This page refers to [UI3: Figma's UI Kit](https://www.figma.com/community/file/1486123838948777078/ui3-figmas-ui-kit) by Figma, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) ([Figma Community copyright and licensing](https://help.figma.com/hc/en-us/articles/360042296374-Figma-Community-copyright-and-licensing)). The kit copies no artwork, icons or components from the file: this page only names its components, and the kit's values were measured from other sources ([tokens.md](tokens.md#measured-metrics)).
 
@@ -26,7 +26,7 @@ The usual Figma property names, as guesses; the per-component rows below say whe
 | `State=Error` (or Invalid) | `aria-invalid="true"` + `aria-describedby` pointing at the `.kit-help` |
 | `Loading=True` | `aria-busy="true"` (buttons) |
 | `Checked=True` / `Checked=Mixed` (or Indeterminate) | `checked` / `input.indeterminate = true` in your script |
-| `Open=True` (menu triggers) | nothing: the runtime sets `aria-expanded` |
+| `Open=True` (menu triggers, dialogs) | nothing: the runtime sets a menu trigger's `aria-expanded`; a dialog is opened by its trigger (`data-kit-dialog-open`) or `kit.dialog()`, never by the `open` attribute |
 | `Size=Default` / `Size=Large` | nothing / `kit-button-large` (buttons only) |
 | `Theme=Light` / `Theme=Dark` | nothing: Figma's injected tokens switch the theme |
 
@@ -50,12 +50,12 @@ The usual Figma property names, as guesses; the per-component rows below say whe
 
 ## Components
 
-The kit's cap is 20 components ([PLAN.md](../PLAN.md#7-component-and-token-inventory-target)): the 18 in kit 0.3.0, plus the dialog and toast planned for Phase 3.
+The kit's cap is 20 components ([PLAN.md](../PLAN.md#7-component-and-token-inventory-target)), and kit 0.4.0 has all 20: the dialog and the toast joined in Phase 3.
 
 | UI3 component / variant (name to verify) | Kit markup | State mapping | Notes |
 |---|---|---|---|
 | Button: Primary, Secondary, Tertiary (or Ghost, Text), Destructive (or Danger) | `<button class="kit-button kit-button-primary" type="button">`, or `kit-button-secondary`, `-tertiary`, `-danger` | `Variant=` → the class; `Size=Large` → `kit-button-large`; `Selected=True` → `aria-pressed="true"` (not on primary or danger); `Loading=True` → `aria-busy="true"`; `State=Disabled` → `disabled` | Always `type="button"`. A leading icon is an `svg.kit-icon` first in the button; a trailing one needs the label in a `<span>`. Seen as FAPP `basic_form--btn`, `primaryBtn`, `negativeBtn`, `btnBig`; FK `button`; FUI3 `fig-button variant=...`. Inverse and success buttons have no kit variant ([below](#ui3-parts-with-no-kit-equivalent)). [Button](components.md#button) |
-| Icon button | `<button class="kit-icon-button" type="button" aria-label="...">` + one `svg.kit-icon` | `Selected=True` → `aria-pressed="true"`; `Open=True` → nothing (runtime `aria-expanded`); `State=Disabled` → `disabled` | 24×24 only: a 32px icon button has no kit size. A dialog's close X is an icon button with `aria-label="Close"`. Seen as FAPP `raw_components--_iconButton`, `iconButtonSelected`, `close_button--closeX`; FK `icon-button`. [Icon button](components.md#icon-button) |
+| Icon button | `<button class="kit-icon-button" type="button" aria-label="...">` + one `svg.kit-icon` | `Selected=True` → `aria-pressed="true"`; `Open=True` → nothing (runtime `aria-expanded`); `State=Disabled` → `disabled` | 24×24 only: a 32px icon button has no kit size. A dialog's close X is an icon button with `aria-label="Close"` and `data-kit-dialog-close`. Seen as FAPP `raw_components--_iconButton`, `iconButtonSelected`, `close_button--closeX`; FK `icon-button`. [Icon button](components.md#icon-button) |
 | Text input | `<div class="kit-field">` > `label.kit-label` + `<input class="kit-input" type="text">` | `State=Error` → `aria-invalid="true"` + `aria-describedby`; `State=Disabled` → `disabled`; placeholder text → `placeholder` | 24px. A 32px (large) input has no kit size. Seen as FAPP `basic_form--textInput`, `raw_components--input`; FK `input`; FUI3 `fig-input-text`. [Text input](components.md#text-input) |
 | Text input with icon, search field | `<div class="kit-input-icon">` > `svg.kit-icon` + `input.kit-input` (`type="search"` for search) | as text input | The icon slot ignores the pointer: no buttons inside. [Text input](components.md#text-input) |
 | Textarea (multi-line input) | `<textarea class="kit-textarea" rows="4">` in a `.kit-field` | as text input | Height comes from `rows`, never `height`; no resize grip. Seen as FAPP `raw_components--textAreaInput`; FK `textarea`; FUI3 `fig-input-text multiline`. [Textarea](components.md#textarea) |
@@ -72,8 +72,8 @@ The kit's cap is 20 components ([PLAN.md](../PLAN.md#7-component-and-token-inven
 | Banner, callout, inline message | `<div class="kit-notice" data-kit-tone="..." role="status">` > optional `svg.kit-icon` + `p.kit-notice-text` + optional button | `Type=` or `Tone=` Info, Success, Warning, Danger (or Error) → `data-kit-tone="info"`, `"success"`, `"warning"`, `"danger"` (`role="alert"` for danger); Neutral → no tone | Not for field errors (those use `.kit-help`). Seen as FAPP `states_panel--errorStateBox`, `raw_components--propertiesPanelErrorBox`, `feature_callout--featureCallout`. [Inline notice](components.md#inline-notice) |
 | Footer, action bar | `<footer class="kit-footer">` as the root's last child: `p.kit-text-secondary[role="status"]` + `div.kit-row` of buttons | the buttons' own | Sticky at the bottom; one per window. Seen as FAPP `header_modal--bottomSection`, PropsKit `fig-footer`. [Sticky footer](components.md#sticky-footer) |
 | Window resize corner | `<button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window">` | none: the runtime shows and hides it | No UI3 counterpart expected: it is the kit's window chrome. Leave it as the only element after `</main>`. [Resize handle](components.md#resize-handle) |
-| Dialog, modal (40px header with close X, body, actions) | Phase 3, not in kit 0.3.0: a `<dialog>` with focus return is planned ([PLAN.md](../PLAN.md#6-phase-3--later-months-5-7)) | n/a | Until then, build the dialog's content as the window's own view: `.kit-section-header` for the header, `.kit-section` for the body, `.kit-footer` for the actions. Seen as FAPP `header_modal--modal`, `draggable_modal--frame`; FK `dialog`, `alert-dialog`. |
-| Toast, visual bell | Phase 3, not in kit 0.3.0 | n/a | Until then, send `figma.notify(message, { error, timeout, button })` from `code.ts`: Figma's own toast. Seen as FAPP `--z-index-visual-bell` only. |
+| Dialog, modal (40px header with close X, body, actions) | `<dialog class="kit-dialog" id="d" aria-labelledby="d-title">` > `header.kit-dialog-header` (`<h2 id="d-title">` + `button.kit-icon-button[data-kit-dialog-close][aria-label="Close"]`) + `div.kit-dialog-body` + `footer.kit-dialog-footer` of `kit-button`s with `data-kit-dialog-close` and a `value`; inside `[data-kit-root]`, after the content. Its trigger gets `data-kit-dialog-open="d"`, or the script calls `await kit.dialog('d')` | `Size=Small` / `Size=Large` (or a 288 / 448px frame) → `kit-dialog-small` / `kit-dialog-large` (default 352px); a disabled action → `disabled` on its button; `Open=True` → nothing in the markup; closes on an outside click → `data-kit-dialog-light-dismiss` (only with nothing to lose) | Each action becomes a button `value`, and the script reads the one that closed the dialog from `kit.dialog()` (`''` after Escape or the close X). The dimmed backdrop, the shadow and the 13px radius come with the class: draw none of them. An alert dialog (FK `alert-dialog`) is the same markup with `kit-dialog-small`. A closed dialog takes no room, and an open one never resizes the window. Seen as FAPP `header_modal--modal`, `draggable_modal--frame`; FK `dialog`, `alert-dialog`. [Dialog](components.md#dialog) |
+| Toast, visual bell | No markup: `kit.toast('Renamed 3 layers', { tone, duration, action })` in the UI script, when the result arrives | `Type=` or `Tone=` Info, Success, Warning, Danger (or Error) → `tone: 'info'`, `'success'`, `'warning'`, `'danger'`; Neutral → no `tone`; a button in it → `action: { label, onClick }` (one at most); a timeout → `duration` in ms (`0` until dismissed) | One at a time, at the bottom centre of the plugin window, on the inverse surface like the tooltip: dark in the light theme and light in the dark one ([why](tokens.md#ui3s-dark-menus-are-not-reproducible)). Copy the frame's message, never its position or colours. From `code.ts`, `figma.notify(message, { error, timeout, button })` (Figma's own toast, outside the window) is the alternative when the window is hidden or about to close, or the plugin has no UI. Seen as FAPP `--z-index-visual-bell` only. [Toast](components.md#toast) |
 
 ## UI3 parts with no kit equivalent
 
@@ -86,7 +86,7 @@ What to write instead. Report each one you hit when you translate a frame.
 | Slider, range | A `.kit-number` with `min` and `max` | A native `<input type="range">` has no kit styling: style it yourself with tokens, 24px tall. FK `slider`, FUI3 `fig-slider`. |
 | Colour picker (the fill picker popover) | The native picker through `.kit-color`'s swatch | System UI, not Figma's; UNVERIFIED in Figma's desktop app. FK `color-picker`, FUI3 `fig-fill-picker`. |
 | Combobox, autocomplete | A search field (`.kit-input-icon` + `type="search"`) above a `.kit-list` of button rows | FK `combobox`. |
-| Popover (a floating panel that isn't a menu) | Show the content in the page (a section or a notice) | `.kit-menu` is for commands only. FK `popover`. |
+| Popover (a floating panel that isn't a menu) | Show the content in the page (a section or a notice), or in a `kit-dialog` when it needs the person's full attention | `.kit-menu` is for commands only. FK `popover`. |
 | Collapsible section, disclosure | A `.kit-section-header` with a `kit-icon-button[aria-expanded]` that toggles `hidden` on its section, in your script | No kit chevron or animation. FK `collapsible`. |
 | Context menu (right-click) | A `.kit-menu` opened from a button | The kit's menu opens from a `popovertarget` button. |
 | Submenu, menu check items, shortcut column | Flatten into the menu, or into the page | FAPP `multilevel--submenu`, `rightColumnShortcut`. |
@@ -120,6 +120,8 @@ A frame drawn with plain layers (rectangles and text, or another library's insta
 | A tinted box with an icon and a sentence | `kit-notice` with a tone |
 | An icon, a title and a sentence centred in an empty area | `kit-empty` |
 | A bar of buttons at the bottom | `kit-footer` |
+| A card with a title bar, a close X and buttons at the bottom, over a dimmed page | `kit-dialog` (the dimming is its backdrop; don't draw it) |
+| A small dark pill near the bottom with one sentence, maybe an icon or a button | `kit.toast()` in your script, not markup |
 | Any other height (28, 36, 40px controls) | Still 24 or 32px: never copy heights ([pitfall 9](pitfalls.md#9-24-and-32-px-controls)) |
 
 ## Text styles
@@ -147,7 +149,8 @@ The full kit type scale is under [Kit tokens](tokens.md#kit-tokens).
 | Gap or padding 2 · 4 · 6 · 8 · 12 · 16 · 24 · 32 · 40px | `--kit-spacer-0-5` · `-1` · `-1-5` · `-2` · `-2-5` · `-3` · `-4` · `-5` · `-6` |
 | Another value (10, 14, 20px ...) | The nearest spacer; report it |
 | Radius 2 · 5 · 13px · full | `--kit-radius-small` · `-medium` · `-large` · `-full` |
-| Elevation 300 · 400 · 500 (tooltip, menu, dialog) | `var(--kit-shadow-tooltip)` · `var(--kit-shadow-menu)` · `var(--kit-shadow-dialog)` |
+| Elevation 300 · 400 · 500 (tooltip, menu, dialog) | `var(--kit-shadow-tooltip)` · `var(--kit-shadow-menu)` · `var(--kit-shadow-dialog)` (the kit's tooltip, toast, menu and dialog already have theirs) |
+| A dimmed overlay behind a modal | None in your CSS: a `kit-dialog`'s backdrop is `var(--kit-scrim)` |
 | Elevation 100 or 200, any other shadow | None; report it |
 | Fixed frame width | Drop it inside the window; the window's width goes in `installKitWindow({ size: { width } })` in `code.ts` ([window-chrome.md](window-chrome.md#pick-a-mode)) |
 | Fixed frame height | Drop it: the window fits its content |

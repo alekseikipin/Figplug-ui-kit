@@ -59,7 +59,7 @@ No build is needed: `code.js` is committed.
 
 If nothing happens, see the [import gotchas](../../docs/install.md#import-gotchas). After editing `code.ts`, rebuild with `npx tsc -p examples/rename-layers` from the repo root.
 
-To try it without Figma, run `npm run preview` in the repo and open http://localhost:4173/preview.html?plugin=examples/rename-layers (or pick it under *Plugin*): it runs in its own window mode against the preview's `figma` stub, a stand-in with a few fake layers ([loop.md](../../docs/loop.md#preview-in-a-browser)). `npm run build` at the root rebuilds every example too.
+To try it without Figma, run `npm run preview` in the repo and open http://localhost:4173/preview.html?plugin=examples/rename-layers (or pick it under *Plugin*): it runs in its own window mode against the preview's `figma` stub, a stand-in with a few fake layers ([loop.md](../../docs/loop.md#preview-in-a-browser)). `npm run build:examples` at the root rebuilds every example (`npm run check` runs it too); `npm run build` compiles only the root plugin.
 
 ## Files
 
