@@ -280,7 +280,7 @@ Fixing the rest without colour keywords is possible for some of it (a thicker or
 
 ## What the automated checks cover
 
-`npm run test:e2e` runs these in Chromium. The CI workflow's e2e job runs them on every push, but it has not run on GitHub yet. In the run on 2026-10-14 at kit 0.4.0 (Playwright 1.62.1, Chromium 151.0.7922.34) 164 tests passed and 10 were skipped (the docs screenshots and the listing images, made only on request); 31 of the 164 run axe.
+`npm run test:e2e` runs these in Chromium. The CI workflow's e2e job runs them on every push, but it has not run on GitHub yet. In the run on 2026-10-14 at kit 0.4.0 (Playwright 1.62.1, Chromium 151.0.7922.34) 165 tests passed and 10 were skipped (the docs screenshots and the listing images, made only on request); 31 of the 165 run axe.
 
 | Check | What it covers |
 |---|---|

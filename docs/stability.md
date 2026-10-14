@@ -10,7 +10,7 @@ From v1.0 on, every name in [the public surface](#the-public-surface-today) belo
 
 The freeze is about **names and meanings, not pixels**. A token's or component's value may still be corrected in a minor release to follow Figma's UI3 (a measured radius, a hover colour), and is listed under "Changed" in the CHANGELOG. Controls stay 24 and 32px tall: the audit's `control-height` rule depends on it.
 
-Since 0.2.0 nothing public has been renamed or removed. PLAN.md asks for two consecutive releases without renames before 1.0: 0.3.0 and 0.4.0 add names and rename none, so they are those two once both are released. On 2026-10-14 `v0.3.0` is tagged in the local repo only, and 0.4.0 is not committed or tagged yet ([roadmap-status.md](roadmap-status.md#7-v10)).
+Since 0.2.0 nothing public has been renamed or removed. PLAN.md asks for two consecutive releases without renames before 1.0: 0.3.0 and 0.4.0 add names and rename none, so they are those two once both are released. On 2026-10-14 `v0.3.0` and `v0.4.0` are tagged in the local repo only and not yet released ([roadmap-status.md](roadmap-status.md#7-v10)).
 
 ## The public surface today
 

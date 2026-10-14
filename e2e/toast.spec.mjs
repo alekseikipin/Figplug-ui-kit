@@ -246,6 +246,30 @@ test.describe('toast', () => {
     expect(geo.hit, 'the whole handle takes the pointer').toBe(true);
   });
 
+  test('with a sticky footer the toast sits above it, so it never covers the footer\'s buttons', async ({ page }) => {
+    await openPreview(page);
+    const frame = pluginFrame(page);
+    await frame.evaluate(() => {
+      const root = /** @type {Element} */ (document.querySelector('[data-kit-root]'));
+      root.insertAdjacentHTML('beforeend', '<footer class="kit-footer"><button class="kit-button kit-button-primary" type="button">Apply</button></footer>');
+      window.kit.toast('Saved 3 colours', { duration: 0 });
+    });
+    await expect.poll(() => frame.locator('.kit-toast').count()).toBe(1);
+    // Measure once the slide-in has finished and the fit-content window has refitted to the footer.
+    await frame.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+    await expect.poll(() => frame.evaluate(() => Math.round(innerHeight - /** @type {Element} */ (document.querySelector('.kit-footer')).getBoundingClientRect().bottom))).toBe(0);
+    const geo = await frame.evaluate(() => {
+      const t = /** @type {Element} */ (document.querySelector('.kit-toast')).getBoundingClientRect();
+      const f = /** @type {Element} */ (document.querySelector('.kit-footer')).getBoundingClientRect();
+      const b = /** @type {Element} */ (document.querySelector('.kit-footer .kit-button')).getBoundingClientRect();
+      const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+      return { toastBottom: t.bottom, footerTop: f.top, footerAtBottom: Math.round(innerHeight - f.bottom), hit: hit && hit.matches('.kit-footer .kit-button') };
+    });
+    expect(geo.footerAtBottom, 'the footer sits at the bottom of the window').toBe(0);
+    expect(geo.toastBottom, 'the toast ends above the footer').toBeLessThanOrEqual(geo.footerTop);
+    expect(geo.hit, 'the footer button still takes the pointer').toBe(true);
+  });
+
   test('with nested dialogs open the region goes to the top one, also when focus has fallen to <body>; its toast takes clicks', async ({ page }) => {
     await openPreview(page);
     const frame = pluginFrame(page);

@@ -289,6 +289,7 @@ html[data-kit-chrome="on"] .kit-app:has(> .kit-footer:last-child) { padding-bott
 
 /* == toast == */
 .kit-toast-region { position: fixed; bottom: var(--kit-spacer-2); left: 50%; z-index: var(--kit-z-toast); width: max-content; max-width: calc(100vw - var(--kit-spacer-3)); translate: -50% 0; }
+:root:has(.kit-footer) .kit-toast-region { bottom: calc(var(--kit-spacer-6) + var(--kit-spacer-2)); }
 .kit-toast { display: flex; align-items: center; gap: var(--kit-spacer-1); min-height: var(--kit-control-height-large); padding: 0 var(--kit-spacer-2); }
 .kit-toast > .kit-icon { color: var(--figma-color-icon-oninverse); }
 .kit-toast[data-kit-tone="success"] > .kit-icon { color: var(--figma-color-icon-success); }
