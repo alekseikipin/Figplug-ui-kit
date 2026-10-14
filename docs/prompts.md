@@ -55,8 +55,13 @@ The Phase 1 done-when for agent context is one archetype passing in a fresh clon
 
 ## One-shot log
 
-No runs recorded yet. Add one row per run, newest first.
+Newest first. These Phase 1 rows are agent-only runs: a fresh subagent in a fresh `git clone` of the Phase 1 commit, given only the entry prompt, then graded by a separate agent that ran checks 1-3 and booted the result in the preview's fake host. Check 4 (import into the Figma desktop app) has not been run, so none of these counts as a full one-shot yet; the automated rate is 5 of 5. Machine: macOS, Node 24.13.0.
 
-| Date | Tool | Model | Archetype | Build | Audit | check:ui | Imports? | Notes / new audit rule |
-|---|---|---|---|---|---|---|---|---|
-| | | | | | | | | |
+| Date | Tool | Model | Kit | Archetype | Build | Audit | check:ui | Imports? | Notes / new audit rule |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-13 | Claude Code (Agent SDK subagent, fresh clone, no human) | claude-opus-5-5 | 0.2.0 | `rename-layers` | pass | pass | pass | Pending: real Figma not run; boots in `preview.html`'s fake host | Pass. Tests coupled to the demo fail once the demo is replaced (npm test host-demo cases, 20 e2e specs) → Phase 2: demo-specific tests skip when the demo is gone. `kit-help` used as plain secondary text → new rule `orphan-help`. A `role=status` line rewritten on every keystroke → AGENTS.md guidance. The preview's mode switch missed `installKitWindow({ mode, bounds })` → preview fix. |
+| 2026-10-13 | Claude Code (Agent SDK subagent, fresh clone, no human) | claude-opus-5-5 | 0.2.0 | `export-selection` | pass | pass | pass | Pending: real Figma not run; boots in `preview.html`'s fake host | Pass. The status line claimed "Downloaded N" for downloads the sandbox may block silently → AGENTS.md: a page can't confirm a download; say "Started N downloads". |
+| 2026-10-13 | Claude Code (Agent SDK subagent, fresh clone, no human) | claude-opus-5-5 | 0.2.0 | `content-fill` | pass | pass | pass | Pending: real Figma not run; boots in `preview.html`'s fake host | Pass. No findings. |
+| 2026-10-13 | Claude Code (Agent SDK subagent, fresh clone, no human) | claude-opus-5-5 | 0.2.0 | `variables-sync` | pass | pass | pass | Pending: real Figma not run; boots in `preview.html`'s fake host | Pass. A long list scrolled the whole fit-content window (footer out of view) → AGENTS.md guidance and a `.kit-scroll` region. Swatch set via `style.color = hex` (document data, legitimate) → new rule `js-color-literal` flags colour *literals* in JS and docs show `setProperty('--swatch', hex)` for data colours. Host-demo tests failed after the demo was replaced → same fix as above. |
+| 2026-10-13 | Claude Code (Agent SDK subagent, fresh clone, no human) | claude-opus-5-5 | 0.2.0 | `a11y-contrast` | pass | pass | pass | Pending: real Figma not run; boots in `preview.html`'s fake host | Pass on the checks; domain bugs no check could catch (group opacity applied per child, overlapping text treated as solid boxes) → the Phase 2 example ships golden-scene tests. Untyped host messages → AGENTS.md: declare one interface per host message. The preview stub lacked `PageNode.on`, `commitUndo`, `getNodeByIdAsync` → stub extended. |
+
