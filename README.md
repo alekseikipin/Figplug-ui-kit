@@ -25,7 +25,7 @@ Made for designers: plain files, no bundler or framework, and it runs in Figma s
 
 **Try it:** **Code → Download ZIP** and unzip it, then in the Figma desktop app choose **Plugins → Development → Import plugin from manifest…** and pick `manifest.json` ([step by step](#60-second-start)).
 
-<p align="center"><a href="#looks-native">Looks native</a> · <a href="#60-second-start">Start</a> · <a href="#build-with-your-ai-agent">Build with AI</a> · <a href="#20-components">Components</a> · <a href="#five-example-plugins">Examples</a> · <a href="#docs">Docs</a></p>
+<p align="center"><a href="#looks-native">Looks native</a> · <a href="#60-second-start">Start</a> · <a href="#build-with-your-ai-agent">Build with AI</a> · <a href="#20-components">Components</a> · <a href="#example-plugins">Examples</a> · <a href="#docs">Docs</a></p>
 
 <sub>Not [rsms/figplug](https://github.com/rsms/figplug), the plugin build tool.</sub>
 
@@ -108,16 +108,16 @@ For example, the task in the illustration: `<task>` = "renames the selected laye
 
 States are attributes (`disabled`, `aria-invalid`, `aria-busy` …), and `npm run preview` shows every component in every state in your browser. The dialog is a native modal, `const choice = await kit.dialog('id')`; a toast is one call, `kit.toast('Renamed 3 layers', { tone: 'success' })`. Markup and do's and don'ts: [docs/components.md](docs/components.md).
 
-## Five example plugins
+## Example plugins
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/examples-dark.gif">
-  <img src="docs/media/examples-light.gif" width="480" alt="Animation in the kit's browser preview showing the five example plugins in turn, opening on Rename layers with the prefix Icon/ previewed as Icon/Label and Icon/Card: Rename layers previewing new names as the prefix is typed; Export selection switching to 3x, so the card's size reads 720 × 288; Content fill ticking Include text inside selected frames and groups and filling three text layers with full names; Variables sync setting color/brand to 9747FF by hex; and Contrast check flagging a Caption layer at 2.67:1, below WCAG AA.">
+  <img src="docs/media/examples-light.gif" width="480" alt="Animation in the kit's browser preview showing the five archetype plugins in turn, opening on Rename layers with the prefix Icon/ previewed as Icon/Label and Icon/Card: Rename layers previewing new names as the prefix is typed; Export selection switching to 3x, so the card's size reads 720 × 288; Content fill ticking Include text inside selected frames and groups and filling three text layers with full names; Variables sync setting color/brand to 9747FF by hex; and Contrast check flagging a Caption layer at 2.67:1, below WCAG AA.">
 </picture>
 
 <sub>Recorded in the kit's browser preview, not in Figma, on the preview's stand-in document.</sub>
 
-Each began as the one prompt in a fresh clone and was then reviewed and fixed; its README has the prompt, the agent's diff and what the review changed. Each has its own `manifest.json` to import, and `npm run preview` runs any of them in the browser.
+Five archetypes from one-shot runs, plus the kit tour, the demo the Community listing runs. Each archetype began as the one prompt in a fresh clone and was then reviewed and fixed; its README has the prompt, the agent's diff and what the review changed. The tour was built by hand to show every component and the window at work. Each has its own `manifest.json` to import, and `npm run preview` runs any of them in the browser.
 
 | Example | What it does | Window |
 |---|---|---|
@@ -126,6 +126,7 @@ Each began as the one prompt in a fresh clone and was then reviewed and fixed; i
 | [content-fill](examples/content-fill/README.md) | Names, emails, dates or numbers in selected text | `fixed` |
 | [variables-sync](examples/variables-sync/README.md) | The file's colour variables, edited by hex | `resizable` |
 | [a11y-contrast](examples/a11y-contrast/README.md) | WCAG contrast of selected text against its background | `fit-content` |
+| [kit-tour](examples/kit-tour/README.md) | The kit tour: all 20 components working, the starter's Create demo, and the window refitting to each of three tabs. The [Figplug](https://www.figma.com/community/plugin/1545605168743471916) listing on the Figma Community runs it | `fit-content` |
 
 Delete `examples/` when you start your own plugin: your build and the checks don't depend on it.
 
@@ -227,8 +228,8 @@ The pages in [docs/](docs/index.md) are the canonical version; this README links
 
 **Kit 0.4.0, before 1.0, not yet released** (the [changelog](CHANGELOG.md) dates it when its tag is pushed). Since 0.2.0 nothing public has been renamed or removed ([stability](docs/stability.md)). Locally, `npm run check` and the browser tests pass; CI runs on every push (badge above). Item by item: [release checklist](docs/release-checklist.md) and [roadmap status](docs/roadmap-status.md).
 
-- **Seen in the Figma desktop app** (126.9.13, macOS, 2026-10-14): the starter imported from the folder and ran in Design, FigJam, Slides and Buzz, and matched Figma's own panel in both Design themes; in Design it resized from the keyboard and reopened at its width. Each of the five example plugins ran its main action once in Design (dark), through the starter's manifest. Of the five prompt tasks, the agent's plugins for three were seen doing their task in Figma.
-- **Still pending, among others:** pointer drags; the menu, tooltip, dialog and toast inside Figma; a Figma re-run of the fix for a window shown before it fitted (the starter in FigJam and Slides, and the examples' blank first second in Design); each example's own manifest, its light theme and its other editors; the native colour picker, screen readers and forced colours; the browser client; Windows; and the test with two first-time designers. The full list is in the [release checklist](docs/release-checklist.md#manual-surface-matrix).
+- **Seen in the Figma desktop app** (126.9.13, macOS, 2026-10-14): the starter imported from the folder and ran in Design, FigJam, Slides and Buzz, and matched Figma's own panel in both Design themes; in Design it resized from the keyboard and reopened at its width. Each of the five archetype plugins ran its main action once in Design (dark), through the starter's manifest. Of the five prompt tasks, the agent's plugins for three were seen doing their task in Figma.
+- **Still pending, among others:** the kit tour, which has not run in Figma yet; pointer drags; the menu, tooltip, dialog and toast inside Figma; a Figma re-run of the fix for a window shown before it fitted (the starter in FigJam and Slides, and the examples' blank first second in Design); each example's own manifest, its light theme and its other editors; the native colour picker, screen readers and forced colours; the browser client; Windows; and the test with two first-time designers. The full list is in the [release checklist](docs/release-checklist.md#manual-surface-matrix).
 
 ## Contributing
 

@@ -39,12 +39,12 @@ These pages are the kit's canonical documentation. [README.md](../README.md), [A
 | [release-checklist.md](release-checklist.md) | You cut a release: the manual surface matrix, with the first run in the Figma app and what it left open (the components to look at in Figma, dialog and toast included), the status tables for Phases 1, 2 and 3 with their evidence, PLAN.md's success metrics and the adoption log, the pending captures, the version bump, the owner's outward actions and the monthly maintenance. |
 | [roadmap-status.md](roadmap-status.md) | You want where each Phase 3 item stands: the two Community listings, the `figma/plugin-samples` PR, the dialog and toast, the watched items (PropsKit, hosted upload, an npm package) with their triggers, and the v1.0 criteria. |
 | [propskit.md](propskit.md) | Figma's PropsKit (`fig-*` web components, generative plugins only today) comes up: whether it has reached classic plugins, how to re-check, the draft `fig-*` → kit mapping and demo plan for the week it does, and the licence caveats. |
-| [community-listing.md](community-listing.md) | You publish or update a Community listing: the kit's own listing (copy, republish steps) and the two archetype listings, "Rename in Order" and "Text Contrast Check" (copy, data-security answers, the publish folder's manifest changes, images, the owner's checklist). |
+| [community-listing.md](community-listing.md) | You publish or update a Community listing: the kit's own listing, **Figplug**, which runs the kit tour (copy, the version note, carousel media, republish steps from a publish folder outside the repo) and the two archetype listings, "Rename in Order" and "Text Contrast Check" (copy, data-security answers, the publish folder's manifest changes, images, the owner's checklist). |
 | [../CHANGELOG.md](../CHANGELOG.md) | You need what changed in a release before upgrading, its public surface, or the renames from the 2025 version. |
 
 ## Examples
 
-Five finished plugins in [`examples/`](../examples/), one per archetype task in [prompts.md](prompts.md#the-five-archetype-tasks), each with its own `manifest.json` to import. Each README has the prompt, the one-shot result, the agent's diff and what curation changed. `npm run preview` runs any of them in the browser ([loop.md](loop.md#preview-in-a-browser)).
+Six plugins in [`examples/`](../examples/), each with its own `manifest.json` to import: five archetypes from one-shot runs, one per archetype task in [prompts.md](prompts.md#the-five-archetype-tasks), whose READMEs have the prompt, the one-shot result, the agent's diff and what curation changed; and the kit tour, built by hand, the demo the kit's Community listing runs ([community-listing.md](community-listing.md#the-kits-own-listing)). `npm run preview` runs any of them in the browser ([loop.md](loop.md#preview-in-a-browser)).
 
 | Example | Window mode | Shows |
 |---|---|---|
@@ -53,6 +53,7 @@ Five finished plugins in [`examples/`](../examples/), one per archetype task in 
 | [content-fill](../examples/content-fill/README.md) | `fixed` | Fonts loaded before text edits, `figma.mixed`, the native select |
 | [variables-sync](../examples/variables-sync/README.md) | `resizable` | `dynamic-page` variable getters, hex input with validation, aliases |
 | [a11y-contrast](../examples/a11y-contrast/README.md) | `fit-content` | Contrast maths in main, a results list, error and success states |
+| [kit-tour](../examples/kit-tour/README.md) | `fit-content` | All 20 components working in three CSS-only tabs, the window refitting to each tab, `kit.dialog()` and `kit.toast()` (an Undo toast with `duration: 0`), the starter's Create demo |
 
 ## Outside docs/
 

@@ -1011,7 +1011,7 @@ count.addEventListener('input', validate);
 create.addEventListener('click', createShapes);
 // Enter creates too. No <form>: a sandboxed iframe may block its submit (docs/pitfalls.md#17-smaller-traps).
 count.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); createShapes(); }
+  if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); if (!event.repeat) createShapes(); }
 });
 document.getElementById('close').addEventListener('click', () => post({ type: 'close' }));
 

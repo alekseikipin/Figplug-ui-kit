@@ -214,7 +214,7 @@ test('the live frame boots, fits its content and shows the handle', async ({ pag
 
 // The window around the live frame is as wide as the frame at every width: a long plugin name in
 // the title bar must not widen it (it ends in an ellipsis), or a 240px plugin shows a blank strip.
-const EXAMPLES = ['rename-layers', 'export-selection', 'content-fill', 'variables-sync', 'a11y-contrast']
+const EXAMPLES = ['rename-layers', 'export-selection', 'content-fill', 'variables-sync', 'a11y-contrast', 'kit-tour']
   .filter((name) => { try { read(`../examples/${name}/manifest.json`); return true; } catch { return false; } });
 for (const name of ['', ...EXAMPLES]) {
   test(`the preview window is exactly as wide as the plugin frame at the narrowest width (${name || 'kit fixture'})`, async ({ page }) => {

@@ -1,0 +1,1507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kit tour</title>
+<meta name="kit" content="kit v0.4.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+<style data-kit="tokens">
+/* kit tokens v0.4.0 · protocol 1 · MIT · https://github.com/alekseikipin/Figplug-ui-kit · issues: https://github.com/alekseikipin/Figplug-ui-kit/issues · re-paste all three data-kit blocks to upgrade */
+/* Measured from UI3 (docs/tokens.md); Figma injects only the colours. */
+:root { color-scheme: light; }
+:root.figma-dark { color-scheme: dark; }
+:root {
+  --kit-spacer-0-5: 2px;
+  --kit-spacer-1: 4px;
+  --kit-spacer-1-5: 6px;
+  --kit-spacer-2: 8px;
+  --kit-spacer-2-5: 12px;
+  --kit-spacer-3: 16px;
+  --kit-spacer-4: 24px;
+  --kit-spacer-5: 32px;
+  --kit-spacer-6: 40px;
+
+  --kit-radius-small: 2px;
+  --kit-radius-medium: 5px;
+  --kit-radius-large: 13px;
+  --kit-radius-full: 9999px;
+
+  --kit-control-height: 24px;
+  --kit-control-height-large: 32px;
+  --kit-icon-size: 24px;
+  --kit-icon-size-small: 16px;
+  --kit-border-width: 1px;
+  --kit-focus-width: 1px;
+
+  --kit-font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --kit-font-size: 11px;
+  --kit-line-height: 16px;
+  --kit-letter-spacing: 0.055px;
+  --kit-font-weight: 450;
+  --kit-font-weight-strong: 550;
+  --kit-font-size-large: 13px;
+  --kit-line-height-large: 22px;
+  --kit-letter-spacing-large: -0.032px;
+  --kit-font-size-heading: 15px;
+  --kit-line-height-heading: 25px;
+  --kit-letter-spacing-heading: -0.075px;
+  --kit-font-size-small: 9px;
+  --kit-line-height-small: 14px;
+  --kit-letter-spacing-small: 0.045px;
+
+  --kit-duration-small: 100ms;
+  --kit-duration-medium: 200ms;
+  --kit-duration-large: 400ms;
+  --kit-easing: ease-out;
+
+  --kit-z-handle: 10;
+  --kit-z-toast: 11;
+  --kit-z-menu: 13;
+  --kit-z-tooltip: 13;
+
+  --kit-shadow-tooltip: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 5px 12px 0px rgba(0, 0, 0, 0.13), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.15);
+  --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
+  --kit-shadow-dialog: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 24px 0px rgba(0, 0, 0, 0.18), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.08);
+  --kit-scrim: rgba(0, 0, 0, 0.5);
+}
+:root.figma-dark {
+  --kit-shadow-tooltip: 0px 1px 3px 0px rgba(0, 0, 0, 0.5), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.3), 0px 5px 12px 0px rgba(0, 0, 0, 0.35), inset 0px 0.5px 0px 0px rgba(255, 255, 255, 0.08);
+  --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35), inset 0px 0.5px 0px 0px rgba(255, 255, 255, 0.08);
+  --kit-shadow-dialog: 0px 3px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 24px 0px rgba(0, 0, 0, 0.45), inset 0px 0.5px 0px 0px rgba(255, 255, 255, 0.08);
+}
+</style>
+<style data-kit="components">
+/* kit components · tokens only, states as attributes · docs/components.md#implementation-notes */
+
+/* == base == */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; font-family: var(--kit-font-family); font-size: var(--kit-font-size); line-height: var(--kit-line-height); letter-spacing: var(--kit-letter-spacing); font-weight: var(--kit-font-weight); color: var(--figma-color-text); background-color: var(--figma-color-bg); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+button, input, select, textarea { margin: 0; font: inherit; letter-spacing: inherit; color: inherit; }
+a { color: var(--figma-color-text-brand); text-decoration: none; }
+a:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: var(--kit-focus-width); border-radius: var(--kit-radius-small); }
+
+/* == layout == */
+.kit-app { display: flow-root; }
+.kit-section { padding: var(--kit-spacer-3); }
+.kit-divider { margin: 0; border: 0; border-top: var(--kit-border-width) solid var(--figma-color-border); }
+.kit-stack { display: flex; flex-direction: column; gap: var(--kit-spacer-2); }
+.kit-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--kit-spacer-2); }
+.kit-row > :is(.kit-field, .kit-input, .kit-input-icon, .kit-select, .kit-number, .kit-color) { flex: 1 1 0; min-width: 0; }
+.kit-heading { margin: 0; font-size: var(--kit-font-size); line-height: var(--kit-line-height); letter-spacing: var(--kit-letter-spacing); font-weight: var(--kit-font-weight-strong); }
+.kit-text-secondary { margin: 0; color: var(--figma-color-text-secondary); }
+.kit-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.kit-icon { display: block; flex: none; width: var(--kit-icon-size); height: var(--kit-icon-size); }
+.kit-icon-small { width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); }
+.kit-field { display: flex; flex-direction: column; gap: var(--kit-spacer-1); min-width: 0; }
+.kit-label { color: var(--figma-color-text-secondary); }
+.kit-help { margin: 0; color: var(--figma-color-text-secondary); }
+.kit-field:has(:is(input, select, textarea):is(:disabled, [aria-disabled="true"])) > .kit-label { color: var(--figma-color-text-disabled); }
+.kit-field:has([aria-invalid="true"]) > .kit-help { color: var(--figma-color-text-danger); }
+.kit-scroll { max-height: var(--kit-scroll-max-height, 240px); overflow: auto; }
+.kit-scroll:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: -1px; }
+
+/* == button == */
+.kit-button, .kit-icon-button { --kit-button-bg: transparent; --kit-button-bg-hover: var(--figma-color-bg-hover); --kit-button-bg-pressed: var(--figma-color-bg-pressed); --kit-button-text: var(--figma-color-text); --kit-button-ring: var(--figma-color-border); position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center; height: var(--kit-control-height); padding: 0 var(--kit-spacer-2); border: 0; border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid var(--kit-button-ring); outline-offset: -1px; background-color: var(--kit-button-bg); color: var(--kit-button-text); text-decoration: none; white-space: nowrap; cursor: default; user-select: none; }
+:is(.kit-button, .kit-icon-button):hover { background-color: var(--kit-button-bg-hover); }
+:is(.kit-button, .kit-icon-button):active { background-color: var(--kit-button-bg-pressed); }
+:is(.kit-button, .kit-icon-button):focus-visible { outline-color: var(--figma-color-border-selected); }
+.kit-button-tertiary, .kit-icon-button { --kit-button-ring: transparent; }
+.kit-button-primary { --kit-button-bg: var(--figma-color-bg-brand); --kit-button-bg-hover: var(--figma-color-bg-brand-hover); --kit-button-bg-pressed: var(--figma-color-bg-brand-pressed); --kit-button-text: var(--figma-color-text-onbrand); --kit-button-ring: transparent; }
+.kit-button-danger { --kit-button-bg: var(--figma-color-bg-danger); --kit-button-bg-hover: var(--figma-color-bg-danger-hover); --kit-button-bg-pressed: var(--figma-color-bg-danger-pressed); --kit-button-text: var(--figma-color-text-ondanger); --kit-button-ring: transparent; }
+.kit-button-primary:focus-visible { outline-color: var(--figma-color-border-onbrand-strong); box-shadow: 0 0 0 var(--kit-focus-width) var(--figma-color-border-selected-strong); }
+.kit-button-danger:focus-visible { outline-color: var(--figma-color-border-ondanger-strong); box-shadow: 0 0 0 var(--kit-focus-width) var(--figma-color-border-danger-strong); }
+:is(.kit-button, .kit-icon-button)[aria-pressed="true"], .kit-icon-button[aria-expanded="true"] { --kit-button-bg: var(--figma-color-bg-selected); --kit-button-bg-hover: var(--figma-color-bg-selected-hover); --kit-button-bg-pressed: var(--figma-color-bg-selected-pressed); --kit-button-text: var(--figma-color-text-brand); --kit-button-ring: transparent; }
+:is(.kit-button, .kit-icon-button):is(:disabled, [aria-disabled="true"]) { --kit-button-bg: transparent; --kit-button-text: var(--figma-color-text-disabled); --kit-button-ring: var(--figma-color-border-disabled); background-color: var(--kit-button-bg); }
+:is(.kit-button-tertiary, .kit-icon-button):is(:disabled, [aria-disabled="true"]) { --kit-button-ring: transparent; }
+.kit-button:is(.kit-button-primary, .kit-button-danger):is(:disabled, [aria-disabled="true"]) { --kit-button-bg: var(--figma-color-bg-disabled); --kit-button-text: var(--figma-color-text-ondisabled); --kit-button-ring: transparent; }
+.kit-button-large { height: var(--kit-control-height-large); padding: 0 var(--kit-spacer-2-5); }
+.kit-button:has(> .kit-icon:first-child) { padding-left: 0; }
+.kit-button-large:has(> .kit-icon:first-child) { padding-left: var(--kit-spacer-1); }
+.kit-button[aria-busy="true"] { color: transparent; pointer-events: none; }
+.kit-button[aria-busy="true"]::after { content: ""; position: absolute; inset: 0; width: var(--kit-spacer-2-5); aspect-ratio: 1; margin: auto; border: var(--kit-border-width) solid var(--kit-button-text); border-right-color: transparent; border-radius: var(--kit-radius-full); animation: kit-spin 800ms linear infinite; }
+@keyframes kit-spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .kit-button[aria-busy="true"]::after { animation: none; } }
+
+/* == input == */
+.kit-input, .kit-textarea { display: block; width: 100%; min-width: 0; padding: 0 var(--kit-spacer-2); border: 0; border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid transparent; outline-offset: -1px; background-color: var(--figma-color-bg-secondary); color: var(--figma-color-text); appearance: none; }
+.kit-input { height: var(--kit-control-height); }
+:is(.kit-input, .kit-textarea)::placeholder { color: var(--figma-color-text-tertiary); opacity: 1; }
+:is(.kit-input, .kit-textarea):hover, :where(.kit-color:hover) > .kit-input { outline-color: var(--figma-color-border); }
+:is(.kit-input, .kit-textarea)[aria-invalid="true"] { outline-color: var(--figma-color-border-danger-strong); }
+:is(.kit-input, .kit-textarea):is(:disabled, [aria-disabled="true"]) { outline-color: var(--figma-color-border-disabled); background-color: var(--figma-color-bg); color: var(--figma-color-text-disabled); }
+:is(.kit-input, .kit-textarea):is(:disabled, [aria-disabled="true"])::placeholder { color: var(--figma-color-text-disabled); }
+:is(.kit-input, .kit-textarea):focus-visible { outline-color: var(--figma-color-border-selected); }
+.kit-input::-webkit-search-cancel-button, .kit-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+.kit-input-icon, .kit-select, .kit-number, .kit-color { position: relative; display: block; min-width: 0; }
+.kit-input-icon > .kit-icon { position: absolute; top: 0; bottom: 0; left: 0; margin: auto 0; color: var(--figma-color-icon-secondary); pointer-events: none; }
+.kit-input-icon > .kit-icon-small { left: var(--kit-spacer-1); }
+.kit-input-icon:has(> .kit-input:is(:disabled, [aria-disabled="true"])) > .kit-icon { color: var(--figma-color-icon-disabled); }
+
+/* == select == */
+.kit-select > select { display: block; width: 100%; min-width: 0; height: var(--kit-control-height); padding: 0 var(--kit-icon-size) 0 var(--kit-spacer-2); border: 0; border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid var(--figma-color-border); outline-offset: -1px; background-color: var(--figma-color-bg); color: var(--figma-color-text); text-overflow: ellipsis; white-space: nowrap; cursor: default; appearance: none; }
+.kit-select :is(option, optgroup) { background-color: var(--figma-color-bg); color: var(--figma-color-text); }
+.kit-select::after { content: ""; position: absolute; top: calc(50% - 5px); right: 9px; width: 6px; aspect-ratio: 1; border: solid; border-width: 0 var(--kit-border-width) var(--kit-border-width) 0; color: var(--figma-color-icon-secondary); transform: rotate(45deg); pointer-events: none; }
+.kit-select:hover::after { color: var(--figma-color-icon-secondary-hover); }
+.kit-select > select[aria-invalid="true"] { outline-color: var(--figma-color-border-danger-strong); }
+.kit-select > select:is(:disabled, [aria-disabled="true"]) { outline-color: var(--figma-color-border-disabled); color: var(--figma-color-text-disabled); }
+.kit-select > select:focus-visible { outline-color: var(--figma-color-border-selected); }
+.kit-select:has(> select:is(:disabled, [aria-disabled="true"]))::after { color: var(--figma-color-icon-disabled); }
+
+/* == resize-handle == */
+.kit-resize-handle { position: fixed; right: 0; bottom: 0; z-index: var(--kit-z-handle); width: var(--kit-control-height); height: var(--kit-control-height); padding: 0; border: 0; border-radius: var(--kit-radius-medium); outline: var(--kit-focus-width) solid transparent; outline-offset: -1px; background: transparent; color: var(--figma-color-icon-secondary); cursor: nwse-resize; touch-action: none; user-select: none; }
+html[data-kit-mode="fit-content"] .kit-resize-handle { cursor: ew-resize; }
+.kit-resize-handle::before, .kit-resize-handle::after { content: ""; position: absolute; border-top: var(--kit-border-width) solid; transform: rotate(-45deg); }
+.kit-resize-handle::before { right: 2.5px; bottom: 7.5px; width: 11px; }
+.kit-resize-handle::after { right: 3px; bottom: 5.5px; width: 6px; }
+.kit-resize-handle:is(:hover, :active) { color: var(--figma-color-icon); }
+.kit-resize-handle:focus-visible { outline-color: var(--figma-color-border-selected); }
+html[data-kit-chrome="on"] .kit-app { padding-bottom: var(--kit-spacer-4); }
+html[data-kit-chrome="on"] .kit-app:has(> .kit-section:last-child) { padding-bottom: var(--kit-spacer-2); }
+
+/* == textarea == */
+.kit-textarea { padding-block: var(--kit-spacer-1); resize: none; overflow-wrap: break-word; }
+
+/* == checkbox == */
+.kit-checkbox, .kit-radio { display: flex; gap: var(--kit-spacer-2); width: fit-content; max-width: 100%; padding: var(--kit-spacer-1) 0; cursor: default; }
+:is(.kit-checkbox, .kit-radio) > input { --kit-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4.5 8.5 2.5 2.5 4.5-5.5' fill='none' stroke='currentColor' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); display: inline-grid; place-content: center; flex: none; width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); margin: 0; border: var(--kit-border-width) solid var(--figma-color-border-strong); border-radius: var(--kit-radius-medium); outline: var(--kit-focus-width) solid transparent; outline-offset: -1px; appearance: none; }
+:is(.kit-checkbox, .kit-radio) > input::before { content: ""; width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); background-color: var(--kit-mark-color, transparent); mask: var(--kit-mark) center / contain no-repeat; }
+.kit-checkbox > input:indeterminate { --kit-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='4' y='7.4' width='8' height='1.25' rx='.6'/%3E%3C/svg%3E"); }
+:is(.kit-checkbox, .kit-radio):hover > input:enabled { --kit-mark-color: var(--figma-color-icon-tertiary); }
+:is(.kit-checkbox, .kit-radio) > input:is(:checked, [type="checkbox"]:indeterminate) { --kit-mark-color: var(--figma-color-icon-onbrand); border-color: transparent; background-color: var(--figma-color-bg-brand); }
+:is(.kit-checkbox, .kit-radio) > input[aria-invalid="true"] { border-color: var(--figma-color-border-danger-strong); }
+:is(.kit-checkbox, .kit-radio) > input:disabled { border-color: var(--figma-color-border-disabled-strong); }
+:is(.kit-checkbox, .kit-radio) > input:disabled:is(:checked, [type="checkbox"]:indeterminate) { --kit-mark-color: var(--figma-color-icon-ondisabled); background-color: var(--figma-color-bg-disabled); }
+:is(.kit-checkbox, .kit-radio):has(> :disabled) { color: var(--figma-color-text-disabled); }
+:is(.kit-checkbox, .kit-radio) > input:focus-visible { outline-color: var(--figma-color-border-selected); }
+:is(.kit-checkbox, .kit-radio) > input:is(:checked, [type="checkbox"]:indeterminate):focus-visible { border-color: var(--figma-color-border-onbrand-strong); outline-color: var(--figma-color-border-selected-strong); outline-offset: 0; }
+:is(.kit-checkbox, .kit-radio) + .kit-help { margin-top: calc(-1 * var(--kit-spacer-1)); padding-left: var(--kit-spacer-4); }
+
+/* == radio == */
+.kit-radio > input { --kit-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='3'/%3E%3C/svg%3E"); border-radius: var(--kit-radius-full); }
+
+/* == number == */
+.kit-number > .kit-input { appearance: textfield; }
+.kit-number > .kit-input::-webkit-inner-spin-button { display: none; }
+.kit-number-prefix { position: absolute; inset: 0 auto 0 0; display: flex; align-items: center; justify-content: center; width: var(--kit-icon-size); color: var(--figma-color-text-secondary); pointer-events: none; }
+:is(.kit-input-icon, .kit-color) > .kit-input, .kit-number-prefix + .kit-input { padding-left: var(--kit-icon-size); }
+.kit-number:has(> .kit-input:is(:disabled, [aria-disabled="true"])) > .kit-number-prefix { color: var(--figma-color-text-disabled); }
+
+/* == color == */
+.kit-color-swatch { position: absolute; top: var(--kit-spacer-1); left: var(--kit-spacer-1); width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); padding: 0; border: 0; border-radius: var(--kit-radius-small); outline: var(--kit-border-width) solid var(--figma-color-border); outline-offset: -1px; background: none; appearance: none; }
+.kit-color-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.kit-color-swatch::-webkit-color-swatch { border: 0; border-radius: var(--kit-radius-small); }
+.kit-color-swatch::-moz-color-swatch { border: 0; border-radius: var(--kit-radius-small); }
+.kit-color-swatch:focus-visible { outline-color: var(--figma-color-border-selected); outline-offset: var(--kit-focus-width); }
+
+/* == icon-button == */
+.kit-icon-button { --kit-button-text: var(--figma-color-icon); width: var(--kit-control-height); padding: 0; }
+.kit-icon-button:hover { --kit-button-text: var(--figma-color-icon-hover); }
+.kit-icon-button:is([aria-pressed="true"], [aria-expanded="true"]) { --kit-button-text: var(--figma-color-icon-brand); }
+.kit-icon-button:is(:disabled, [aria-disabled="true"]) { --kit-button-text: var(--figma-color-icon-disabled); }
+
+/* == section-header == */
+.kit-section-header, .kit-dialog-header { display: flex; align-items: center; gap: var(--kit-spacer-1); min-height: var(--kit-spacer-6); padding: 0 var(--kit-spacer-2) 0 var(--kit-spacer-3); }
+:is(.kit-section-header, .kit-dialog-header) > :is(h1, h2, h3, h4) { flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; font: inherit; font-weight: var(--kit-font-weight-strong); text-overflow: ellipsis; white-space: nowrap; }
+.kit-section-header + .kit-section { padding-top: 0; }
+
+/* == list == */
+.kit-list { margin: 0; padding: 0; list-style: none; }
+.kit-list-row { --kit-list-hover: var(--figma-color-bg-hover); --kit-list-pressed: var(--figma-color-bg-pressed); --kit-list-icon: var(--figma-color-icon-secondary); --kit-list-meta: var(--figma-color-text-secondary); display: flex; align-items: center; gap: var(--kit-spacer-1); width: 100%; min-height: var(--kit-control-height-large); padding: 0 var(--kit-spacer-2); border: 0; border-radius: var(--kit-radius-medium); background-color: transparent; color: var(--figma-color-text); text-align: start; }
+.kit-list-row:has(> .kit-list-row-icon:first-child) { padding-left: 0; }
+.kit-list-row-icon { color: var(--kit-list-icon); }
+.kit-list-row-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kit-list-row-meta { flex: none; color: var(--kit-list-meta); }
+button.kit-list-row:hover { background-color: var(--kit-list-hover); }
+button.kit-list-row:active { background-color: var(--kit-list-pressed); }
+.kit-list-row:is([aria-selected="true"], [aria-current="true"]) { --kit-list-hover: var(--figma-color-bg-selected-hover); --kit-list-pressed: var(--figma-color-bg-selected-pressed); --kit-list-icon: var(--figma-color-icon-onselected); --kit-list-meta: var(--figma-color-text-onselected-secondary); background-color: var(--figma-color-bg-selected); color: var(--figma-color-text-onselected); }
+.kit-list-row:is(:disabled, [aria-disabled="true"]):is(*, :hover) { --kit-list-icon: var(--figma-color-icon-disabled); --kit-list-meta: var(--figma-color-text-disabled); background-color: transparent; color: var(--figma-color-text-disabled); }
+.kit-list-row:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: -1px; }
+
+/* == empty == */
+.kit-empty { display: flex; flex-direction: column; align-items: center; gap: var(--kit-spacer-1); padding: var(--kit-spacer-5) var(--kit-spacer-3); text-align: center; color: var(--figma-color-text-secondary); }
+.kit-empty > .kit-icon { color: var(--figma-color-icon-tertiary); }
+.kit-empty-title { margin: 0; font: inherit; font-weight: var(--kit-font-weight-strong); color: var(--figma-color-text); }
+.kit-empty-text { max-width: 240px; margin: 0; }
+.kit-empty > .kit-button { margin-top: var(--kit-spacer-2); }
+
+/* == notice == */
+.kit-notice { --kit-notice-icon: var(--figma-color-icon-secondary); display: flex; align-items: flex-start; padding: var(--kit-spacer-1); border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid transparent; outline-offset: -1px; background-color: var(--figma-color-bg-secondary); }
+.kit-notice > .kit-icon { color: var(--kit-notice-icon); }
+.kit-notice-text, .kit-toast-text { flex: 1 1 auto; min-width: 0; margin: 0; padding: var(--kit-spacer-1); overflow-wrap: break-word; }
+.kit-notice[data-kit-tone="info"] { --kit-notice-icon: var(--figma-color-icon-brand); outline-color: var(--figma-color-border-brand); background-color: var(--figma-color-bg-brand-tertiary); }
+.kit-notice[data-kit-tone="success"] { --kit-notice-icon: var(--figma-color-icon-success); outline-color: var(--figma-color-border-success); background-color: var(--figma-color-bg-success-tertiary); }
+.kit-notice[data-kit-tone="warning"] { --kit-notice-icon: var(--figma-color-icon-warning); outline-color: var(--figma-color-border-warning); background-color: var(--figma-color-bg-warning-tertiary); }
+.kit-notice[data-kit-tone="danger"] { --kit-notice-icon: var(--figma-color-icon-danger); outline-color: var(--figma-color-border-danger); background-color: var(--figma-color-bg-danger-tertiary); }
+
+/* == footer == */
+.kit-footer { position: sticky; bottom: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--kit-spacer-2); padding: var(--kit-spacer-2) var(--kit-spacer-3); border-top: var(--kit-border-width) solid var(--figma-color-border); background-color: var(--figma-color-bg); }
+.kit-footer > :is(.kit-text-secondary, .kit-help) { flex: 1 1 auto; }
+:root:has(.kit-footer) { scroll-padding-bottom: var(--kit-spacer-6); }
+html[data-kit-chrome="on"] .kit-footer { padding-right: var(--kit-spacer-5); }
+html[data-kit-chrome="on"] .kit-app:has(> .kit-footer:last-child) { padding-bottom: 0; }
+
+/* == tabs == */
+.kit-tabs { display: flex; flex-direction: column; gap: var(--kit-spacer-2); min-width: 0; }
+.kit-tablist { display: flex; flex-wrap: wrap; gap: var(--kit-spacer-2); }
+.kit-tab { position: relative; display: flex; align-items: center; height: var(--kit-control-height); padding: 0 var(--kit-spacer-2); border-radius: var(--kit-radius-medium); color: var(--figma-color-text-secondary); white-space: nowrap; user-select: none; }
+.kit-tab > input[type="radio"] { position: absolute; inset: 0; margin: 0; opacity: 0; }
+.kit-tab:hover { color: var(--figma-color-text-secondary-hover); }
+.kit-tab:has(> :checked) { background-color: var(--figma-color-bg-secondary); color: var(--figma-color-text); font-weight: var(--kit-font-weight-strong); }
+.kit-tab:has(> :disabled) { color: var(--figma-color-text-disabled); }
+.kit-tab:has(> :focus-visible) { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: -1px; }
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(1) > :checked)) > :nth-child(2),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(2) > :checked)) > :nth-child(3),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(3) > :checked)) > :nth-child(4),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(4) > :checked)) > :nth-child(5),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(5) > :checked)) > :nth-child(6),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(6) > :checked)) > :nth-child(7) { display: none; }
+
+/* == tooltip == */
+.kit-tooltip, .kit-toast { border-radius: var(--kit-radius-medium); box-shadow: var(--kit-shadow-tooltip); background-color: var(--figma-color-bg-inverse); color: var(--figma-color-text-oninverse); }
+.kit-tooltip-host { position: relative; display: inline-flex; max-width: 100%; }
+.kit-tooltip { position: absolute; top: calc(100% + var(--kit-spacer-1)); left: 50%; z-index: var(--kit-z-tooltip); width: max-content; max-width: 200px; padding: var(--kit-spacer-1) var(--kit-spacer-2); white-space: normal; translate: -50% 0; scale: 0; visibility: hidden; transition: visibility 0s, scale 0s; }
+.kit-tooltip::before { content: ""; position: absolute; inset: calc(-1 * var(--kit-spacer-1)); }
+.kit-tooltip-host:hover > .kit-tooltip { scale: 1; visibility: visible; transition-delay: var(--kit-duration-large); }
+.kit-tooltip-host:has(:focus-visible) > .kit-tooltip { scale: 1; visibility: visible; transition-delay: 0s; }
+.kit-tooltip-host[data-kit-tooltip-dismissed] > .kit-tooltip { scale: 0; visibility: hidden; transition: none; }
+.kit-tooltip-start { left: 0; translate: none; }
+.kit-tooltip-end { left: auto; right: 0; translate: none; }
+.kit-tooltip-above { top: auto; bottom: calc(100% + var(--kit-spacer-1)); }
+
+/* == menu == */
+.kit-menu, .kit-dialog { max-width: calc(100vw - var(--kit-spacer-3)); max-height: calc(100vh - var(--kit-spacer-3)); overflow: auto; border: 0; border-radius: var(--kit-radius-large); background-color: var(--figma-color-bg); color: var(--figma-color-text); }
+.kit-menu { position: fixed; inset: auto; min-width: 120px; margin: 0; padding: var(--kit-spacer-2); box-shadow: var(--kit-shadow-menu); }
+.kit-menu-item { display: flex; align-items: center; width: 100%; height: var(--kit-control-height); padding: 0 var(--kit-spacer-2); border: 0; border-radius: var(--kit-radius-medium); outline: 0; background-color: transparent; text-align: start; white-space: nowrap; }
+.kit-menu-item:is(:hover, :focus-visible) { background-color: var(--figma-color-bg-brand); color: var(--figma-color-text-onbrand); }
+.kit-menu-item:is(:disabled, [aria-disabled="true"]) { background-color: transparent; color: var(--figma-color-text-disabled); }
+.kit-menu-separator { margin: var(--kit-spacer-2) 0; border: 0; border-top: var(--kit-border-width) solid var(--figma-color-border); }
+
+/* == dialog == */
+.kit-dialog { width: 352px; padding: 0; box-shadow: var(--kit-shadow-dialog); }
+.kit-dialog::backdrop { background-color: var(--kit-scrim); }
+.kit-dialog-small { width: 288px; }
+.kit-dialog-large { width: 448px; }
+.kit-dialog-header, .kit-dialog-footer { position: sticky; top: 0; z-index: 1; background-color: var(--figma-color-bg); }
+.kit-dialog-header { border-bottom: var(--kit-border-width) solid var(--figma-color-border); }
+.kit-dialog-body { padding: var(--kit-spacer-3) var(--kit-spacer-3) var(--kit-spacer-2); }
+.kit-dialog-footer { top: auto; bottom: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--kit-spacer-2); padding: var(--kit-spacer-2) var(--kit-spacer-3) var(--kit-spacer-3); }
+
+/* == toast == */
+.kit-toast-region { position: fixed; bottom: var(--kit-spacer-2); left: 50%; z-index: var(--kit-z-toast); width: max-content; max-width: calc(100vw - var(--kit-spacer-3)); translate: -50% 0; }
+:root:has(.kit-footer) .kit-toast-region { bottom: calc(var(--kit-spacer-6) + var(--kit-spacer-2)); }
+.kit-toast { display: flex; align-items: center; gap: var(--kit-spacer-1); min-height: var(--kit-control-height-large); padding: 0 var(--kit-spacer-2); }
+.kit-toast > .kit-icon { color: var(--figma-color-icon-oninverse); }
+.kit-toast[data-kit-tone="success"] > .kit-icon { color: var(--figma-color-bg-success); }
+.kit-toast[data-kit-tone="danger"] > .kit-icon { color: var(--figma-color-bg-danger); }
+.kit-toast :is(.kit-button, .kit-icon-button) { --kit-button-text: var(--figma-color-text-oninverse); --kit-button-bg-hover: color-mix(in srgb, currentColor 16%, transparent); --kit-button-bg-pressed: var(--kit-button-bg-hover); }
+html[data-kit-chrome="on"] .kit-toast-region { max-width: calc(100vw - 2 * var(--kit-spacer-5)); }
+@media (prefers-reduced-motion: no-preference) { .kit-toast { animation: kit-toast-in var(--kit-duration-medium) var(--kit-easing); } }
+@keyframes kit-toast-in { from { opacity: 0; translate: 0 var(--kit-spacer-2); } }
+
+/* == forced-colors == */
+@media (forced-colors: active) {
+  :is(.kit-checkbox, .kit-radio) > input { appearance: auto; }
+  :is(.kit-checkbox, .kit-radio) > input::before { content: none; }
+  .kit-list-row:is([aria-selected="true"], [aria-current="true"]), .kit-menu-item:is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"]) { outline: var(--kit-focus-width) solid; }
+  .kit-dialog, .kit-toast { outline: var(--kit-border-width) solid; }
+  .kit-icon { color: inherit !important; }
+}
+</style>
+<script data-kit="runtime">
+(() => {
+'use strict';
+// kit runtime · how and why: docs/window-chrome.md#implementation-notes · menus, dialogs, toasts: docs/components.md
+const KIT_PROTOCOL = 1;
+const KIT_VERSION = '0.4.0';
+// Never edit CONFIG here: override it with data-kit-config (docs/window-chrome.md#customising-config).
+const CONFIG = {
+  snapWidths: [320, 480, 640],
+  step: 8,
+  bigStep: 32,
+  initTimeoutMs: 500,
+  fallbackMode: /** @type {KitMode} */ ('fit-content'),
+  strings: {
+    resizeLabel: 'Resize window',
+    resizeHint: 'Drag, or use the arrow keys. Shift for bigger steps, Enter to snap, Home to fit, End for the widest size.',
+    announce: 'Window {width} by {height}',
+    dismiss: 'Dismiss',
+  },
+};
+/* kit:pure:start */
+const KIT_GENEROUS_BOUNDS = Object.freeze({ minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 });
+/** @param {Partial<KitBounds> | null | undefined} bounds */
+function sanitizeBounds(bounds) {
+  /** @type {Partial<KitBounds>} */ const b = bounds !== null && typeof bounds === 'object' ? bounds : {};
+  /** @param {unknown} v @param {number} fallback */
+  const pick = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : fallback);
+  const g = KIT_GENEROUS_BOUNDS;
+  const minWidth = Math.max(g.minWidth, pick(b.minWidth, g.minWidth));
+  const maxWidth = Math.max(minWidth, pick(b.maxWidth, g.maxWidth));
+  const minHeight = Math.max(g.minHeight, pick(b.minHeight, g.minHeight));
+  const maxHeight = Math.max(minHeight, pick(b.maxHeight, g.maxHeight));
+  return { minWidth, maxWidth, minHeight, maxHeight };
+}
+/** @param {number} width @param {number} height @param {Partial<KitBounds> | null} [bounds] */
+function clampSize(width, height, bounds) {
+  const b = sanitizeBounds(bounds);
+  /** @param {unknown} v @param {number} min @param {number} max */
+  const axis = (v, min, max) => (typeof v !== 'number' || Number.isNaN(v) ? min : Math.min(max, Math.max(min, Math.round(v))));
+  return { width: axis(width, b.minWidth, b.maxWidth), height: axis(height, b.minHeight, b.maxHeight) };
+}
+/** @param {readonly number[]} snaps */
+function sortedSnaps(snaps) {
+  return (Array.isArray(snaps) ? snaps : []).filter((s) => Number.isFinite(s) && s > 0).sort((a, b) => a - b);
+}
+/** @param {number} width @param {readonly number[]} snaps */
+function nextSnap(width, snaps) {
+  const list = sortedSnaps(snaps);
+  if (list.length === 0) return Number.isFinite(width) ? width : 0;
+  for (const snap of list) if (snap > width) return snap;
+  return list[0];
+}
+/** @param {number} width @param {readonly number[]} snaps */
+function widestSnap(width, snaps) {
+  const list = sortedSnaps(snaps);
+  return list.length > 0 ? list[list.length - 1] : nextSnap(width, list);
+}
+/** @param {string} template @param {KitSize} size */
+function announceText(template, size) {
+  return String(template).replace(/\{(width|height)\}/g, (_, key) => String(key === 'width' ? size.width : size.height));
+}
+/** @param {{ left: number, top: number, bottom: number }} anchor @param {KitSize} menu @param {KitSize} viewport */
+function placeMenu(anchor, menu, viewport, gap = 4, margin = 8) {
+  const below = anchor.bottom + gap;
+  const roomBelow = viewport.height - margin - below;
+  const roomAbove = anchor.top - gap - margin;
+  const top = menu.height <= roomBelow || roomBelow >= roomAbove ? below : anchor.top - gap - menu.height;
+  /** @param {number} value @param {number} size @param {number} room */
+  const clamp = (value, size, room) => Math.round(Math.max(margin, Math.min(value, room - margin - size)));
+  return { left: clamp(anchor.left, menu.width, viewport.width), top: clamp(top, menu.height, viewport.height) };
+}
+/** @param {KitSize | null | undefined} a @param {KitSize | null | undefined} b */
+function sameSize(a, b) {
+  return !!a && !!b && a.width === b.width && a.height === b.height;
+}
+/* kit:pure:end */
+/** @type {KitMode} */ let mode = CONFIG.fallbackMode;
+/** @type {KitBounds} */ let bounds = KIT_GENEROUS_BOUNDS;
+/** @type {KitSize | null} */ let initSize = null;
+/** @type {KitSize | null} */ let defaultSize = null;
+/** @type {KitSize | null} */ let lastSent = null;
+/** @type {{ width: number, height: number, user: boolean } | null} */ let queued = null;
+/** @type {{ controller: AbortController, pointerId: number, x: number, y: number, start: KitSize, last: KitSize, moved: boolean } | null} */ let drag = null;
+/** @type {number | null} */ let headingWidth = null;
+/** @type {number | null} */ let headingHeight = null;
+/** @type {number | null} */ let refitAtWidth = null;
+/** @type {number | undefined} */ let initTimer;
+/** @type {HTMLElement | null} */ let handle = null;
+/** @type {HTMLElement | null} */ let announcer = null;
+/** @type {ResizeObserver | null} */ let observer = null;
+/** @type {Element | null} */ let observedRoot = null;
+let chrome = false, configured = false, fontsLoaded = false, warnedProtocol = false;
+let started = false, fitRequested = false, pressMoved = false;
+let frame = 0, announceTimer = 0, retargetTimer = 0;
+/** @param {KitUiToMainMessage} message */
+function post(message) {
+  if (window.parent !== window) window.parent.postMessage({ pluginMessage: message }, '*');
+}
+/** @param {unknown} v @returns {v is KitMode} */
+function isMode(v) { return v === 'fit-content' || v === 'resizable' || v === 'fixed'; }
+/** @param {unknown} v @returns {v is KitSize} */
+function isSize(v) {
+  const size = /** @type {Record<string, unknown>} */ (v);
+  return v !== null && typeof v === 'object' && Number.isFinite(size.width) && Number.isFinite(size.height);
+}
+function chromeOn() { return configured && chrome && mode !== 'fixed'; }
+function viewportSize() {
+  return window.innerWidth > 0 || !initSize ? { width: window.innerWidth, height: window.innerHeight } : initSize;
+}
+function currentSize() {
+  const at = queued || (drag && drag.last);
+  const view = viewportSize();
+  return at ? { width: at.width, height: at.height } : { width: headingWidth ?? view.width, height: headingHeight ?? view.height };
+}
+function findRoot() { return document.querySelector('[data-kit-root]') || document.body || document.documentElement; }
+function contentHeight() {
+  if (!(window.innerWidth > 0)) return viewportSize().height;
+  const root = findRoot();
+  const body = document.body;
+  /** @param {string} value */
+  const px = (value) => parseFloat(value) || 0;
+  let bottom = root.getBoundingClientRect().bottom + window.scrollY + px(getComputedStyle(root).marginBottom);
+  if (body && root !== body && body.contains(root)) {
+    const style = getComputedStyle(body);
+    bottom += px(style.paddingBottom) + px(style.borderBottomWidth) + px(style.marginBottom);
+  }
+  return Math.ceil(bottom);
+}
+/** @param {number} width @param {number} height @param {{ immediate?: boolean, final?: boolean, user?: boolean }} [options] */
+function requestSize(width, height, options = {}) {
+  const size = clampSize(width, height, bounds);
+  const user = options.user === true;
+  if (options.immediate || options.final) {
+    cancelFrame();
+    send(size, user, options.final === true);
+    return;
+  }
+  queued = { width: size.width, height: size.height, user: user || (queued !== null && queued.user) };
+  if (!frame) frame = requestAnimationFrame(flushFrame);
+}
+function cancelFrame() {
+  if (frame) cancelAnimationFrame(frame);
+  frame = 0;
+  queued = null;
+}
+function flushFrame() {
+  const next = queued;
+  cancelFrame();
+  if (next) send(next, next.user, false);
+}
+/** @param {KitSize} size @param {boolean} user @param {boolean} final */
+function send(size, user, final) {
+  if (!final && sameSize(size, lastSent)) return;
+  lastSent = size;
+  const track = chromeOn();
+  headingWidth = track && size.width !== window.innerWidth ? size.width : null;
+  headingHeight = track && size.height !== window.innerHeight ? size.height : null;
+  post({ type: 'kit:resize', width: size.width, height: size.height, user, final });
+}
+function fitNow() {
+  if (!started || mode === 'fixed' || (drag && mode === 'resizable')) return;
+  watchRootSoon();
+  requestSize(currentSize().width, contentHeight());
+}
+function syncObserver() {
+  if (started && mode === 'fit-content') {
+    if (!observer) observer = new ResizeObserver(fitNow);
+    watchRoot();
+    return;
+  }
+  if (observer) observer.disconnect();
+  observer = null;
+  observedRoot = null;
+  clearTimeout(retargetTimer);
+  retargetTimer = 0;
+}
+function watchRootSoon() {
+  if (!observer || retargetTimer || findRoot() === observedRoot) return;
+  retargetTimer = setTimeout(() => { retargetTimer = 0; watchRoot(); }, 0);
+}
+function watchRoot() {
+  const root = findRoot();
+  if (!observer || root === observedRoot) return;
+  if (observedRoot) observer.unobserve(observedRoot);
+  observer.observe(root);
+  observedRoot = root;
+}
+function start() {
+  if (started || !configured || !fontsLoaded) return;
+  started = true;
+  const base = initSize && chromeOn() ? initSize : viewportSize();
+  if (mode === 'fit-content') requestSize(base.width, contentHeight(), { immediate: true });
+  else if (mode === 'resizable') requestSize(base.width, takeFitRequest() ? contentHeight() : base.height, { immediate: true });
+  syncObserver();
+}
+function onFitMessage() { if (started) fitNow(); else fitRequested = true; }
+function takeFitRequest() { const asked = fitRequested; fitRequested = false; return asked; }
+/** @param {KitMode} nextMode @param {boolean} nextChrome @param {Partial<KitBounds> | null} nextBounds @param {KitSize | null} size @param {KitSize | null} fallbackDefault */
+function configure(nextMode, nextChrome, nextBounds, size, fallbackDefault) {
+  mode = nextMode;
+  chrome = nextChrome;
+  bounds = sanitizeBounds(nextBounds);
+  initSize = size ? clampSize(size.width, size.height, bounds) : null;
+  const base = fallbackDefault || viewportSize();
+  defaultSize = clampSize(base.width, base.height, bounds);
+  configured = true;
+  const on = chromeOn();
+  Object.assign(document.documentElement.dataset, { kitChrome: on ? 'on' : 'off', kitMode: mode });
+  if (handle) handle.hidden = !on;
+  if (!started) start();
+  else {
+    syncObserver();
+    if (mode === 'fit-content') fitNow();
+    else if (mode === 'resizable' && initSize && on) requestSize(initSize.width, takeFitRequest() ? contentHeight() : initSize.height, { immediate: true });
+  }
+}
+/** @param {KitInitMessage} msg */
+function applyInit(msg) {
+  clearTimeout(initTimer);
+  if (msg.protocol !== KIT_PROTOCOL && !warnedProtocol) {
+    warnedProtocol = true;
+    const theirs = typeof msg.protocol === 'string' ? JSON.stringify(msg.protocol) : String(msg.protocol);
+    console.warn(`kit: code.ts speaks protocol ${theirs}, this ui.html speaks ${KIT_PROTOCOL}. Re-paste the kit blocks of both files from one release.`);
+  }
+  configure(isMode(msg.mode) ? msg.mode : CONFIG.fallbackMode, msg.chrome === true, msg.bounds, isSize(msg.size) ? msg.size : null, isSize(msg.defaultSize) ? msg.defaultSize : null);
+}
+function useFallback() {
+  if (!configured) configure(CONFIG.fallbackMode, false, null, null, null);
+}
+/** @param {MessageEvent} e */
+function onMessage(e) {
+  const msg = e.data && e.data.pluginMessage;
+  const type = msg !== null && typeof msg === 'object' ? msg.type : undefined;
+  if (type === 'kit:init') applyInit(msg);
+  else if (type === 'kit:fit') onFitMessage();
+}
+function onViewportResize() {
+  if (headingWidth !== null && window.innerWidth === headingWidth) headingWidth = null;
+  if (headingHeight !== null && window.innerHeight === headingHeight) headingHeight = null;
+  if (refitAtWidth !== null && window.innerWidth === refitAtWidth) {
+    refitAtWidth = null;
+    if (mode === 'resizable' && !drag) requestSize(window.innerWidth, contentHeight(), { final: true, user: true });
+  }
+  placeOpenMenu();
+}
+
+// ---- Gestures (docs/window-chrome.md#gestures-and-keys)
+/** @param {KitSize} base */
+function snapTarget(base, widest = false) {
+  const usable = CONFIG.snapWidths.filter((w) => w >= bounds.minWidth && w <= bounds.maxWidth);
+  const snaps = usable.length > 0 ? usable : CONFIG.snapWidths;
+  const width = widest ? widestSnap(base.width, snaps) : nextSnap(base.width, snaps);
+  return { width, height: mode === 'resizable' ? base.height : contentHeight() };
+}
+function scheduleAnnounce() {
+  clearTimeout(announceTimer);
+  announceTimer = setTimeout(() => {
+    announceTimer = 0;
+    if (announcer) announcer.textContent = announceText(CONFIG.strings.announce, currentSize());
+  }, 150);
+}
+/** @param {PointerEvent} e */
+function onPointerDown(e) {
+  if (e.button !== 0 || !e.isPrimary || drag || !chromeOn() || !handle) return;
+  pressMoved = false;
+  const el = handle;
+  try { el.setPointerCapture(e.pointerId); } catch { return; }
+  e.preventDefault();
+  el.focus({ preventScroll: true, focusVisible: false });
+  refitAtWidth = null;
+  clearTimeout(announceTimer);
+  const now = currentSize();
+  const start = clampSize(now.width, now.height, bounds);
+  const controller = new AbortController();
+  const signal = controller.signal;
+  drag = { controller, pointerId: e.pointerId, x: e.clientX, y: e.clientY, start, last: start, moved: false };
+  el.addEventListener('pointermove', onPointerMove, { signal });
+  el.addEventListener('pointerup', commitDrag, { signal });
+  el.addEventListener('pointercancel', commitDrag, { signal });
+  el.addEventListener('lostpointercapture', commitDrag, { signal });
+  window.addEventListener('keydown', onDragKey, { signal, capture: true });
+}
+/** @param {PointerEvent} e */
+function onPointerMove(e) {
+  const d = drag;
+  if (!d || e.pointerId !== d.pointerId) return;
+  const width = d.start.width + (e.clientX - d.x);
+  const height = mode === 'resizable' ? d.start.height + (e.clientY - d.y) : contentHeight();
+  const target = clampSize(width, height, bounds);
+  const changed = mode === 'resizable' ? !sameSize(target, d.start) : target.width !== d.start.width;
+  if (!d.moved && !changed) return;
+  d.moved = true;
+  d.last = target;
+  requestSize(target.width, target.height, { user: true });
+}
+/** @param {PointerEvent} e */
+function commitDrag(e) {
+  if (drag && e.pointerId === drag.pointerId) endDrag(true);
+}
+/** @param {KeyboardEvent} e */
+function onDragKey(e) {
+  if (e.key !== 'Escape') return;
+  e.preventDefault();
+  e.stopPropagation();
+  endDrag(false);
+}
+/** @param {boolean} keep */
+function endDrag(keep) {
+  const d = drag;
+  if (!d) return;
+  drag = null;
+  pressMoved = d.moved;
+  d.controller.abort();
+  if (handle && handle.hasPointerCapture(d.pointerId)) handle.releasePointerCapture(d.pointerId);
+  if (!d.moved) return;
+  const size = keep ? d.last : d.start;
+  requestSize(size.width, mode === 'resizable' ? size.height : contentHeight(), { final: true, user: true });
+}
+/** @param {MouseEvent} e */
+function onDoubleClick(e) {
+  if (e.button !== 0 || drag || pressMoved || !chromeOn()) return;
+  e.preventDefault();
+  refitAtWidth = null;
+  const next = snapTarget(currentSize());
+  requestSize(next.width, next.height, { final: true, user: true });
+}
+/** @param {KeyboardEvent} e */
+function onKeyDown(e) {
+  if (drag || !chromeOn() || e.altKey || e.ctrlKey || e.metaKey) return;
+  const base = currentSize();
+  const step = e.shiftKey ? CONFIG.bigStep : CONFIG.step;
+  /** @type {KitSize} */
+  let next;
+  switch (e.key) {
+    case 'ArrowLeft': case 'ArrowRight':
+      next = { width: base.width + (e.key === 'ArrowRight' ? step : -step), height: mode === 'resizable' ? base.height : contentHeight() };
+      break;
+    case 'ArrowUp': case 'ArrowDown':
+      if (mode !== 'resizable') return;
+      next = { width: base.width, height: base.height + (e.key === 'ArrowDown' ? step : -step) };
+      break;
+    case 'Enter': case ' ': case 'Home': case 'End':
+      e.preventDefault();
+      if (e.repeat) return;
+      if (e.key === 'Home') {
+        next = { width: defaultSize ? defaultSize.width : viewportSize().width, height: contentHeight() };
+        if (mode === 'resizable' && next.width !== window.innerWidth) refitAtWidth = clampSize(next.width, 0, bounds).width;
+      } else next = snapTarget(base, e.key === 'End');
+      break;
+    default:
+      return;
+  }
+  e.preventDefault();
+  if (e.key !== 'Home') refitAtWidth = null;
+  requestSize(next.width, next.height, { final: true, user: true });
+  scheduleAnnounce();
+}
+/** @param {HTMLElement} el */
+function describeHandle(el) {
+  /** @param {string} tag */
+  const add = (tag) => document.body.appendChild(Object.assign(document.createElement(tag), { className: 'kit-visually-hidden' }));
+  const hint = document.getElementById('kit-resize-hint') || Object.assign(add('p'), { id: 'kit-resize-hint' });
+  hint.textContent = CONFIG.strings.resizeHint;
+  const ids = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+  if (ids.indexOf(hint.id) < 0) el.setAttribute('aria-describedby', ids.concat(hint.id).join(' '));
+  const region = document.querySelector('[data-kit-announce]');
+  announcer = region instanceof HTMLElement ? region : add('div');
+  if (!region) announcer.setAttribute('data-kit-announce', '');
+  announcer.setAttribute('aria-live', 'polite');
+}
+
+// ---- Menus (docs/components.md#menu)
+/** @type {HTMLElement | null} */ let menuOpen = null;
+/** @type {HTMLElement | null} */ let menuInvoker = null;
+const popovers = typeof HTMLElement.prototype.showPopover === 'function';
+/** @param {unknown} el @returns {el is HTMLElement} */
+function isMenu(el) { return el instanceof HTMLElement && el.matches('.kit-menu[popover]'); }
+/** @param {ParentNode} root @param {string} selector @param {(el: HTMLElement) => boolean} keep */
+function elements(root, selector, keep) { return Array.from(root.querySelectorAll(selector)).filter(/** @returns {el is HTMLElement} */ (el) => el instanceof HTMLElement && keep(el)); }
+/** @param {HTMLElement} menu */
+function menuInvokers(menu) { return elements(document, '[popovertarget]', (el) => el.getAttribute('popovertarget') === menu.id); }
+/** @param {HTMLElement} menu */
+function menuItems(menu) { return elements(menu, '.kit-menu-item', (el) => !el.matches(':disabled, [aria-disabled="true"]')); }
+function placeOpenMenu() {
+  if (!menuOpen || !menuInvoker || !menuOpen.matches(':popover-open')) return;
+  Object.assign(menuOpen.style, { left: '0px', top: '0px' });
+  const { clientWidth: width, clientHeight: height } = document.documentElement;
+  const at = placeMenu(menuInvoker.getBoundingClientRect(), menuOpen.getBoundingClientRect(), { width, height });
+  Object.assign(menuOpen.style, { left: at.left + 'px', top: at.top + 'px' });
+}
+/** @param {Event} e */
+function onMenuToggle(e) {
+  const menu = e.target;
+  const { newState, source } = /** @type {ToggleEvent} */ (e);
+  if (!isMenu(menu)) return;
+  const open = newState === 'open';
+  if (e.type === 'beforetoggle') {
+    if (open) {
+      menuOpen = menu;
+      menuInvoker = source instanceof HTMLElement ? source : menuInvoker && menuInvoker.getAttribute('popovertarget') === menu.id ? menuInvoker : menuInvokers(menu)[0] || null;
+      requestAnimationFrame(placeOpenMenu);
+    } else if (menuOpen === menu) menuOpen = null;
+    return;
+  }
+  for (const el of menuInvokers(menu)) el.setAttribute('aria-expanded', String(open));
+  if (!open || menu !== menuOpen) return;
+  placeOpenMenu();
+  const first = menuItems(menu)[0];
+  if (first) first.focus({ preventScroll: true });
+}
+/** @param {KeyboardEvent} e */
+function onMenuKey(e) {
+  const el = e.target;
+  if (!(el instanceof HTMLElement) || e.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.key === 'Escape') dismissTooltips();
+  if (!popovers) return;
+  const menu = el.closest('.kit-menu');
+  if (e.key === 'Escape' && menuOpen && menuOpen.matches(':popover-open')) {
+    e.preventDefault();
+    e.stopPropagation();
+    menuOpen.hidePopover();
+    if (menuInvoker) menuInvoker.focus();
+  } else if (!isMenu(menu)) {
+    const target = document.getElementById(el.getAttribute('popovertarget') || '');
+    if (e.key !== 'ArrowDown' || !isMenu(target) || target.matches(':popover-open')) return;
+    e.preventDefault();
+    menuInvoker = el;
+    target.showPopover({ source: el });
+  } else if (e.key === 'Tab') menu.hidePopover();
+  else {
+    const items = menuItems(menu);
+    const before = items.filter((item) => el.compareDocumentPosition(item) & Node.DOCUMENT_POSITION_PRECEDING);
+    const after = items.filter((item) => el.compareDocumentPosition(item) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const last = items[items.length - 1];
+    const next = /** @type {Record<string, HTMLElement | undefined>} */ ({ ArrowDown: after[0] || items[0], ArrowUp: before[before.length - 1] || last, Home: items[0], End: last })[e.key];
+    if (!next) return;
+    e.preventDefault();
+    next.focus();
+  }
+}
+/** @param {Event} e */
+function onMenuScroll(e) { if (menuOpen && !(e.target instanceof Node && menuOpen.contains(e.target))) placeOpenMenu(); }
+/** @param {MouseEvent} e */
+function onMenuClick(e) {
+  const t = e.target instanceof Element ? e.target : null;
+  const by = t && t.closest('[popovertarget]');
+  if (by instanceof HTMLElement) menuInvoker = by;
+  const item = t && t.closest('.kit-menu-item');
+  const menu = item && item.closest('.kit-menu');
+  if (!item || !isMenu(menu) || item.matches('[aria-disabled="true"]')) return;
+  setTimeout(() => { if (!e.defaultPrevented && menu.matches(':popover-open')) menu.hidePopover(); }, 0);
+}
+
+// ---- Tooltips (docs/components.md#tooltip)
+const TIP_OFF = 'data-kit-tooltip-dismissed';
+/** Escape hides the tooltips shown by hover or keyboard focus, each until both leave its host. */
+function dismissTooltips() {
+  for (const host of elements(document, `.kit-tooltip-host:is(:hover, :has(:focus-visible)):not([${TIP_OFF}])`, () => true)) {
+    host.setAttribute(TIP_OFF, '');
+    const done = new AbortController();
+    /** @param {Event} e */
+    const leave = (e) => {
+      const to = /** @type {FocusEvent} */ (e).relatedTarget;
+      if (host.matches(e.type === 'focusout' ? ':hover' : ':has(:focus-visible)') || (to instanceof Node && host.contains(to))) return;
+      host.removeAttribute(TIP_OFF);
+      done.abort();
+    };
+    host.addEventListener('pointerleave', leave, { signal: done.signal });
+    host.addEventListener('focusout', leave, { signal: done.signal });
+  }
+}
+
+// ---- Dialogs (docs/components.md#dialog)
+/** @param {string | KitDialogLike} target @returns {Promise<string>} */
+function openDialog(target) {
+  const dialog = typeof target === 'string' ? document.getElementById(target) : target;
+  if (!(dialog instanceof HTMLDialogElement)) return Promise.reject(new TypeError(`kit.dialog: ${target} is not a <dialog>`));
+  if (menuOpen && menuOpen.matches(':popover-open')) menuOpen.hidePopover();
+  if (!dialog.open) modals.push(dialog);
+  /** @type {Promise<string>} */
+  const closed = new Promise((resolve) => {
+    dialog.returnValue = '';
+    dialog.showModal();
+    const onClose = () => { if (dialog.open) dialog.addEventListener('close', onClose, { once: true }); else { placeToasts(); resolve(dialog.returnValue); } };
+    dialog.addEventListener('close', onClose, { once: true });
+  });
+  if (!dialog.querySelector('[autofocus]')) for (const f of elements(dialog, '.kit-dialog-body :is(input:not([type=hidden]), select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])):not(:disabled)', () => true)) if (f.focus(), document.activeElement === f) break;
+  placeToasts();
+  return closed;
+}
+/** @param {MouseEvent} e */
+function onDialogClick(e) {
+  const t = e.target;
+  if (!(t instanceof Element) || t.closest('[aria-disabled="true"]')) return;
+  const opener = t.closest('[data-kit-dialog-open]');
+  const closer = t.closest('[data-kit-dialog-close]');
+  const r = t.matches('dialog[data-kit-dialog-light-dismiss]') && t.getBoundingClientRect();
+  const dialog = closer ? closer.closest('dialog') : r && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) && t;
+  if (opener || dialog instanceof HTMLDialogElement) setTimeout(() => {
+    if (e.defaultPrevented) return;
+    if (opener) openDialog(opener.getAttribute('data-kit-dialog-open') || '').catch((error) => console.warn('[kit]', error.message));
+    else if (dialog instanceof HTMLDialogElement) dialog.close((closer && closer.getAttribute('value')) || '');
+  }, 0);
+}
+
+// ---- Toasts (docs/components.md#toast)
+/** @type {(() => void)[]} */ const toasts = [];
+/** @type {HTMLElement | null} */ let toastRegion = null;
+/** @type {Element | null} */ let toastShown = null;
+/** @type {HTMLDialogElement[]} */ let modals = [];
+let toastReady = false;
+const RING = 'M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0';
+/** @type {Record<string, string>} */
+const ICONS = { info: RING + 'M12 11.5v3m0-5.5v.01', success: RING + 'M9.5 12.5l1.75 1.75 3.25-3.75', warning: 'M12 6.5 18 17H6zM12 10.5v3m0 2v.01', danger: RING + 'M12 9v3.5m0 2.5v.01' };
+/** @param {string} d */
+const svg = (d) => `<svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round"><path d="${d}"/></svg>`;
+function placeToasts() {
+  modals = modals.filter((d) => d.matches(':modal'));
+  const host = document.activeElement?.closest('dialog:modal') || modals[modals.length - 1] || document.querySelector('dialog:modal') || document.body;
+  if (toastRegion && host && toastRegion.parentNode !== host) host.append(toastRegion);
+}
+function nextToast() {
+  const show = toastReady && !toastShown && toasts.shift();
+  if (show) show();
+}
+/** @param {string} message @param {KitToastOptions} [options] @returns {KitToastHandle} */
+function toast(message, options) {
+  const { tone = '', duration = 4000, action } = options || {};
+  const ms = duration >= 0 ? duration : 4000;
+  const glyph = ICONS[tone] || '';
+  const el = Object.assign(document.createElement('div'), { className: 'kit-toast', innerHTML: (glyph && svg(glyph)) + '<p class="kit-toast-text"></p>'
+    + (action ? '<button class="kit-button kit-button-secondary" type="button"></button>' : '') + `<button class="kit-icon-button" type="button">${svg('m8 8 8 8m0-8-8 8')}</button>` });
+  if (glyph) el.dataset.kitTone = tone;
+  if (tone === 'danger') el.setAttribute('role', 'alert');
+  const [text, ...buttons] = Array.from(el.querySelectorAll('p, button'));
+  text.textContent = String(message);
+  if (action) buttons[0].textContent = action.label;
+  buttons[buttons.length - 1].setAttribute('aria-label', CONFIG.strings.dismiss);
+  const controller = new AbortController();
+  let timer = 0, left = ms, since = 0, hover = false;
+  /** @type {EventTarget | null} */ let from = null;
+  const sync = () => {
+    clearTimeout(timer);
+    if (timer) left -= Date.now() - since;
+    since = Date.now();
+    timer = toastShown === el && !hover && !el.matches(':focus-within') && ms > 0 && ms < 2 ** 31 ? setTimeout(dismiss, left) : 0;
+  };
+  const show = () => { toastShown = el; placeToasts(); if (toastRegion) toastRegion.append(el); sync(); };
+  function dismiss() {
+    clearTimeout(timer);
+    controller.abort();
+    if (toasts.indexOf(show) >= 0) toasts.splice(toasts.indexOf(show), 1);
+    if (toastShown !== el) return;
+    if (el.contains(document.activeElement) && from instanceof HTMLElement) from.focus();
+    el.remove();
+    toastShown = null;
+    nextToast();
+  }
+  /** @type {Record<string, (e: any) => void>} */
+  const handlers = {
+    mouseenter: () => { hover = true; sync(); },
+    mouseleave: () => { hover = false; sync(); },
+    focusin: (e) => { if (!el.contains(e.relatedTarget)) from = e.relatedTarget; sync(); },
+    focusout: sync,
+    keydown: (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); dismiss(); } },
+    click: (e) => { const b = e.target.closest('button'); if (b) try { if (action && b === buttons[0]) action.onClick(); } finally { dismiss(); } },
+  };
+  for (const type in handlers) el.addEventListener(type, handlers[type], { signal: controller.signal });
+  toasts.push(show);
+  if (!toastRegion) {
+    toastRegion = Object.assign(document.createElement('div'), { className: 'kit-toast-region' });
+    toastRegion.setAttribute('aria-live', 'polite');
+    placeToasts();
+    setTimeout(() => { toastReady = true; nextToast(); }, 100);
+  }
+  nextToast();
+  return { dismiss };
+}
+function applyConfigOverrides() {
+  const el = document.querySelector('script[type="application/json"][data-kit-config]');
+  if (!el) return;
+  /** @param {unknown} v @returns {v is Record<string, unknown>} */
+  const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  /** @type {unknown} */ let raw;
+  try { raw = JSON.parse(el.textContent || '{}'); } catch (error) {
+    return console.warn('[kit] data-kit-config is not valid JSON; using defaults.', error);
+  }
+  if (!isObject(raw)) return console.warn('[kit] data-kit-config must be a JSON object; using defaults.');
+  /** @type {string[]} */ const ignored = [];
+  for (const [key, v] of Object.entries(raw)) {
+    if (key === 'snapWidths' && Array.isArray(v) && v.length > 0 && v.every((n) => typeof n === 'number' && Number.isFinite(n) && n > 0)) CONFIG.snapWidths = v.slice();
+    else if ((key === 'step' || key === 'bigStep') && typeof v === 'number' && Number.isInteger(v) && v >= 1) CONFIG[key] = v;
+    else if (key === 'initTimeoutMs' && typeof v === 'number' && v >= 0 && v <= 0x7fffffff) CONFIG.initTimeoutMs = v;
+    else if (key === 'fallbackMode' && isMode(v)) CONFIG.fallbackMode = v;
+    else if (key === 'strings' && isObject(v)) {
+      for (const [name, text] of Object.entries(v)) {
+        if ((name === 'resizeLabel' || name === 'resizeHint' || name === 'announce' || name === 'dismiss') && typeof text === 'string' && text.trim() !== '') CONFIG.strings[name] = text;
+        else ignored.push('strings.' + name);
+      }
+    } else ignored.push(key);
+  }
+  if (ignored.length > 0) console.warn('[kit] data-kit-config: ignored ' + ignored.join(', ') + ' (unknown key or wrong type).');
+}
+function boot() {
+  applyConfigOverrides();
+  mode = CONFIG.fallbackMode;
+  const found = document.querySelector('[data-kit-resize]');
+  handle = found instanceof HTMLElement ? found : null;
+  if (handle) {
+    handle.setAttribute('aria-label', CONFIG.strings.resizeLabel);
+    describeHandle(handle);
+    handle.addEventListener('pointerdown', onPointerDown);
+    handle.addEventListener('dblclick', onDoubleClick);
+    handle.addEventListener('keydown', onKeyDown);
+  }
+  window.addEventListener('message', onMessage);
+  window.addEventListener('resize', onViewportResize);
+  if (popovers) {
+    document.addEventListener('beforetoggle', onMenuToggle, true);
+    document.addEventListener('toggle', onMenuToggle, true);
+    document.addEventListener('scroll', onMenuScroll, { capture: true, passive: true });
+  }
+  document.addEventListener('keydown', onMenuKey, true);
+  document.addEventListener('click', (e) => { if (popovers) onMenuClick(e); onDialogClick(e); }, true);
+  /** @type {Promise<unknown>} */
+  const fonts = 'fonts' in document ? document.fonts.ready : Promise.resolve();
+  const fontCap = new Promise((resolve) => setTimeout(resolve, CONFIG.initTimeoutMs));
+  Promise.race([fonts.catch(() => undefined), fontCap]).then(() => { fontsLoaded = true; start(); });
+  initTimer = setTimeout(useFallback, CONFIG.initTimeoutMs);
+  post({ type: 'kit:ready', protocol: KIT_PROTOCOL });
+}
+window.kit = Object.freeze({ version: KIT_VERSION, protocol: KIT_PROTOCOL, fit: () => fitNow(), dialog: openDialog, toast });
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+else boot();
+})();
+</script>
+<style>
+/* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
+/* The tab bar is the window's first row. It sticks to the top while a long tab scrolls (the window
+   stops at its maximum height), and its 8px side padding lines the tab labels up with the text. */
+.tour { gap: 0; }
+.tour > .kit-tablist { position: sticky; top: 0; z-index: 2; padding: var(--kit-spacer-2); border-bottom: var(--kit-border-width) solid var(--figma-color-border); background-color: var(--figma-color-bg); }
+/* What the browser scrolls into view (focus moving back up, find in page) clears the sticky bar:
+   the bar's 41px (24 + 2 x 8 + 1) and 8px more. */
+:root:has(.tour > .kit-tablist) { scroll-padding-top: calc(var(--kit-control-height) + 3 * var(--kit-spacer-2) + var(--kit-border-width)); }
+/* The tour's last row keeps the kit's usual 8px clearance for the grip, as a last .kit-section would.
+   On Create the sticky footer is the last row, so the grip sits in its corner, as the kit does for a
+   footer that is the root's last child. */
+html[data-kit-chrome="on"] .kit-app:has(> .tour:last-child) { padding-bottom: var(--kit-spacer-2); }
+html[data-kit-chrome="on"] .kit-app:has(input[name="tour"][value="create"]:checked) { padding-bottom: 0; }
+.tour-cols { align-items: flex-start; }
+.tour-cols > * { flex: 1 1 0; min-width: 0; }
+.tour-indent { margin-left: var(--kit-spacer-4); }
+/* Insets the rows by 8px, so their text lines up with the section header's title, as in UI3. */
+.tour-list { --kit-scroll-max-height: 176px; padding: 0 var(--kit-spacer-2) var(--kit-spacer-2); }
+.tour-modes { display: flex; flex-direction: column; gap: var(--kit-spacer-2); margin: 0; padding: 0; list-style: none; }
+.tour-mode-name { display: flex; align-items: center; gap: var(--kit-spacer-2); font-weight: var(--kit-font-weight-strong); }
+/* The selected list row's pair: 15.73:1 light, 8.27:1 dark (docs/accessibility.md). */
+.tour-here { padding: 0 var(--kit-spacer-1-5); border-radius: var(--kit-radius-full); background-color: var(--figma-color-bg-selected); color: var(--figma-color-text-onselected); font-weight: var(--kit-font-weight); }
+.tour-modes > li:not([aria-current="true"]) .tour-here { display: none; }
+.tour-size { flex: 1 1 0; min-width: 0; margin: 0; font-weight: var(--kit-font-weight-strong); font-variant-numeric: tabular-nums; }
+.tour-keys { width: 100%; border-collapse: collapse; }
+.tour-keys :is(th, td) { padding: var(--kit-spacer-1) 0; border-bottom: var(--kit-border-width) solid var(--figma-color-border); font-weight: inherit; text-align: start; vertical-align: top; }
+.tour-keys tr:last-child > * { border-bottom: 0; }
+.tour-keys th { width: 1%; padding-right: var(--kit-spacer-3); white-space: nowrap; }
+.tour-keys td { color: var(--figma-color-text-secondary); }
+.tour-keys kbd { display: inline-block; min-width: var(--kit-icon-size-small); padding: 0 var(--kit-spacer-1); border-radius: var(--kit-radius-small); background-color: var(--figma-color-bg-secondary); font: inherit; text-align: center; }
+</style>
+</head>
+<body>
+<main class="kit-app" data-kit-root>
+  <h1 class="kit-visually-hidden">Kit tour</h1>
+  <div class="kit-tabs tour">
+    <div class="kit-tablist" role="radiogroup" aria-label="Tour">
+      <label class="kit-tab"><input type="radio" name="tour" value="components" checked>Components</label>
+      <label class="kit-tab"><input type="radio" name="tour" value="create">Create</label>
+      <label class="kit-tab"><input type="radio" name="tour" value="window">Window</label>
+    </div>
+
+    <div id="panel-components">
+      <div class="kit-section">
+        <p class="kit-text-secondary">Every kit component, working. Each tab fits the window to its content.</p>
+      </div>
+      <header class="kit-section-header"><h2>Buttons</h2></header>
+      <div class="kit-section kit-stack">
+        <p class="kit-text-secondary">Save shows the busy state. Snap to grid and the lock are toggles.</p>
+        <div class="kit-row">
+          <button class="kit-button kit-button-primary" type="button">Primary</button>
+          <button class="kit-button kit-button-secondary" type="button">Secondary</button>
+          <button class="kit-button kit-button-tertiary" type="button">Tertiary</button>
+          <button class="kit-button kit-button-danger" type="button">Danger</button>
+        </div>
+        <div class="kit-row">
+          <button class="kit-button kit-button-primary kit-button-large" type="button">Large</button>
+          <button class="kit-button kit-button-secondary" type="button" disabled>Disabled</button>
+          <button class="kit-button kit-button-secondary" id="save" type="button">Save</button>
+          <button class="kit-button kit-button-secondary" id="snap" type="button" aria-pressed="true">Snap to grid</button>
+        </div>
+        <div class="kit-row">
+          <span class="kit-tooltip-host">
+            <button class="kit-icon-button" type="button" aria-label="Add layer" aria-describedby="tip-add"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.5v9M7.5 12h9" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button>
+            <span class="kit-tooltip kit-tooltip-start" role="tooltip" id="tip-add">Adds an empty frame</span>
+          </span>
+          <span class="kit-tooltip-host">
+            <button class="kit-icon-button" id="lock" type="button" aria-label="Lock ratio" aria-pressed="false" aria-describedby="tip-lock"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11h8v6H8z M9.5 11V9.5a2.5 2.5 0 0 1 5 0V11" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg></button>
+            <span class="kit-tooltip kit-tooltip-start" role="tooltip" id="tip-lock">Keeps width and height in proportion</span>
+          </span>
+          <span class="kit-tooltip-host">
+            <button class="kit-icon-button" type="button" aria-label="Delete" aria-disabled="true" aria-describedby="tip-delete"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 8.5h9M10.5 8.5V7h3v1.5M8.75 8.5l.5 8.5h5.5l.5-8.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span class="kit-tooltip kit-tooltip-start" role="tooltip" id="tip-delete">Nothing to delete</span>
+          </span>
+        </div>
+      </div>
+      <hr class="kit-divider">
+      <header class="kit-section-header"><h2>Overlays</h2></header>
+      <div class="kit-section kit-stack">
+        <p class="kit-text-secondary">Open the menu or the dialog, or show a toast.</p>
+        <div class="kit-row">
+          <button class="kit-button kit-button-secondary" type="button" popovertarget="tour-menu" aria-haspopup="menu" aria-expanded="false">Actions</button>
+          <button class="kit-button kit-button-secondary" id="open-dialog" type="button">Rename frame…</button>
+        </div>
+        <div class="kit-menu" id="tour-menu" popover role="menu" aria-label="Actions">
+          <button class="kit-menu-item" role="menuitem" type="button" data-tour-toast="Duplicated 3 layers">Duplicate</button>
+          <button class="kit-menu-item" role="menuitem" type="button" data-tour-toast="Grouped 3 layers">Group selection</button>
+          <hr class="kit-menu-separator">
+          <button class="kit-menu-item" role="menuitem" type="button" disabled>Delete</button>
+        </div>
+        <span class="kit-label" id="toasts-label">Toasts</span>
+        <div class="kit-stack" role="group" aria-labelledby="toasts-label">
+          <div class="kit-row">
+            <button class="kit-button kit-button-secondary" id="toast-info" type="button">Info</button>
+            <button class="kit-button kit-button-secondary" id="toast-success" type="button">Success</button>
+            <button class="kit-button kit-button-secondary" id="toast-warning" type="button">Warning</button>
+            <button class="kit-button kit-button-secondary" id="toast-danger" type="button">Danger</button>
+          </div>
+          <div class="kit-row">
+            <button class="kit-button kit-button-secondary" id="toast-undo" type="button">With Undo</button>
+            <button class="kit-button kit-button-secondary" id="toast-queue" type="button">Two in a row</button>
+          </div>
+        </div>
+        <dialog class="kit-dialog kit-dialog-small" id="tour-dialog" aria-labelledby="tour-dialog-title">
+          <header class="kit-dialog-header">
+            <h2 id="tour-dialog-title">Rename frame</h2>
+            <button class="kit-icon-button" type="button" data-kit-dialog-close aria-label="Close"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button>
+          </header>
+          <div class="kit-dialog-body kit-stack">
+            <div class="kit-field">
+              <label class="kit-label" for="dialog-name">Name</label>
+              <input class="kit-input" id="dialog-name" type="text" value="Hero" autocomplete="off">
+            </div>
+          </div>
+          <footer class="kit-dialog-footer">
+            <button class="kit-button kit-button-secondary" type="button" data-kit-dialog-close value="cancel">Cancel</button>
+            <button class="kit-button kit-button-primary" id="dialog-ok" type="button" data-kit-dialog-close value="rename">Rename</button>
+          </footer>
+        </dialog>
+      </div>
+      <hr class="kit-divider">
+      <header class="kit-section-header"><h2>Fields</h2></header>
+      <div class="kit-section kit-stack">
+        <p class="kit-text-secondary">Pick a fill or type its hex code: the two stay in step.</p>
+        <div class="kit-field">
+          <label class="kit-label" for="layer-name">Layer name</label>
+          <input class="kit-input" id="layer-name" type="text" placeholder="Frame" autocomplete="off" aria-describedby="layer-name-help">
+          <p class="kit-help" id="layer-name-help">Used for every new layer.</p>
+        </div>
+        <div class="kit-input-icon">
+          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11.5" cy="11.5" r="4" fill="none" stroke="currentColor"/><path d="m14.5 14.5 3 3" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
+          <input class="kit-input" type="search" placeholder="Search layers" aria-label="Search layers">
+        </div>
+        <div class="kit-row">
+          <div class="kit-field">
+            <label class="kit-label" for="width">Width</label>
+            <div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">W</span><input class="kit-input" id="width" type="number" value="320" min="1" step="1"></div>
+          </div>
+          <div class="kit-field">
+            <label class="kit-label" for="height">Height</label>
+            <div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">H</span><input class="kit-input" id="height" type="number" value="240" min="1" step="1"></div>
+          </div>
+          <div class="kit-field">
+            <label class="kit-label" for="scale">Scale</label>
+            <div class="kit-select"><select id="scale"><option value="1">1x</option><option value="2" selected>2x</option><option value="3">3x</option></select></div>
+          </div>
+        </div>
+        <div class="kit-field">
+          <label class="kit-label" for="fill-hex">Fill</label>
+          <div class="kit-color">
+            <input class="kit-color-swatch" id="fill-swatch" type="color" value="#0d99ff" aria-label="Pick the fill colour">
+            <input class="kit-input" id="fill-hex" type="text" value="0D99FF" spellcheck="false" autocomplete="off" aria-describedby="fill-help">
+          </div>
+          <p class="kit-help" id="fill-help">A hex code, like 0D99FF or F0A.</p>
+        </div>
+        <div class="kit-field">
+          <label class="kit-label" for="notes">Notes</label>
+          <textarea class="kit-textarea" id="notes" rows="2" placeholder="One name per line"></textarea>
+        </div>
+        <div class="kit-field">
+          <label class="kit-label" for="prefix">Prefix</label>
+          <input class="kit-input" id="prefix" type="text" value="#Frame" autocomplete="off" aria-invalid="true" aria-describedby="prefix-help">
+          <p class="kit-help" id="prefix-help">Use only letters, numbers and dashes.</p>
+        </div>
+      </div>
+      <hr class="kit-divider">
+      <header class="kit-section-header"><h2>Choices</h2></header>
+      <div class="kit-section kit-stack">
+        <p class="kit-text-secondary">All shows a dash while only some are on.</p>
+        <div class="kit-row tour-cols">
+          <div class="kit-stack" role="group" aria-labelledby="include-label">
+            <span class="kit-label" id="include-label">Include</span>
+            <label class="kit-checkbox"><input type="checkbox" id="include-all">All</label>
+            <label class="kit-checkbox tour-indent"><input type="checkbox" data-tour-part checked>Frames</label>
+            <label class="kit-checkbox tour-indent"><input type="checkbox" data-tour-part checked>Text</label>
+            <label class="kit-checkbox tour-indent"><input type="checkbox" data-tour-part>Hidden layers</label>
+          </div>
+          <div class="kit-stack" role="radiogroup" aria-labelledby="scope-label">
+            <span class="kit-label" id="scope-label">Scope</span>
+            <label class="kit-radio"><input type="radio" name="scope" value="selection" checked>Selection</label>
+            <label class="kit-radio"><input type="radio" name="scope" value="page">Current page</label>
+            <label class="kit-radio"><input type="radio" name="scope" value="file" disabled>All pages</label>
+          </div>
+        </div>
+      </div>
+      <hr class="kit-divider">
+      <header class="kit-section-header">
+        <h2>Feedback</h2>
+        <span class="kit-tooltip-host">
+          <button class="kit-icon-button" id="restore" type="button" aria-label="Show hidden notices" aria-disabled="true" aria-describedby="tip-restore"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12s2.5-4.5 6.5-4.5 6.5 4.5 6.5 4.5-2.5 4.5-6.5 4.5S5.5 12 5.5 12z" fill="none" stroke="currentColor" stroke-linejoin="round"/><circle cx="12" cy="12" r="2" fill="none" stroke="currentColor"/></svg></button>
+          <span class="kit-tooltip kit-tooltip-end kit-tooltip-above" role="tooltip" id="tip-restore">Dismiss a notice first</span>
+        </span>
+      </header>
+      <div class="kit-section kit-stack">
+        <p class="kit-text-secondary">Dismiss the first notice; the eye button in this header brings it back.</p>
+        <div class="kit-notice" id="notice-info" data-kit-tone="info" role="status">
+          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="M12 11.5v3M12 9.25v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
+          <p class="kit-notice-text">Hidden layers are skipped.</p>
+          <button class="kit-icon-button" id="dismiss-info" type="button" aria-label="Dismiss notice"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="kit-notice" data-kit-tone="success">
+          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="m9.75 12.25 1.5 1.5 3-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <p class="kit-notice-text">Renamed 12 layers.</p>
+        </div>
+        <div class="kit-notice" data-kit-tone="warning">
+          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.75 17.75 17H6.25z" fill="none" stroke="currentColor" stroke-linejoin="round"/><path d="M12 10.75v2.5M12 15.25v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
+          <p class="kit-notice-text">3 names are duplicates.</p>
+        </div>
+        <div class="kit-notice" data-kit-tone="danger">
+          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="M12 9.25v3.25M12 14.75v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
+          <p class="kit-notice-text">2 layers are locked.</p>
+        </div>
+        <div class="kit-empty">
+          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 9.5h6v6h-6z" fill="none" stroke="currentColor" stroke-linejoin="round"/><circle cx="15.5" cy="10.5" r="3" fill="none" stroke="currentColor"/></svg>
+          <h3 class="kit-empty-title">No shapes yet</h3>
+          <p class="kit-empty-text">Make some on the Create tab.</p>
+          <button class="kit-button kit-button-secondary" id="go-create" type="button">Go to Create</button>
+        </div>
+      </div>
+      <hr class="kit-divider">
+      <header class="kit-section-header"><h2>List</h2></header>
+      <div class="tour-list">
+        <div class="kit-scroll">
+          <ul class="kit-list" id="frames" aria-label="Frames">
+            <li><button class="kit-list-row" type="button" aria-current="true"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Cover</span><span class="kit-list-row-meta">1920 × 1080</span></button></li>
+            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Hero</span><span class="kit-list-row-meta">1440 × 720</span></button></li>
+            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Features</span><span class="kit-list-row-meta">1440 × 960</span></button></li>
+            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Pricing</span><span class="kit-list-row-meta">1440 × 880</span></button></li>
+            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Reviews</span><span class="kit-list-row-meta">1440 × 640</span></button></li>
+            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Questions</span><span class="kit-list-row-meta">1440 × 720</span></button></li>
+            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Sign up</span><span class="kit-list-row-meta">1440 × 560</span></button></li>
+            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Footer</span><span class="kit-list-row-meta">1440 × 320</span></button></li>
+            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Mobile hero</span><span class="kit-list-row-meta">390 × 844</span></button></li>
+            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Mobile menu</span><span class="kit-list-row-meta">390 × 844</span></button></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-create">
+      <div class="kit-section kit-stack">
+        <p class="kit-text-secondary">Adds real shapes to the page you are on.</p>
+        <div class="kit-field">
+          <label class="kit-label" for="count">Count</label>
+          <input class="kit-input" id="count" type="text" inputmode="numeric" autocomplete="off" value="5" aria-describedby="count-help">
+          <p class="kit-help" id="count-help">From 1 to 50, placed in a row.</p>
+        </div>
+        <div class="kit-field">
+          <label class="kit-label" for="shape">Shape</label>
+          <div class="kit-select"><select id="shape"><option value="rectangle">Rectangle</option><option value="ellipse">Ellipse</option></select></div>
+        </div>
+      </div>
+      <footer class="kit-footer">
+        <p class="kit-text-secondary" id="status" role="status">Nothing selected</p>
+        <div class="kit-row">
+          <button class="kit-button kit-button-secondary" id="close" type="button">Close</button>
+          <button class="kit-button kit-button-primary" id="create" type="button">Create</button>
+        </div>
+      </footer>
+    </div>
+
+    <div id="panel-window">
+      <header class="kit-section-header"><h2>Modes</h2></header>
+      <div class="kit-section">
+        <ul class="tour-modes">
+          <li data-tour-mode="fit-content"><span class="tour-mode-name">fit-content <span class="tour-here">In use</span></span><span class="kit-text-secondary">The height follows the content. You drag the width.</span></li>
+          <li data-tour-mode="resizable"><span class="tour-mode-name">resizable <span class="tour-here">In use</span></span><span class="kit-text-secondary">You drag both sides. kit.fit() fits the content on request.</span></li>
+          <li data-tour-mode="fixed"><span class="tour-mode-name">fixed <span class="tour-here">In use</span></span><span class="kit-text-secondary">One size, set in code. No handle.</span></li>
+        </ul>
+      </div>
+      <hr class="kit-divider">
+      <header class="kit-section-header"><h2>This window</h2></header>
+      <div class="kit-section kit-stack">
+        <div class="kit-row">
+          <p class="tour-size"><span class="kit-visually-hidden">Size: </span><span id="size">360 × 360</span></p>
+          <button class="kit-button kit-button-secondary" id="grow" type="button">Add a line</button>
+        </div>
+        <p class="kit-text-secondary" id="grow-line" hidden>A new line of content: the window grew to fit it.</p>
+        <p class="kit-text-secondary" id="window-note">Drag the corner to change the width; the plugin remembers it for each editor.</p>
+      </div>
+      <div id="handle-part">
+        <hr class="kit-divider">
+        <header class="kit-section-header"><h2>Resize handle</h2></header>
+        <div class="kit-section kit-stack">
+          <table class="tour-keys">
+            <caption class="kit-visually-hidden">Resize handle keys</caption>
+            <tbody>
+              <tr><th scope="row"><kbd>←</kbd> <kbd>→</kbd></th><td>8 px narrower or wider</td></tr>
+              <tr><th scope="row"><kbd>Shift</kbd> + <kbd>←</kbd> <kbd>→</kbd></th><td>32 px at a time</td></tr>
+              <tr><th scope="row"><kbd>Enter</kbd> or <kbd>Space</kbd></th><td>Snap to the next width</td></tr>
+              <tr><th scope="row">Double-click</th><td>Snap to the next width</td></tr>
+              <tr><th scope="row"><kbd>Home</kbd></th><td>Default width, fitted</td></tr>
+              <tr><th scope="row"><kbd>End</kbd></th><td>Widest snap width</td></tr>
+              <tr><th scope="row"><kbd>Esc</kbd></th><td>Cancels a drag</td></tr>
+            </tbody>
+          </table>
+          <p class="kit-text-secondary">Tab to the grip in the corner to try them.</p>
+        </div>
+      </div>
+      <hr class="kit-divider">
+      <div class="kit-section">
+        <p class="kit-text-secondary">Get the files and docs from this plugin's Community page.</p>
+      </div>
+    </div>
+  </div>
+</main>
+<button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+<script>
+'use strict';
+// The tour: the Create tab talks to code.ts (the starter's demo, docs/messages.md); every other
+// tab runs in this window only. The tabs themselves are CSS: no script switches them.
+(() => {
+/** @param {string} id */
+const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
+/** @param {{ type: string } & Record<string, unknown>} message */
+const post = (message) => parent.postMessage({ pluginMessage: message }, '*');
+/** @param {number} n @param {string} word */
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/** @param {Element} el @param {boolean} invalid */
+const setInvalid = (el, invalid) => { if (invalid) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); };
+
+// A held Enter repeats its keydown, and a focused button clicks on every repeat: without this, one
+// long press on Create makes a batch of shapes per repeat. One press, one action. (Space clicks on
+// keyup, so it never repeats.)
+const app = /** @type {HTMLElement} */ (document.querySelector('[data-kit-root]'));
+app.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && event.repeat && event.target instanceof HTMLButtonElement) event.preventDefault();
+}, true);
+
+// ---- Toasts. One shows at a time, first in, first out. The Undo toast has no timer (duration 0:
+// an action the person needs is not timed, docs/components.md#toast), so the tour takes it away
+// before it shows any other toast, and when the person leaves the Components tab.
+/** @type {KitToastHandle | null} */
+let undoToast = null;
+/** @param {string} message @param {KitToastOptions} [options] */
+function tourToast(message, options) {
+  if (undoToast) { undoToast.dismiss(); undoToast = null; }
+  return kit.toast(message, options);
+}
+const tabs = /** @type {HTMLInputElement[]} */ ([...document.querySelectorAll('input[name="tour"]')]);
+/** @param {string} value */
+function showTab(value) {
+  const tab = tabs.find((t) => t.value === value);
+  if (!tab) return;
+  tab.checked = true;
+  tab.focus();
+  leaveComponents();
+}
+function leaveComponents() {
+  const current = tabs.find((t) => t.checked);
+  if (undoToast && current && current.value !== 'components') { undoToast.dismiss(); undoToast = null; }
+}
+for (const tab of tabs) tab.addEventListener('change', leaveComponents);
+
+// ---- Create: count, shape, the selection count and the created reply ----
+const count = /** @type {HTMLInputElement} */ ($('count'));
+const shape = /** @type {HTMLSelectElement} */ ($('shape'));
+const create = $('create');
+
+function readCount() {
+  const text = count.value.trim(), n = Number(text);
+  return /^\d+$/.test(text) && n >= 1 && n <= 50 ? n : null; // code.ts clamps to the same range
+}
+
+function validateCount() {
+  const ok = readCount() !== null;
+  setInvalid(count, !ok);
+  $('count-help').textContent = ok ? 'From 1 to 50, placed in a row.' : 'Enter a whole number from 1 to 50.';
+}
+
+function createShapes() {
+  if (create.getAttribute('aria-busy') === 'true') return; // aria-busy stops the mouse, not Enter or Space
+  const n = readCount();
+  if (n === null) { validateCount(); count.focus(); return; }
+  create.setAttribute('aria-busy', 'true');
+  post({ type: 'create-shapes', count: n, shape: shape.value });
+}
+
+count.addEventListener('input', validateCount);
+// Enter creates too. No <form>: a sandboxed iframe may block its submit (docs/pitfalls.md#17-smaller-traps).
+count.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); if (!event.repeat) createShapes(); }
+});
+create.addEventListener('click', createShapes);
+$('close').addEventListener('click', () => post({ type: 'close' }));
+
+// The status line says what main reports: the selection, then the last result on a second line
+// (the window grows for it). A result, not a toast, so nothing covers Create and Close.
+let selected = 0, result = '';
+window.addEventListener('message', (event) => {
+  const msg = event.data && event.data.pluginMessage;
+  if (!msg || typeof msg !== 'object' || typeof msg.count !== 'number') return;
+  if (msg.type === 'selection') selected = msg.count;
+  else if (msg.type === 'created') {
+    create.removeAttribute('aria-busy'); // code.ts always answers, with 0 when it failed
+    result = msg.count > 0 ? `Created ${plural(msg.count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle')}` : 'Nothing created';
+  } else return;
+  const selection = selected === 0 ? 'Nothing selected' : `${plural(selected, 'layer')} selected`;
+  $('status').replaceChildren(selection, ...(result ? [document.createElement('br'), result] : []));
+});
+
+// ---- Components: buttons ----
+const save = $('save');
+save.addEventListener('click', () => {
+  if (save.getAttribute('aria-busy') === 'true') return;
+  save.setAttribute('aria-busy', 'true');
+  setTimeout(() => { save.removeAttribute('aria-busy'); tourToast('Saved', { tone: 'success' }); }, 1500);
+});
+for (const toggle of [$('snap'), $('lock')]) {
+  toggle.addEventListener('click', () => toggle.setAttribute('aria-pressed', String(toggle.getAttribute('aria-pressed') !== 'true')));
+}
+
+// ---- Components: fields. The swatch and the hex field stay in step. While typing, the swatch
+// follows only six digits (three could be the start of six); on change, three count too and expand
+// as in Figma's own hex field (F0A is FF00AA). Anything else is an error, '#' or not.
+const swatch = /** @type {HTMLInputElement} */ ($('fill-swatch'));
+const hex = /** @type {HTMLInputElement} */ ($('fill-hex'));
+const HEX6 = /^#?([0-9a-f]{6})$/i;
+const HEX3 = /^#?([0-9a-f]{3})$/i;
+/** @param {string} text @returns {string | null} six upper-case digits, or null */
+function readHex(text) {
+  const t = text.trim();
+  const six = HEX6.exec(t);
+  if (six) return six[1].toUpperCase();
+  const three = HEX3.exec(t);
+  return three ? three[1].replace(/./g, (d) => d + d).toUpperCase() : null;
+}
+/** @param {boolean} invalid */
+function setHexError(invalid) {
+  setInvalid(hex, invalid);
+  $('fill-help').textContent = invalid ? 'Enter a hex code, like 0D99FF or F0A.' : 'A hex code, like 0D99FF or F0A.';
+}
+swatch.addEventListener('input', () => { hex.value = swatch.value.slice(1).toUpperCase(); setHexError(false); });
+hex.addEventListener('input', () => {
+  const m = HEX6.exec(hex.value.trim());
+  if (!m) return; // half-typed: say nothing until the field is left
+  swatch.value = '#' + m[1].toLowerCase();
+  setHexError(false);
+});
+hex.addEventListener('change', () => {
+  const code = readHex(hex.value);
+  setHexError(code === null);
+  if (code !== null) { hex.value = code; swatch.value = '#' + code.toLowerCase(); }
+});
+
+const prefix = /** @type {HTMLInputElement} */ ($('prefix'));
+prefix.addEventListener('input', () => {
+  const ok = /^[A-Za-z0-9-]*$/.test(prefix.value);
+  setInvalid(prefix, !ok);
+  $('prefix-help').textContent = ok ? 'Letters, numbers and dashes.' : 'Use only letters, numbers and dashes.';
+});
+
+// ---- Components: choices. "All" is indeterminate while only some parts are checked.
+const all = /** @type {HTMLInputElement} */ ($('include-all'));
+const parts = /** @type {HTMLInputElement[]} */ ([...document.querySelectorAll('[data-tour-part]')]);
+function syncAll() {
+  const on = parts.filter((p) => p.checked).length;
+  all.checked = on === parts.length;
+  all.indeterminate = on > 0 && on < parts.length;
+}
+all.addEventListener('change', () => { for (const p of parts) p.checked = all.checked; syncAll(); });
+for (const p of parts) p.addEventListener('change', syncAll);
+syncAll();
+
+// ---- Components: feedback. Dismissing the info notice enables the header's button that brings
+// it back; the tooltip says why the button is off until then. Focus moves to the control that
+// undoes the step, both ways, so it never stays on a hidden or an inert button.
+const notice = $('notice-info');
+const restore = $('restore');
+/** @param {boolean} hidden */
+function setNoticeHidden(hidden) {
+  notice.hidden = hidden;
+  if (hidden) restore.removeAttribute('aria-disabled'); else restore.setAttribute('aria-disabled', 'true');
+  $('tip-restore').textContent = hidden ? '1 notice is hidden' : 'Dismiss a notice first';
+}
+$('dismiss-info').addEventListener('click', () => { setNoticeHidden(true); restore.focus(); });
+restore.addEventListener('click', () => {
+  if (restore.getAttribute('aria-disabled') === 'true') return;
+  setNoticeHidden(false);
+  $('dismiss-info').focus();
+});
+$('go-create').addEventListener('click', () => showTab('create'));
+
+// ---- Components: list. One current row; a click moves it.
+const frames = $('frames');
+frames.addEventListener('click', (event) => {
+  const row = /** @type {Element} */ (event.target).closest('.kit-list-row');
+  if (!row) return;
+  for (const r of frames.querySelectorAll('[aria-current]')) r.removeAttribute('aria-current');
+  row.setAttribute('aria-current', 'true');
+});
+
+// ---- Components: overlays. The runtime opens, places and closes the menu and the dialog.
+$('tour-menu').addEventListener('click', (event) => {
+  const item = /** @type {Element} */ (event.target).closest('.kit-menu-item');
+  const message = item && item.getAttribute('data-tour-toast');
+  if (message) tourToast(message, { tone: 'success' });
+});
+const dialogName = /** @type {HTMLInputElement} */ ($('dialog-name'));
+$('open-dialog').addEventListener('click', async () => {
+  const value = await kit.dialog('tour-dialog'); // the clicked button's value: 'rename', 'cancel', or '' after Escape or ×
+  const name = dialogName.value.trim();
+  if (value === 'rename') tourToast(name ? `Renamed to “${name}”` : 'Kept the old name: the new one was empty', { tone: name ? 'success' : 'info' });
+  else tourToast(value === 'cancel' ? 'Cancelled' : 'Closed without renaming');
+});
+dialogName.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); if (!event.repeat) $('dialog-ok').click(); }
+});
+/** @type {Array<[string, 'info' | 'success' | 'warning' | 'danger', string]>} */
+const TOASTS = [
+  ['toast-info', 'info', 'Hidden layers are skipped'],
+  ['toast-success', 'success', 'Renamed 3 layers'],
+  ['toast-warning', 'warning', '3 names are duplicates'],
+  ['toast-danger', 'danger', '2 layers are locked'],
+];
+for (const [id, tone, message] of TOASTS) $(id).addEventListener('click', () => tourToast(message, { tone }));
+$('toast-undo').addEventListener('click', () => {
+  undoToast = tourToast('Deleted 2 layers', { duration: 0, action: { label: 'Undo', onClick: () => { undoToast = null; tourToast('Restored 2 layers', { tone: 'success' }); } } });
+});
+$('toast-queue').addEventListener('click', () => { tourToast('First of two'); tourToast('Second of two'); });
+
+// ---- Window: the mode in use, the live size, and content that grows ----
+const root = document.documentElement;
+const grow = $('grow');
+const growLine = $('grow-line');
+/** @param {boolean} on */
+function setGrown(on) {
+  if (growLine.hidden !== on) return; // already as asked
+  growLine.hidden = !on;
+  grow.textContent = on ? 'Remove the line' : 'Add a line';
+  // fit-content follows its content on its own; a resizable window fits only when asked.
+  if (root.dataset.kitMode === 'resizable') kit.fit();
+}
+grow.addEventListener('click', () => setGrown(growLine.hidden === true));
+function showMode() {
+  const mode = root.dataset.kitMode;
+  const fixed = mode === 'fixed';
+  // The chrome is off in a fixed window, and in the panels Figma docks and sizes itself (Buzz, Dev Mode).
+  const docked = root.dataset.kitChrome === 'off' && !fixed;
+  for (const item of document.querySelectorAll('[data-tour-mode]')) {
+    if (!docked && item.getAttribute('data-tour-mode') === mode) item.setAttribute('aria-current', 'true');
+    else item.removeAttribute('aria-current');
+  }
+  $('handle-part').hidden = docked || fixed;
+  grow.hidden = docked || fixed;
+  if (grow.hidden) setGrown(false);
+  $('window-note').textContent = docked ? 'Figma docks the plugin in a panel here and sets its size, so the modes and the handle don’t apply.'
+    : fixed ? 'A fixed window keeps the size set in code, and has no handle.'
+    : mode === 'resizable' ? 'Drag the corner to change the size; the plugin remembers it for each editor.'
+    : 'Drag the corner to change the width; the plugin remembers it for each editor.';
+}
+new MutationObserver(showMode).observe(root, { attributes: true, attributeFilter: ['data-kit-mode', 'data-kit-chrome'] });
+showMode();
+const showSize = () => { $('size').textContent = `${window.innerWidth} × ${window.innerHeight}`; };
+window.addEventListener('resize', showSize);
+showSize();
+})();
+</script>
+</body>
+</html>

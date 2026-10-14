@@ -93,9 +93,9 @@ export function agentSvg({ W = 880 } = {}) {
     { tool: 'Run', c: 'run', arg: 'npm run build' },
     { out: '> tsc -p tsconfig.json' },
     { tool: 'Run', c: 'run', arg: 'npm run audit' },
-    { out: 'audit: no problems in 6 plugin folders', ok: true },
+    { out: 'audit: no problems in 7 plugin folders', ok: true },
     { tool: 'Run', c: 'run', arg: 'npm run check:ui' },
-    { out: 'check-ui: no type errors in 6 plugin folders', ok: true },
+    { out: 'check-ui: no type errors in 7 plugin folders', ok: true },
     { done: 'Done: build, audit and check:ui pass (your plugin and the 5 examples). In the Figma desktop app:' },
     { path: 'Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json' },
   ];
@@ -185,7 +185,7 @@ ${stepEls.join('\n')}
     svg: tl.render(svgDoc({
       w: W, h: H, css, body,
       title: 'The one prompt, run by a coding agent',
-      desc: `Animated illustration, not a recording: the README's one prompt, with the rename-layers task from docs/prompts.md ("${TASK}"), is typed into a coding agent (Claude Code, Cursor or similar). The agent clones the repo, reads AGENTS.md and docs/components.md, edits manifest.json, ui.html and code.ts, runs npm install, npm run build, npm run audit ("audit: no problems in 6 plugin folders") and npm run check:ui ("check-ui: no type errors in 6 plugin folders"), then says how to import the plugin: Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json. The command output lines are real output from kit 0.4.0.`,
+      desc: `Animated illustration, not a recording: the README's one prompt, with the rename-layers task from docs/prompts.md ("${TASK}"), is typed into a coding agent (Claude Code, Cursor or similar). The agent clones the repo, reads AGENTS.md and docs/components.md, edits manifest.json, ui.html and code.ts, runs npm install, npm run build, npm run audit ("audit: no problems in 7 plugin folders") and npm run check:ui ("check-ui: no type errors in 7 plugin folders"), then says how to import the plugin: Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json. The command output lines are real output from kit 0.4.0.`,
     })),
   };
 }

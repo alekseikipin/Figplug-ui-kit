@@ -123,10 +123,10 @@ export function auditSvg({ W = 880 } = {}) {
   term.push(`<g class="an ${tl.appear(tCmd1[0] - 0.3, { dur: 0.01, dy: 0 })}">${cmd(tCmd1)}</g>`);
   term.push(`<g class="an ${tl.appear(tFind)}">${tline([['fg', 'ui.html:951  '], ['errt b', 'color-literal'], ['fg', '  literal colour #333 in color; use a var(--figma-color-*) token']])}`
     + `${tline([['fg', '(transparent and currentColor are fine)']])}</g>`);
-  term.push(`<g class="an ${tl.appear(tSum)}">${tline([['errt', 'audit: 1 error(s), 0 warning(s) in 6 plugin folders; see docs/pitfalls.md']])}</g>`);
+  term.push(`<g class="an ${tl.appear(tSum)}">${tline([['errt', 'audit: 1 error(s), 0 warning(s) in 7 plugin folders; see docs/pitfalls.md']])}</g>`);
   ty += TLH;
   term.push(`<g class="an ${tl.appear(tCmd2[0] - 0.3, { dur: 0.01, dy: 0 })}">${cmd(tCmd2)}</g>`);
-  term.push(`<g class="an ${tl.appear(tClean)}">${tline([['okt', 'audit: no problems in 6 plugin folders']])}</g>`);
+  term.push(`<g class="an ${tl.appear(tClean)}">${tline([['okt', 'audit: no problems in 7 plugin folders']])}</g>`);
   const H = ty - TLH + 18;
 
   const tokens = {
@@ -184,7 +184,7 @@ ${term.join('\n')}
     svg: tl.render(svgDoc({
       w: W, h: H, css, body,
       title: 'npm run audit catches a hard-coded colour',
-      desc: 'Animated illustration with real audit output from kit 0.4.0: a rule with color: #333; is added to the host <style> in ui.html at line 951. npm run audit prints "ui.html:951  color-literal  literal colour #333 in color; use a var(--figma-color-*) token (transparent and currentColor are fine)" and "audit: 1 error(s), 0 warning(s) in 6 plugin folders; see docs/pitfalls.md". The value is replaced with var(--figma-color-text), and the next npm run audit prints "audit: no problems in 6 plugin folders".',
+      desc: 'Animated illustration with real audit output from kit 0.4.0: a rule with color: #333; is added to the host <style> in ui.html at line 951. npm run audit prints "ui.html:951  color-literal  literal colour #333 in color; use a var(--figma-color-*) token (transparent and currentColor are fine)" and "audit: 1 error(s), 0 warning(s) in 7 plugin folders; see docs/pitfalls.md". The value is replaced with var(--figma-color-text), and the next npm run audit prints "audit: no problems in 7 plugin folders".',
     })),
   };
 }

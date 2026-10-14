@@ -24,7 +24,7 @@ Already have a plugin, for example one made with Figma's **Plugins > Development
 
 ## The examples
 
-The download also holds [examples/](../examples/): five finished plugins built on the kit. An agent wrote each one from the entry prompt and one of the [five pinned tasks](prompts.md#the-five-archetype-tasks); each was then curated: the defects no check caught were fixed and pinned with tests. Import any of them the same way as the starter: **Plugins > Development > Import plugin from manifest...**, then pick `examples/<name>/manifest.json`. Each folder has its compiled `code.js` committed, so it runs with no terminal. Each also has its own name ("Rename layers (kit example)" and so on) and its own id (`kit-example-<name>`), so it appears as a separate entry under Plugins > Development and keeps its own `clientStorage`.
+The download also holds [examples/](../examples/): five finished plugins built on the kit, plus the [kit tour](../examples/kit-tour/README.md), the hand-built demo the Community listing runs. An agent wrote each of the five from the entry prompt and one of the [five pinned tasks](prompts.md#the-five-archetype-tasks); each was then curated: the defects no check caught were fixed and pinned with tests. Import any of them the same way as the starter: **Plugins > Development > Import plugin from manifest...**, then pick `examples/<name>/manifest.json`. Each folder has its compiled `code.js` committed, so it runs with no terminal. Each also has its own name ("Rename layers (kit example)" and so on) and its own id (`kit-example-<name>`), so it appears as a separate entry under Plugins > Development and keeps its own `clientStorage`.
 
 | Folder | What it does | Window mode |
 |---|---|---|

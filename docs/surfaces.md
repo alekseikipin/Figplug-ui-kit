@@ -136,9 +136,10 @@ Each plugin in [examples/](../examples/) has its own `manifest.json`, and each l
 | [`content-fill`](../examples/content-fill/README.md) | `fixed` | `figma`, `figjam`, `slides`, `buzz` | All four have text layers; in FigJam it also fills stickies and shapes with text. It writes text, which Dev Mode forbids. |
 | [`variables-sync`](../examples/variables-sync/README.md) | `resizable` | `figma` | Slides has no variables; Dev Mode is read-only and this plugin writes; whether `figma.variables` is available in FigJam is UNVERIFIED, and Buzz has not been checked either. Where the API is missing, the plugin says "this editor has no variables" instead of throwing. |
 | [`a11y-contrast`](../examples/a11y-contrast/README.md) | `fit-content` | `figma`, `figjam`, `slides`, `buzz` | All four have text layers. It never edits the document (it only changes the selection and scrolls the view), so a Dev Mode build is possible as a second plugin, as for `export-selection`; whether its selecting and scrolling work there is UNVERIFIED (Figma's guide says Dev Mode selects one layer at a time, but the probe saw three selected there). In FigJam, text on stickies and shapes is not a text layer and isn't checked. |
+| [`kit-tour`](../examples/kit-tour/README.md) | `fit-content` | `figma`, `figjam`, `slides`, `buzz` | The starter's list: the tour is what the kit's Community listing runs, so it goes wherever the kit does. Only its Create tab touches the document (`createRectangle`, `createEllipse`, as the starter's demo); like the starter's, they should land on the canvas outside a slide in Slides and outside the asset grid in Buzz (UNVERIFIED for both: not run). Create writes, so not Dev Mode. In Buzz the docked panel sets the size: the tour's Window tab says so and hides the handle's keys. |
 
-- **No example lists `dev`.** Three of them write to the document, which Dev Mode forbids, and the two read-only ones also list FigJam. A Dev Mode build of `export-selection` or `a11y-contrast` would be a copy of the folder with the [Dev Mode manifest](#the-dev-mode-manifest) and its own `id`; none is in the repo.
-- **What has been run:** `e2e/examples.spec.mjs` boots each example in every editor its manifest lists, in `preview.html`'s fake host (the stub's `editorType`, not Figma), with no console error or warning. In the real Figma, each example ran once in Figma Design ([results](#results-the-examples)); every other editor is still open in the examples rows of the [release checklist](release-checklist.md#the-examples).
+- **No example lists `dev`.** Four of them write to the document (`kit-tour` only from its Create tab), which Dev Mode forbids, and the two read-only ones also list FigJam. A Dev Mode build of `export-selection` or `a11y-contrast` would be a copy of the folder with the [Dev Mode manifest](#the-dev-mode-manifest) and its own `id`; none is in the repo.
+- **What has been run:** `e2e/examples.spec.mjs` boots each example in every editor its manifest lists, in `preview.html`'s fake host (the stub's `editorType`, not Figma), with no console error or warning. In the real Figma, each of the five archetypes ran once in Figma Design ([results](#results-the-examples)); `kit-tour`, added after that run, has not run in Figma at all. Every other editor, and every tour row, is still open in the examples rows of the [release checklist](release-checklist.md#the-examples).
 - **Adding an editor to an example:** check the editor's section above for the APIs the plugin calls, add the value to its `editorType`, and add a row to the release checklist.
 
 ### Results: the examples
@@ -153,7 +154,7 @@ Measured 2026-10-14 in Figma desktop 126.9.13 (macOS), Figma Design in the dark 
 | `variables-sync` | `resizable` | Listed the collection's colour variables; set `brand/primary` to `FF3366` in Mode 1 (busy spinner, then the new value) | Blank for about 1 s on open |
 | `a11y-contrast` | `fit-content` | Grey `#B8B8B8` on `#FFFFFF` flagged at 1.99:1, below AA; black passed at 21:1; danger notice shown | First showed its content overflowing, then refitted with the footer in view |
 
-Not run: the light theme, FigJam, Slides and Buzz, and each example's own manifest.
+Not run: the light theme, FigJam, Slides and Buzz, and each example's own manifest. `kit-tour` did not exist yet and was not run at all.
 
 ## What is known and what is not
 
