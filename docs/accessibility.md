@@ -297,7 +297,7 @@ Fixing the rest without colour keywords is possible for some of it (a thicker or
 
 ## What the automated checks cover
 
-`npm run test:e2e` runs these in Chromium. The CI workflow's e2e job runs them on every push, but it has not run on GitHub yet. In the run on 2026-10-14 at the `v0.4.0` tag (Playwright 1.62.1, Chromium 151.0.7922.34) 165 tests passed and 10 were skipped (the docs screenshots and the listing images, made only on request); 31 of the 165 run axe. With the fixes from the Figma run the same day, 169 passed and 10 were skipped, of 179, still with 31 axe runs.
+`npm run test:e2e` runs these in Chromium. The CI workflow's e2e job runs them on every push; its first run on GitHub, on 2026-10-14 (ubuntu-latest), passed with 169 passed and 22 skipped ([run 38593622113](https://github.com/alekseikipin/Figplug-ui-kit/actions/runs/38593622113)). In the run on 2026-10-14 at the `v0.4.0` tag (Playwright 1.62.1, Chromium 151.0.7922.34) 165 tests passed and 10 were skipped (the docs screenshots and the listing images, made only on request); 31 of the 165 run axe. With the fixes from the Figma run the same day, 169 passed and 10 were skipped, of 179, still with 31 axe runs.
 
 | Check | What it covers |
 |---|---|

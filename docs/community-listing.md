@@ -86,7 +86,7 @@ Rules both listings follow:
 - **The kit's brand appears once, at the end of the description**, as "Built with Figplug UI Kit — https://github.com/alekseikipin/Figplug-ui-kit", followed by a line saying the plugin is not affiliated with Figma. Not in the name, the tagline, the icon or the cover. "Figplug" itself contains "Fig"; the [name risk](#name) above applies to that line too.
 - **Network access: none.** Both manifests declare `"networkAccess": { "allowedDomains": ["none"] }`, so the listing shows **No access to network**. Neither plugin has a backend, an account or telemetry.
 - **Support contact:** https://github.com/alekseikipin/Figplug-ui-kit/issues for both.
-- **Docs link:** each description points to its example's README on GitHub, which the review guidelines ask for (setup and use). Those links resolve only once the repo is pushed ([outward actions](release-checklist.md#outward-actions-waiting-for-the-owner)).
+- **Docs link:** each description points to its example's README on GitHub, which the review guidelines ask for (setup and use). The repo was pushed on 2026-10-14, so those links resolve ([outward actions](release-checklist.md#outward-actions-waiting-for-the-owner)).
 - **The general checklist** for any kit plugin, every field of the publish modal and how review works: [publishing.md](publishing.md).
 
 ### Rename in Order (examples/rename-layers)
@@ -255,7 +255,7 @@ Then look at every image before you upload it. The names, statements, tile colou
 
 None of these steps has been done. Do them for each plugin; the order matters.
 
-1. **Before you start.** The Figma desktop app on macOS or Windows (publishing works only there). Two-factor authentication on the Figma account that will publish. The repo pushed to GitHub, so the description's links resolve ([outward actions](release-checklist.md#outward-actions-waiting-for-the-owner)).
+1. **Before you start.** The Figma desktop app on macOS or Windows (publishing works only there). Two-factor authentication on the Figma account that will publish. The repo is on GitHub (pushed on 2026-10-14), so the description's links resolve ([outward actions](release-checklist.md#outward-actions-waiting-for-the-owner)).
 2. **Run the example in the real Figma app.** Import `examples/<name>/manifest.json` (Plugins > Development > Import plugin from manifest…) and fill its rows in the [surface matrix](release-checklist.md#the-examples), every editor its `editorType` lists. Drop an editor that fails, from the publish folder and from the description. For Rename in Order, also check what Figma's own Rename layers does today ([review risks](#review-risks)).
 3. **Check the names.** Search the Community for "Rename in Order" and "Text Contrast Check". Pick another name, without "Figma" or "Fig", if one is taken, and change it here, in the spec, and in the images (regenerate).
 4. **Make the publish folder** with New plugin…, copy the example's files in, and change `name` and `id` in its `manifest.json` ([manifest changes](#manifest-changes-before-publishing)). Run the audit on it.
