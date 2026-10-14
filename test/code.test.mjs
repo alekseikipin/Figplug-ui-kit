@@ -184,6 +184,17 @@ test('the kit block only declares kit-prefixed names and stays quiet', () => {
   assert.match(block, /const KIT_PROTOCOL = 1;/);
 });
 
+test('the kit:window header, code.js and kit.d.ts name the same kit version and protocol', () => {
+  const header = /^\/\/ .*kit v(\d+\.\d+\.\d+) · protocol (\d+)/;
+  const ts = CODE_TS.split('\n')[0].match(header);
+  const js = kitBlock(CODE_JS).split('\n')[0].match(header);
+  const dts = readFileSync(new URL('../kit.d.ts', import.meta.url), 'utf8').split('\n')[0].match(header);
+  assert.ok(ts && js && dts, 'each file starts with a "kit vX.Y.Z · protocol N" header line');
+  assert.deepEqual(js.slice(1), ts.slice(1), 'code.js is built from this code.ts (npm run build)');
+  assert.deepEqual(dts.slice(1), ts.slice(1), 'kit.d.ts comes from the same release');
+  assert.equal(ts[2], '1', 'protocol 1: kit:fit was added without a protocol bump');
+});
+
 // ---- showUI ----
 
 test('showUI: themeColors on, hidden until fitted, default size, html and title', () => {
@@ -765,7 +776,68 @@ test('a second install drops the first one\'s storage read and kit:init reply', 
   assert.equal(stale.clock.pending, 0, 'no timer of the first install is left');
 });
 
+// ---- KitWindow.fit (kit:fit, kit 0.3.0) ----
+
+test('fit() posts exactly { type: "kit:fit" } in fit-content and resizable, before and after the handshake', async () => {
+  for (const mode of ['fit-content', 'resizable']) {
+    const kit = boot();
+    const win = kit.install({ mode });
+    assert.deepEqual(Object.keys(win), ['mode', 'chrome', 'editorType', 'fit'], mode);
+    assert.ok(Object.isFrozen(win));
+    win.fit(); // before the UI has loaded: Figma queues it, and the runtime applies it on its first fit
+    assert.deepEqual(kit.calls.posted, [{ type: 'kit:fit' }], mode);
+    await kit.handshake();
+    win.fit();
+    win.fit();
+    assert.deepEqual(kit.calls.posted.map((m) => m.type), ['kit:fit', 'kit:init', 'kit:fit', 'kit:fit'], mode);
+    await flush();
+    kit.clock.tick(1000);
+    // The UI measures and answers with kit:resize; main never resizes or saves on its own.
+    assert.deepEqual(kit.calls.resize, [], mode);
+    assert.equal(kit.calls.set.length, 0, mode);
+    assert.deepEqual(kit.calls.warn, [], mode);
+  }
+});
+
+test('fit() does nothing in fixed mode, or once a later install has replaced the window', () => {
+  const fixed = boot();
+  const win = fixed.install({ mode: 'fixed' });
+  win.fit();
+  assert.deepEqual(fixed.calls.posted, [], 'a fixed window never fits');
+
+  const kit = boot();
+  const first = kit.install();
+  const second = kit.install({ mode: 'resizable' });
+  first.fit();
+  assert.deepEqual(kit.calls.posted, [], 'a replaced window cannot reach the new UI');
+  second.fit();
+  assert.deepEqual(kit.calls.posted, [{ type: 'kit:fit' }]);
+});
+
+test('fit() on a plugin that is closing does not throw or warn', () => {
+  const kit = boot();
+  const win = kit.install({ mode: 'resizable' });
+  kit.figma.ui.postMessage = () => { throw new Error('The plugin is closed'); };
+  assert.doesNotThrow(() => win.fit());
+  assert.deepEqual(kit.calls.warn, []);
+});
+
+test('a kit:fit sent from the UI side is not main\'s business: ignored like any unknown kit:* type', async () => {
+  const kit = boot();
+  kit.install({ mode: 'resizable' });
+  kit.emit({ type: 'kit:fit' });
+  await flush();
+  kit.clock.tick(1000);
+  assert.deepEqual(kit.calls.posted, []);
+  assert.deepEqual(kit.calls.resize, []);
+});
+
 // ---- the whole file, host demo included ----
+// These run the starter's "Create shapes" demo. Once a plugin replaces it (no 'create-shapes'
+// handler left in code.js), they skip, and the kit block tests above still cover the kit.
+
+const HAS_DEMO = CODE_JS.includes("'create-shapes'");
+const DEMO = { skip: HAS_DEMO ? false : "the starter's Create-shapes demo is not in code.js (replaced by a plugin)" };
 
 function demoFigma(kit, { failCreate = false } = {}) {
   const created = [];
@@ -806,7 +878,7 @@ function bootWholeFile(demoOptions) {
   return { ...kit, ...demo, context };
 }
 
-test('the whole code.js (kit + host demo) loads against the stub', async () => {
+test('the whole code.js (kit + host demo) loads against the stub', DEMO, async () => {
   const app = bootWholeFile();
   assert.equal(app.calls.showUI.length, 1);
   assert.equal(app.listeners.length, 2, 'the kit listener and the host listener coexist');
@@ -832,7 +904,7 @@ test('the whole code.js (kit + host demo) loads against the stub', async () => {
   assert.equal(app.calls.log.length, 0);
 });
 
-test('host demo: count is clamped, junk is ignored, a failed create still answers', () => {
+test('host demo: count is clamped, junk is ignored, a failed create still answers', DEMO, () => {
   const app = bootWholeFile();
   app.emit({ type: 'create-shapes', count: 1000, shape: 'triangle' });
   assert.equal(app.created.length, 50, 'clamped to the UI count field\'s 1-50 range');
@@ -850,7 +922,7 @@ test('host demo: count is clamped, junk is ignored, a failed create still answer
   assert.equal(readOnly.calls.notify[0].options.error, true);
 });
 
-test('host demo: the UI\'s Close button closes the plugin, nothing else does', () => {
+test('host demo: the UI\'s Close button closes the plugin, nothing else does', DEMO, () => {
   const app = bootWholeFile();
   for (const msg of [{ type: 'kit:close' }, { type: 'Close' }, 'close', null]) app.emit(msg);
   assert.equal(app.calls.closed, undefined);

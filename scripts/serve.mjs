@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/serve.mjs · kit v0.2.0 · zero dependencies, Node 24
+// scripts/serve.mjs · kit v0.3.0 · zero dependencies, Node 24
 // A static file server for the repo root, so preview.html can fetch ui.html and code.js (browsers
 // block fetch() on file:// pages). Development only: it listens on 127.0.0.1, never on the network.
 //

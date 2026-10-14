@@ -54,8 +54,8 @@ All values are px on purpose: Figma's own CSS uses rem on a 16px root, and px gi
 | Type: small | `--kit-font-size-small` 9px · `--kit-line-height-small` 14px · `--kit-letter-spacing-small` 0.045px |
 | Font | `--kit-font-family`: `Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif` |
 | Motion | `--kit-duration-small` 100ms · `--kit-duration-medium` 200ms · `--kit-duration-large` 400ms · `--kit-easing` ease-out |
-| Layers | `--kit-z-handle` 10 · `--kit-z-toast` 11 · `--kit-z-menu` 13 (dialogs use the top layer) |
-| Elevation | `--kit-shadow-tooltip` (UI3 elevation 300) · `--kit-shadow-menu` (400) · `--kit-shadow-dialog` (500); dark values under `:root.figma-dark` |
+| Layers | `--kit-z-handle` 10 · `--kit-z-toast` 11 · `--kit-z-menu` 13 · `--kit-z-tooltip` 13 (menus and dialogs use the top layer, so for them it is a fallback; CSS-only tooltips need theirs) |
+| Elevation | `--kit-shadow-tooltip` (UI3 elevation 300) · `--kit-shadow-menu` (400) · `--kit-shadow-dialog` (500); dark values under `:root.figma-dark`: deeper drop shadows plus a faint inset edge that lifts the surface off the dark editor behind it |
 | Overlay | `--kit-scrim` rgba(0, 0, 0, 0.5), behind modal dialogs |
 
 **Fonts.** Figma's manifest docs say Figma preloads Inter for plugins, which is why the kit names `Inter` first and loads nothing: `networkAccess: none` stays possible. Whether the variable font (needed to render 450 and 550 exactly) is what the iframe sees is unverified; with a static font the browser rounds to 400/500/600, and without Inter the stack falls back to `system-ui`. `preview.html` has a "simulate no Inter" toggle.
@@ -119,11 +119,24 @@ Confidence: **High** = FAPP, or FAPP and a replica agree. **Medium** = replicas 
 | Divider | 1px `border` | `.kit-divider` | FK; FUI3 | High |
 | Icon frame | 24×24 (viewBox 0 0 24 24), 1px stroke; small 16×16 | `--kit-icon-size`, `--kit-icon-size-small` | FK `icon.tsx`; FAPP `--icon-button-icon-size` | High |
 | Property row | 32px tall, padding 16px left / 8px right, 24px controls | no token; use `--kit-spacer-*` | FAPP `ui3_grid_rows--row` | High |
-| Section header | 40px tall, title 11/16/550 | P2 `.kit-section-header` | FAPP modal header; FK; FUI3 (panel header itself unverified) | Medium |
+| Section header | 40px tall, title 11/16/550, padding 16px left / 8px right | `.kit-section-header` | FAPP modal header; FK; FUI3 (panel header itself unverified) | Medium |
+| Icon button | 24×24, radius 5px, no padding; hover `bg-hover`; selected/open `bg-selected` + `icon-brand` | `.kit-icon-button` | FAPP `raw_components--_iconButton`, `iconButtonSelected`; FK | High |
+| Checkbox | 16×16, radius 5px, 1px `border-strong`; checked `bg-brand` + `icon-onbrand` mark; 24px row, 8px gap; disabled `border-disabled-strong` | `.kit-checkbox` | FK; FAPP `base--check` 16px box | High (size), Medium (border) |
+| Checkbox hover | the mark at about 25% (`icon-tertiary`) | `.kit-checkbox:hover` | FUI3 (FK has none) | Medium |
+| Radio | 16px circle, `border-strong` ring; checked: `bg-brand` fill with a 6px `icon-onbrand` dot (contract §12; FK draws a dark ring and an 8px dark dot instead) | `.kit-radio` | FUI3; FK | Medium |
+| Textarea | input fill and rings, padding 4px 8px, no resize | `.kit-textarea` | FK; FAPP `textAreaInput` | High |
+| Number field prefix | 24px slot in the field's start, secondary text | `.kit-number-prefix` | FK `value-field` (label slot 24×24) | High |
+| Colour swatch | 16px, radius 2px, in the field's 24px start slot | `.kit-color-swatch` | inferred from UI3 fill rows | Low |
+| List row | 32px, radius 5px, padding 0 8px; hover `bg-hover`; selected `bg-selected` | `.kit-list-row` | FAPP property row (32px) and `--color-bg-selected`; layer-row height in the editor unverified | Low |
+| Tabs | 24px, padding 0 8px, gap 8px; inactive `text-secondary`; active 550 on `bg-secondary`, radius 5px; hover `text-secondary-hover` | `.kit-tab` | FK; FUI3 (hover) | High (Medium for hover) |
+| Tooltip | padding 4px 8px, radius 5px, 11/16, max 200px, 4px below the control | `.kit-tooltip` | FAPP UI3 `.tooltip--content`; FK; FAPP 200px max (FK offset 7px incl. its arrow) | High |
+| Tooltip delay | 400ms (`--kit-duration-large`); at once on keyboard focus | `.kit-tooltip-host:hover` | Figma's own delay unverified (Base UI default 600ms) | Low |
+| Menu | padding 8px, radius 13px, items 24px, padding 0 8px, radius 5px; separator 1px, 8px above and below; min width 120px | `.kit-menu`, `.kit-menu-item` | FAPP UI3 `.base--dropdown`, `.base--_optionBase`; FK | High |
+| Notice, empty state, sticky footer | no UI3 source: built from the measured spacing, radii and Figma's tone tokens | `.kit-notice`, `.kit-empty`, `.kit-footer` | kit design | Low |
 | Durations | 100 / 200 / 400ms | `--kit-duration-*` | FAPP `--duration-sm/md/lg` | High |
 | Easing | ease-out (no UI3 token exists) | `--kit-easing` | FK and FUI3 transitions | Low |
 | Hover transitions | none: colours change instantly | kit components | FK | Medium |
-| Layers | toast 11 < menu 13 (Figma: visual bell 11, dropdown and tooltip 13) | `--kit-z-*` | FAPP `--z-index-*` | High |
+| Layers | toast 11 < menu = tooltip 13 (Figma: visual bell 11, dropdown and tooltip 13) | `--kit-z-*` | FAPP `--z-index-*` | High |
 | Tooltip shadow | elevation 300 | `--kit-shadow-tooltip` | FAPP `--elevation-300`; FK | High |
 | Menu shadow | elevation 400 | `--kit-shadow-menu` | FAPP `--elevation-400`; FK | High |
 | Dialog shadow | elevation 500 | `--kit-shadow-dialog` | FAPP `--elevation-500`; FK | High |
@@ -137,8 +150,8 @@ Open measurement items: the UI3 Community kit itself (pending, above); whether t
 
 In Figma's own UI, menus, dropdown lists and tooltips are dark (`#1e1e1e`, white text, solid blue highlight) **in both themes**. No injected token has that value in the light theme, and the only way to copy it would be a literal colour, which the colour rule forbids. So the kit builds them from tokens instead:
 
-- **Menus** (P2): `--figma-color-bg` surface, `--kit-shadow-menu`, `--kit-radius-large`; item hover and focus `--figma-color-bg-brand` with `--figma-color-text-onbrand`. Light menus in the light theme, dark in the dark theme.
-- **Tooltips and toasts** (P2, P3): `--figma-color-bg-inverse` with `--figma-color-text-oninverse`. Dark in the light theme (like Figma's), light in the dark theme (unlike Figma's).
+- **Menus** (`.kit-menu`, P2): `--figma-color-bg` surface, `--kit-shadow-menu`, `--kit-radius-large`; item hover and focus `--figma-color-bg-brand` with `--figma-color-text-onbrand`; separators `--figma-color-border`. Light menus in the light theme, dark in the dark theme.
+- **Tooltips and toasts** (`.kit-tooltip` in P2, the toast in P3): `--figma-color-bg-inverse` with `--figma-color-text-oninverse`. Dark in the light theme (like Figma's), light in the dark theme (unlike Figma's).
 
 This is a deliberate trade: it keeps every colour themeable and checkable. The native `<select>` popup is drawn by the operating system and is not affected.
 
@@ -155,22 +168,26 @@ Copy from here. Each name is in Figma's documented list.
 | Field fill | `--figma-color-bg-secondary` | Text inputs, textareas, segmented tracks. |
 | Raised neutral fill | `--figma-color-bg-tertiary` | Tracks, chips, a fill one step stronger. |
 | Divider / default border | `--figma-color-border` | `hr`, secondary-button ring, select ring, input hover ring. |
-| Strong border | `--figma-color-border-strong` | Checkbox box, high-emphasis outlines. |
+| Strong border | `--figma-color-border-strong` | Checkbox and radio outline, high-emphasis outlines. Disabled: `--figma-color-border-disabled-strong`. |
 | Hover | `--figma-color-bg-hover` | Ghost buttons, list rows. Not `border-selected`. |
 | Pressed | `--figma-color-bg-pressed` | Secondary and ghost buttons while pressed. |
 | Selected | `--figma-color-bg-selected` + `--figma-color-text-brand` / `--figma-color-icon-brand` | Toggled buttons, selected rows. Hover `-bg-selected-hover`, pressed `-bg-selected-pressed`. |
-| Selected, solid | `--figma-color-bg-selected-strong` + `--figma-color-text-onbrand` / `--figma-color-icon-onbrand` | Strong selection, highlighted menu item. |
+| Content on a selected row | `--figma-color-text-onselected`, `--figma-color-text-onselected-secondary`, `--figma-color-icon-onselected` | Label, meta text and icon of a selected list row (on `bg-selected`). |
+| Selected, solid | `--figma-color-bg-selected-strong` + `--figma-color-text-onbrand` / `--figma-color-icon-onbrand` | Strong selection. (The kit's menu highlight is `bg-brand` + `text-onbrand`.) |
+| Checked mark | `--figma-color-bg-brand` + `--figma-color-icon-onbrand`; disabled `--figma-color-bg-disabled` + `--figma-color-icon-ondisabled` | Checkbox and radio fill and mark (a mask, so the token sets the colour). |
 | Focus ring | `--figma-color-border-selected` | 1px, inset. On filled buttons: `--figma-color-border-onbrand-strong` inside + `--figma-color-border-selected-strong` outside. |
 | Brand fill | `--figma-color-bg-brand` + `--figma-color-text-onbrand` | Primary button. Hover `-bg-brand-hover`, pressed `-bg-brand-pressed`. Purple in FigJam. |
 | Brand text, links | `--figma-color-text-brand` | Links, brand-coloured labels. |
-| Danger | `--figma-color-bg-danger` + `--figma-color-text-ondanger`; `--figma-color-text-danger`; `--figma-color-border-danger-strong`; `--figma-color-bg-danger-tertiary` | Destructive button; error text; error ring; error tint. Hover `-bg-danger-hover`, pressed `-bg-danger-pressed`. |
-| Success | `--figma-color-bg-success` + `--figma-color-text-onsuccess`; `--figma-color-text-success`; `--figma-color-border-success-strong`; `--figma-color-bg-success-tertiary` | Success fill; success text; ring; tint. |
-| Warning | `--figma-color-bg-warning` + `--figma-color-text-onwarning`; `--figma-color-text-warning`; `--figma-color-border-warning-strong`; `--figma-color-bg-warning-tertiary` | Text on a warning fill is dark (`text-onwarning`), not light. |
+| Danger | `--figma-color-bg-danger` + `--figma-color-text-ondanger`; `--figma-color-text-danger`; `--figma-color-border-danger-strong`; `--figma-color-bg-danger-tertiary` + `--figma-color-border-danger` + `--figma-color-icon-danger` | Destructive button; error text; error ring; danger notice (tint, ring, icon). Hover `-bg-danger-hover`, pressed `-bg-danger-pressed`. |
+| Success | `--figma-color-bg-success` + `--figma-color-text-onsuccess`; `--figma-color-text-success`; `--figma-color-border-success-strong`; `--figma-color-bg-success-tertiary` + `--figma-color-border-success` + `--figma-color-icon-success` | Success fill; success text; ring; success notice (tint, ring, icon). |
+| Warning | `--figma-color-bg-warning` + `--figma-color-text-onwarning`; `--figma-color-text-warning`; `--figma-color-border-warning-strong`; `--figma-color-bg-warning-tertiary` + `--figma-color-border-warning` + `--figma-color-icon-warning` | Text on a warning fill is dark (`text-onwarning`), not light. The last three: warning notice. |
+| Info | `--figma-color-bg-brand-tertiary` + `--figma-color-border-brand` + `--figma-color-icon-brand` | Info notice (tint, ring, icon). |
 | Disabled | `--figma-color-text-disabled`, `--figma-color-icon-disabled`, `--figma-color-border-disabled`; filled: `--figma-color-bg-disabled` + `--figma-color-text-ondisabled` | Never `opacity`. |
-| Icons | `--figma-color-icon`, `--figma-color-icon-secondary`, `--figma-color-icon-tertiary`, `--figma-color-icon-brand`, `--figma-color-icon-onbrand` | Secondary icons darken on hover with `--figma-color-icon-secondary-hover`. |
+| Icons | `--figma-color-icon`, `--figma-color-icon-secondary`, `--figma-color-icon-tertiary`, `--figma-color-icon-brand`, `--figma-color-icon-onbrand` | Secondary icons darken on hover with `--figma-color-icon-secondary-hover`; icon buttons use `--figma-color-icon-hover`. `icon-tertiary`: empty-state icons, the faint checkbox hover mark. |
+| Secondary text, hovered | `--figma-color-text-secondary-hover` | Inactive tabs under the pointer. |
 | Inverse surface | `--figma-color-bg-inverse` + `--figma-color-text-oninverse` | Tooltips, toasts. |
 | Components (purple) | `--figma-color-bg-component`, `--figma-color-text-component`, `--figma-color-icon-component` | Only for things that refer to Figma components and instances. |
 
 The full list of all 174 names, with fallback values for each theme, is in [`tokens.figma-fallback.css`](../tokens.figma-fallback.css). Which kit component uses which token is in [components.md](components.md).
 
-**How many the kit uses.** `ui.html` references 34 of the 174 names (`grep -o -E -- '--figma-color-[a-z0-9-]+' ui.html | sort -u | wc -l`; the 2025 file used 15). PLAN.md section 7 set a Phase 1 target of 60 or more: **not met**. The kit doesn't add unused aliases to raise the count, because they would be dead tokens; the roles still unused (success and warning tones, `border-strong`, the inverse surface, the component purple, `bg-tertiary`, `icon-brand`) come with the Phase 2 components. Proposed: move the target to Phase 2; the owner's decision is pending ([release-checklist.md](release-checklist.md#fix-first-list-inventory-and-first-week-plan-sections-3-7-and-10)).
+**How many the kit uses.** With the Phase 2 components the kit's blocks reference 58 of the 174 names (`grep -o -E -- '--figma-color-[a-z0-9-]+' ui.html | sort -u | wc -l`; 34 in Phase 1, 15 in the 2025 file). The 24 that Phase 2 added are the semantic ones Figma intends for these parts: the four tone families for notices (`bg-*-tertiary`, `border-*`, `icon-*` for brand, success, warning and danger), the checkbox set (`border-strong`, `border-disabled-strong`, `icon-onbrand`, `icon-ondisabled`, `icon-tertiary`), the on-selected set for list rows (`text-onselected`, `text-onselected-secondary`, `icon-onselected`), the inverse surface for tooltips (`bg-inverse`, `text-oninverse`), `icon-hover` for icon buttons (whose selected look reuses `icon-brand`) and `text-secondary-hover` for tabs. PLAN.md section 7's target is 60 or more by the end of the kit: the Phase 3 dialog and toast are expected to close the gap. The kit doesn't add unused aliases to raise the count, because they would be dead tokens; the component purple (`*-component`), `bg-tertiary` and the slot tokens are still unused because no kit part has that role.

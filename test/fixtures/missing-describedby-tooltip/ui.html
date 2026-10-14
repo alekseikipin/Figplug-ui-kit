@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="kit" content="kit v0.2.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+  <meta name="description" content='Test fixture "missing-describedby-tooltip": expects missing-describedby (a role="tooltip" that no aria-describedby references).'>
+  <style data-kit="tokens">
+    /* Fixture tokens: a small subset of the real block. */
+    :root {
+      color-scheme: light;
+      --kit-control-height: 24px;
+      --kit-control-height-large: 32px;
+      --kit-field-bg: var(--figma-color-bg-secondary);
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
+      --kit-scrim: rgba(0, 0, 0, 0.5);
+    }
+    :root.figma-dark {
+      color-scheme: dark;
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+  <style data-kit="components">
+    /* == button == */
+    .kit-button {
+      height: var(--kit-control-height);
+      padding: 0 8px;
+      border: none;
+      border-radius: 5px;
+      color: var(--figma-color-text-onbrand);
+      background: var(--figma-color-bg-brand);
+    }
+    .kit-button:disabled { color: var(--figma-color-text-ondisabled); background: var(--figma-color-bg-disabled); }
+    .kit-button-large { height: var(--kit-control-height-large); }
+  </style>
+  <script data-kit="runtime">
+    (() => {
+      'use strict';
+      const KIT_PROTOCOL = 1;
+      /** @type {KitBounds} */
+      let bounds = { minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 };
+
+      /**
+       * @param {number} width
+       * @param {number} height
+       * @returns {KitSize}
+       */
+      function clampSize(width, height) {
+        return {
+          width: Math.round(Math.min(bounds.maxWidth, Math.max(bounds.minWidth, width))),
+          height: Math.round(Math.min(bounds.maxHeight, Math.max(bounds.minHeight, height))),
+        };
+      }
+
+      /** @param {KitUiToMainMessage} msg */
+      function post(msg) {
+        parent.postMessage({ pluginMessage: msg }, '*');
+      }
+
+      function fit() {
+        const root = document.querySelector('[data-kit-root]') ?? document.body;
+        const size = clampSize(window.innerWidth, Math.ceil(root.getBoundingClientRect().bottom + window.scrollY));
+        post({ type: 'kit:resize', width: size.width, height: size.height });
+      }
+
+      window.addEventListener('message', (event) => {
+        /** @type {KitMainToUiMessage | undefined} */
+        const msg = event.data && event.data.pluginMessage;
+        if (msg && msg.type === 'kit:init') {
+          bounds = msg.bounds;
+          fit();
+        }
+      });
+      document.addEventListener('DOMContentLoaded', () => post({ type: 'kit:ready', protocol: KIT_PROTOCOL }));
+      window.kit = Object.freeze({ version: '0.2.0', protocol: KIT_PROTOCOL, fit });
+    })();
+  </script>
+</head>
+<body>
+  <main class="kit-app" data-kit-root>
+    <button class="kit-button kit-button-primary" type="button" id="create">Create shapes</button>
+    <span class="kit-tooltip-host">
+      <button class="kit-icon-button" type="button" aria-label="Help"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor"/></svg></button>
+      <span class="kit-tooltip" role="tooltip" id="help-tip">Renames every selected layer</span>
+    </span>
+  </main>
+  <script>
+    // Host code, deliberately untyped: check-ui checks host scripts non-strict, so this passes.
+    function labelOf(button) {
+      return button.textContent.trim();
+    }
+    const create = document.getElementById('create');
+    create.addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'create-shapes', count: 5, shape: 'rectangle', label: labelOf(create) } }, '*');
+    });
+    window.addEventListener('message', (event) => {
+      const msg = event.data.pluginMessage;
+      if (msg && msg.type === 'created') kit.fit();
+    });
+  </script>
+</body>
+</html>

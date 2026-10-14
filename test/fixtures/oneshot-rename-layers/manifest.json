@@ -1,0 +1,10 @@
+{
+  "name": "Rename layers",
+  "id": "rename-layers-de406589",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma", "figjam", "slides", "buzz"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["none"] }
+}

@@ -1,6 +1,8 @@
 // Shared helpers for the e2e specs. Not a spec itself (playwright.config.mjs matches *.spec.mjs).
 // The specs drive preview.html, whose fake Figma host runs the repo's real code.js and ui.html and
 // exposes test hooks on window.kitPreviewHost (see the script at the end of preview.html).
+// Kit-level specs call useKitFixture(page) first, so they run a small kit-shaped plugin instead of
+// the starter's demo; specs about the demo itself skip when it is gone (HAS_DEMO, NO_DEMO).
 
 import { readFileSync } from 'node:fs';
 import { test as base, expect } from '@playwright/test';
@@ -20,6 +22,49 @@ export const test = base.extend({
   }, { auto: true }],
 });
 export { expect };
+
+const repoFile = (file) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+
+/**
+ * Whether the starter's "Create shapes" demo is still in place: its 'create-shapes' handler in
+ * code.js and its #count field in ui.html. Specs about the demo skip with NO_DEMO when it is gone,
+ * so replacing the demo with your plugin leaves `npm run test:e2e` green.
+ */
+export const HAS_DEMO = repoFile('code.js').includes("'create-shapes'") && repoFile('ui.html').includes('id="count"');
+export const NO_DEMO = 'the starter\'s Create-shapes demo is not in code.js and ui.html (replaced by a plugin), so its tests are skipped';
+
+/** Per page, the files useKitFixture serves in place of the repo's (patchFile edits these). */
+const served = new WeakMap();
+
+async function serve(page, file, body) {
+  // The newest route wins, so a later patch of the same file replaces an earlier one.
+  await page.route(`**/${file}`, async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body });
+  });
+}
+
+/**
+ * The kit fixture as the fake host should load it: e2e/fixtures/kit-ui.html as ui.html (its kit
+ * blocks are byte copies of ui.html's, checked by test/blocks.test.mjs), and as code.js the real
+ * code.js's kit:window block followed by e2e/fixtures/kit-plugin.js.
+ */
+export function kitFixtureFiles() {
+  const code = repoFile('code.js');
+  const end = code.indexOf('// ==== kit:window:end ====');
+  if (end < 0) throw new Error('code.js has no "// ==== kit:window:end ====" line (run npm run build)');
+  return {
+    'ui.html': repoFile('e2e/fixtures/kit-ui.html'),
+    'code.js': code.slice(0, code.indexOf('\n', end) + 1) + '\n' + repoFile('e2e/fixtures/kit-plugin.js'),
+  };
+}
+
+/** Serves the kit fixture (kitFixtureFiles) to this page in place of ui.html and code.js. */
+export async function useKitFixture(page) {
+  const files = kitFixtureFiles();
+  served.set(page, files);
+  for (const [file, body] of Object.entries(files)) await serve(page, file, body);
+}
 
 /** Opens preview.html with query settings ({ theme, mode, editor, inter, config }) and waits for the plugin. */
 export async function openPreview(page, query = {}) {
@@ -74,19 +119,19 @@ export async function waitForFinal(page, at, settle = 150) {
 
 /**
  * Serves the repo file `file` (as preview.html fetches it) with each [from, to] text replacement
- * applied, for this page only; the file on disk is untouched. Throws at once when a `from` is
- * missing, so a stale patch fails loudly instead of quietly testing the unpatched file.
+ * applied, for this page only; the file on disk is untouched. After useKitFixture the fixture's
+ * version of the file is patched instead. Each call starts from the unpatched file and replaces
+ * the previous patch. Throws at once when a `from` is missing, so a stale patch fails loudly
+ * instead of quietly testing the unpatched file.
  */
 export async function patchFile(page, file, edits) {
-  let body = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+  const fixture = served.get(page);
+  let body = fixture && fixture[file] !== undefined ? fixture[file] : repoFile(file);
   for (const [from, to] of edits) {
-    if (!body.includes(from)) throw new Error(`patchFile: ${JSON.stringify(from)} not found in ${file}`);
+    if (!body.includes(from)) throw new Error(`patchFile: ${JSON.stringify(from)} not found in ${fixture && fixture[file] !== undefined ? `the kit fixture's ${file}` : file}`);
     body = body.replace(from, to);
   }
-  await page.route(`**/${file}`, async (route) => {
-    const response = await route.fetch();
-    await route.fulfill({ response, body });
-  });
+  await serve(page, file, body);
 }
 
 /** The height the plugin's content needs, measured the way the runtime measures it. */

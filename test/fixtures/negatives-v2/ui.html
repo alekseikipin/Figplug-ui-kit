@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="kit" content="kit v0.2.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+  <meta name="description" content='Test fixture "negatives-v2": valid code that looks suspicious to the audit v2 rules; must produce no findings.'>
+  <style data-kit="tokens">
+    /* Fixture tokens: a small subset of the real block. */
+    :root {
+      color-scheme: light;
+      --kit-control-height: 24px;
+      --kit-control-height-large: 32px;
+      --kit-field-bg: var(--figma-color-bg-secondary);
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
+      --kit-scrim: rgba(0, 0, 0, 0.5);
+    }
+    :root.figma-dark {
+      color-scheme: dark;
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+  <style data-kit="components">
+    /* == button == */
+    .kit-button {
+      height: var(--kit-control-height);
+      padding: 0 8px;
+      border: none;
+      border-radius: 5px;
+      color: var(--figma-color-text-onbrand);
+      background: var(--figma-color-bg-brand);
+    }
+    .kit-button:disabled { color: var(--figma-color-text-ondisabled); background: var(--figma-color-bg-disabled); }
+    .kit-button-large { height: var(--kit-control-height-large); }
+  </style>
+  <script data-kit="runtime">
+    (() => {
+      'use strict';
+      const KIT_PROTOCOL = 1;
+      /** @type {KitBounds} */
+      let bounds = { minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 };
+
+      /**
+       * @param {number} width
+       * @param {number} height
+       * @returns {KitSize}
+       */
+      function clampSize(width, height) {
+        return {
+          width: Math.round(Math.min(bounds.maxWidth, Math.max(bounds.minWidth, width))),
+          height: Math.round(Math.min(bounds.maxHeight, Math.max(bounds.minHeight, height))),
+        };
+      }
+
+      /** @param {KitUiToMainMessage} msg */
+      function post(msg) {
+        parent.postMessage({ pluginMessage: msg }, '*');
+      }
+
+      function fit() {
+        const root = document.querySelector('[data-kit-root]') ?? document.body;
+        const size = clampSize(window.innerWidth, Math.ceil(root.getBoundingClientRect().bottom + window.scrollY));
+        post({ type: 'kit:resize', width: size.width, height: size.height });
+      }
+
+      window.addEventListener('message', (event) => {
+        /** @type {KitMainToUiMessage | undefined} */
+        const msg = event.data && event.data.pluginMessage;
+        if (msg && msg.type === 'kit:init') {
+          bounds = msg.bounds;
+          fit();
+        }
+      });
+      document.addEventListener('DOMContentLoaded', () => post({ type: 'kit:ready', protocol: KIT_PROTOCOL }));
+      window.kit = Object.freeze({ version: '0.2.0', protocol: KIT_PROTOCOL, fit });
+    })();
+  </script>
+  <style>
+    /* Host styles. Nothing here may trigger missing-disabled. */
+    .layer-row { display: flex; width: 100%; border: none; background: transparent; color: var(--figma-color-text); }
+    .layer-row:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--figma-color-bg-hover); }
+    .tool:hover { background: var(--figma-color-bg-hover); }
+    .tool:disabled, .tool[aria-disabled="true"] { background: transparent; color: var(--figma-color-text-disabled); }
+    .kit-button-secondary:enabled:hover { border-color: var(--figma-color-border-strong); }
+    .card:hover { background: var(--figma-color-bg-hover); }
+    .layer-row:hover { min-height: 24px; }
+    .layer-row:not(:hover) .kit-icon { color: var(--figma-color-icon-secondary); }
+    @media (hover: hover) { .chip:hover { color: var(--figma-color-text); } }
+  </style>
+</head>
+<body>
+  <main class="kit-app" data-kit-root>
+    <button class="kit-button kit-button-primary" type="button" id="create">Create shapes</button>
+    <button class="layer-row" type="button">Frame 1</button>
+    <button class="tool kit-icon-button" type="button" aria-label="Settings"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16" stroke="currentColor" fill="none"/></svg></button>
+    <div class="card">Not a control</div>
+    <span class="chip">Not a control either</span>
+    <div class="kit-field">
+      <label class="kit-label" for="name">Name</label>
+      <input class="kit-input" id="name" type="text" aria-label="Layer name" aria-invalid="false">
+    </div>
+    <div class="kit-field">
+      <label class="kit-label" for="count">Count:</label>
+      <input class="kit-input" id="count" type="text" aria-invalid="true" aria-describedby="count-help">
+      <p class="kit-help" id="count-help">Enter a whole number from 1 to 50.</p>
+    </div>
+    <label class="kit-visually-hidden" for="filter">Search</label>
+    <input class="kit-input" id="filter" type="search" aria-label="Filter layers by name">
+    <button class="kit-button kit-button-secondary" type="button" aria-label="Close the plugin">Close</button>
+    <button class="kit-icon-button" type="button" aria-label="Dismiss">&times;</button>
+    <button class="kit-button kit-button-secondary" type="button" aria-label="Select Frame 1">Select<span class="kit-visually-hidden"> Frame 1</span></button>
+    <span class="kit-tooltip-host">
+      <button class="kit-icon-button" type="button" aria-label="Help" aria-describedby="help-tip"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor"/></svg></button>
+      <span class="kit-tooltip" role="tooltip" id="help-tip">Renames every selected layer</span>
+    </span>
+    <input class="kit-input" id="prefix" type="text">
+    <p class="kit-help" id="prefix-help">Added before each name; the script wires it up.</p>
+    <p class="kit-text-secondary" id="status" role="status">Nothing selected</p>
+    <span class="swatch" id="swatch"></span>
+    <template id="row-template">
+      <div class="kit-field"><input class="kit-input" type="text"><p class="kit-help" hidden></p></div>
+    </template>
+  </main>
+  <script>
+    // Host code, deliberately untyped: check-ui checks host scripts non-strict, so this passes.
+    function labelOf(button) {
+      return button.textContent.trim();
+    }
+    const create = document.getElementById('create');
+    create.addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'create-shapes', count: 5, shape: 'rectangle', label: labelOf(create) } }, '*');
+    });
+    window.addEventListener('message', (event) => {
+      const msg = event.data.pluginMessage;
+      if (msg && msg.type === 'created') kit.fit();
+    });
+  </script>
+  <script>
+    // Host code that looks like a colour literal or a broken reference, but is not.
+    const prefix = document.getElementById('prefix');
+    prefix.setAttribute('aria-describedby', 'prefix-help');
+    const swatch = document.getElementById('swatch');
+    const hex = '#' + 'ff8800'.slice(0, 6); // document data from the main thread, in real code
+    swatch.style.setProperty('--swatch', hex);
+    swatch.style.color = hex || 'transparent';
+    swatch.style.borderColor = 'var(--figma-color-border)';
+    swatch.style.fontFamily = 'Tan, Inter'; // a font name, not a colour
+    swatch.innerHTML = `<span style="color: ${hex}; background: var(--figma-color-bg)"></span>`;
+    swatch.title = 'Colour #ff8800 from the document'; // plain text, not a style
+    const quoteRe = /'/g; // a quote in a regex does not open a string
+    // el.style.color = '#fff' in a comment does not count, nor does fill="#000" in a selector:
+    document.querySelectorAll('[fill="#000"]').forEach((node) => node.removeAttribute('fill'));
+    const rows = document.getElementById('row-template');
+    void rows; void quoteRe;
+  </script>
+</body>
+</html>

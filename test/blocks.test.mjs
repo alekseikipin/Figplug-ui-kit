@@ -1,6 +1,7 @@
 // The three marked kit blocks (<style data-kit="tokens">, <style data-kit="components">,
-// <script data-kit="runtime">) are pasted byte for byte: preview.html and every examples/*/ui.html
-// must carry exactly the inner text of ui.html's, in the same order. Kit ui files also never hold
+// <script data-kit="runtime">) are pasted byte for byte: preview.html, the e2e kit fixture
+// (e2e/fixtures/kit-ui.html) and every examples/*/ui.html must carry exactly the inner text of
+// ui.html's, in the same order. Kit ui files also never hold
 // an HTML comment (insurance against Figma's sandbox). Plain file reads, so `npm run check` catches
 // drift without a browser.
 import { test } from 'node:test';
@@ -27,7 +28,7 @@ function blocks(file, html) {
 const examples = existsSync(join(ROOT, 'examples'))
   ? readdirSync(join(ROOT, 'examples')).sort().map((name) => `examples/${name}/ui.html`).filter((p) => existsSync(join(ROOT, p)))
   : [];
-const COPIES = ['preview.html', ...examples];
+const COPIES = ['preview.html', 'e2e/fixtures/kit-ui.html', ...examples];
 const CANONICAL = blocks('ui.html', read('ui.html'));
 
 test('ui.html blocks are canonical: tag alone on its line, text ending in a newline, in order', () => {

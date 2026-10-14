@@ -1,5 +1,5 @@
 "use strict";
-// Test fixture (main thread). scripts/audit.mjs only reads the KIT_PROTOCOL line.
+// Test fixture (main thread): minimal, so only what a case adds can trigger the audit.
 const KIT_PROTOCOL = 2;
 figma.showUI(__html__, { themeColors: true });
 figma.ui.postMessage({ type: 'fixture', protocol: KIT_PROTOCOL });

@@ -71,7 +71,7 @@ The handle is a real `<button type="button">`, placed right after the content ro
 - Arrow keys with Ctrl, Alt or Cmd are ignored; holding Enter, Space or Home does not repeat.
 - Outside a drag, Escape is left alone for the plugin. During a drag the runtime handles Escape and stops it, so a plugin's own Escape handler on `document`, an element or a bubbling `window` listener does not also fire; only a `window` listener registered with `{ capture: true }` still sees it ([window-chrome.md](window-chrome.md#gestures-and-keys)).
 - Step sizes, snap widths and the label come from `CONFIG` and are overridden with a `data-kit-config` script, never by editing the runtime block ([window-chrome.md](window-chrome.md#customising-config)). A blank label is rejected, so the handle always keeps an accessible name.
-- `e2e/chrome.spec.mjs` drives every row of this table against the real `ui.html` and `code.js`.
+- `e2e/chrome.spec.mjs` drives every row of this table through the real runtime and `installKitWindow`, in a small kit fixture page (`e2e/fixtures/`) whose kit blocks are byte copies of `ui.html`'s.
 
 ## Focus
 
@@ -114,10 +114,10 @@ A fix needs an `@media (forced-colors: active)` block in the components CSS. It 
 
 | Check | What it covers |
 |---|---|
-| axe-core, `@axe-core/playwright` 4.13 (`e2e/a11y.spec.mjs`) | Rule tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, with `color-contrast` disabled. Run on the preview gallery and on the plugin window, in light, dark and FigJam; on the plugin again in its error state (Count = 0, so `aria-invalid` and the help text are live); and once on the whole preview page. Expects zero violations. |
+| axe-core, `@axe-core/playwright` 4.13 (`e2e/a11y.spec.mjs`) | Rule tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, with `color-contrast` disabled. Run on the preview gallery, on the kit fixture's window (resting, and in its error state with `aria-invalid` and the help text live) and on your own `ui.html`'s window, in light, dark and FigJam; on the starter demo in its error state (Count = 0) while the demo is there (`e2e/demo.spec.mjs`); and once on the whole preview page. Expects zero violations. |
 | Contrast report (same file) | The table above, recomputed on every run. Never fails on a ratio. |
-| Keyboard and pointer (`e2e/chrome.spec.mjs`) | Every handle key, drag, Escape, right-click, plain click and double-click, through the real runtime and `code.js`, with zero leaked listeners. |
-| Gallery states (`e2e/preview.spec.mjs`) | Every Phase 1 component in its six states, that disabled uses the disabled tokens rather than opacity, and that keyboard focus shows the focus ring on invalid and `aria-disabled` fields. |
+| Keyboard and pointer (`e2e/chrome.spec.mjs`, `e2e/chrome-v2.spec.mjs`, `e2e/menu.spec.mjs`) | Every handle key, drag, Escape, right-click, plain click and double-click, the resize hint and the debounced announcement, and the menu's keys, through the real runtime and `installKitWindow`, with zero leaked listeners. |
+| Gallery states (`e2e/preview.spec.mjs`, `e2e/components.spec.mjs`) | Every component in its six states, forced colours, the tooltip's delay and keyboard focus, that disabled uses the disabled tokens rather than opacity, and that keyboard focus shows the focus ring on invalid and `aria-disabled` fields. |
 
 What is left out, and why:
 

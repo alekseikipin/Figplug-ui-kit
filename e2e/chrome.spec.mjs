@@ -1,5 +1,7 @@
-// Window chrome, end to end: the repo's real code.js (installKitWindow) and ui.html (the runtime)
-// in preview.html's fake Figma host. Covers the PLAN.md Phase 1 item 2 sequences: open, drag,
+// Window chrome, end to end: the repo's real installKitWindow (code.js's kit:window block) and
+// runtime (ui.html's kit blocks) in preview.html's fake Figma host, running the kit fixture
+// (e2e/fixtures/kit-ui.html and kit-plugin.js, see useKitFixture) rather than the starter's demo,
+// so these keep passing once the demo is replaced. Covers the PLAN.md Phase 1 item 2 sequences: open, drag,
 // Escape mid-drag, right-click, plain click, double-click, arrow keys, Home, reopen with a saved
 // size, replacing the demo markup, a data-kit-config override (and bad ones), host messages next
 // to kit messages, the three modes, the UI's own 500 ms fallback (alone, and racing a main thread
@@ -8,8 +10,10 @@
 
 import {
   test, expect, openPreview, pluginFrame, waitForPlugin, mark, messagesSince, resizesSince, writesSince,
-  callsSince, waitForFinal, frameSize, contentHeight, drag, handleCenter, listenerCounter, host, patchFile,
+  callsSince, waitForFinal, frameSize, contentHeight, drag, handleCenter, listenerCounter, host, patchFile, useKitFixture,
 } from './helpers.mjs';
+
+test.beforeEach(async ({ page }) => { await useKitFixture(page); });
 
 const BOUNDS = { minWidth: 240, maxWidth: 960, minHeight: 120, maxHeight: 900 };
 // Wraps to a different number of lines at 240, 320 and 440 px.
@@ -48,7 +52,7 @@ test.describe('fit-content (the starter default)', () => {
     }));
     expect(ui).toEqual({
       origin: 'null', cls: 'figma-light', figmaStyle: true, chrome: 'on', mode: 'fit-content', handleHidden: false,
-      kit: { version: '0.2.0', protocol: 1, frozen: true },
+      kit: { version: '0.3.0', protocol: 1, frozen: true },
     });
   });
 
@@ -253,25 +257,24 @@ test.describe('fit-content (the starter default)', () => {
     const frame = pluginFrame(page);
     const count = await listenerCounter(page);
     const baseline = await count();
-    const status = frame.locator('#status');
-    await host(page, () => window.kitPreviewHost.select(3));
-    await expect(status).toHaveText('3 layers selected');
+    const status = frame.locator('#fixture-status');
+    const before = (await frameSize(page)).height;
 
     const at = await mark(page);
-    await frame.locator('#count').fill('4');
-    await frame.locator('#create').click();
-    await expect(status).toHaveText(/Created 4 rectangles/);
+    await frame.locator('#fixture-ping').click();
+    await expect(status).toHaveText(/^Pong 1/);
     const host2ui = (await messagesSince(page, at)).map((m) => `${m.dir} ${m.msg.type}`);
-    expect(host2ui).toEqual(expect.arrayContaining(['ui create-shapes', 'main created', 'main selection']));
-    expect(await host(page, () => window.kitPreviewHost.nodes().filter((n) => n.type === 'RECTANGLE').length)).toBe(4);
+    expect(host2ui).toEqual(expect.arrayContaining(['ui fixture-ping', 'main fixture-pong']));
+    expect((await messagesSince(page, at)).find((m) => m.msg.type === 'fixture-pong').msg).toEqual({ type: 'fixture-pong', n: 1 });
     await page.waitForTimeout(200);
-    expect((await frameSize(page)).height, 'still fitted after the status grew').toBe(await contentHeight(frame));
+    expect((await frameSize(page)).height, 'refitted after the status grew').toBeGreaterThan(before);
+    expect((await frameSize(page)).height).toBe(await contentHeight(frame));
 
-    // A kit:* type the runtime doesn't know is ignored; a host message still reaches the demo.
+    // A kit:* type the runtime doesn't know is ignored; a host message still reaches the host script.
     const quiet = await mark(page);
     await host(page, () => window.kitPreviewHost.postToUi({ type: 'kit:from-the-future' }));
-    await host(page, () => window.kitPreviewHost.postToUi({ type: 'selection', count: 2 }));
-    await expect(status).toHaveText(/^2 layers selected/);
+    await host(page, () => window.kitPreviewHost.postToUi({ type: 'fixture-pong', n: 2 }));
+    await expect(status).toHaveText(/^Pong 2/);
     expect((await messagesSince(page, quiet)).filter((m) => m.dir === 'ui')).toEqual([]);
     expect(await count()).toEqual(baseline);
   });
@@ -676,7 +679,7 @@ test.describe('fixed, and no host at all', () => {
       handleHidden: /** @type {HTMLElement} */ (document.querySelector('[data-kit-resize]')).hidden, version: window.kit.version,
     }));
     expect(ui.at, 'the runtime waited for kit:init first').toBeGreaterThanOrEqual(500);
-    expect(ui).toMatchObject({ chrome: 'off', mode: 'fit-content', handleHidden: true, version: '0.2.0' });
+    expect(ui).toMatchObject({ chrome: 'off', mode: 'fit-content', handleHidden: true, version: '0.3.0' });
     // No chrome: the grip corner is not reserved.
     expect(await page.evaluate(() => getComputedStyle(/** @type {Element} */ (document.querySelector('.kit-app'))).paddingBottom)).toBe('0px');
     await page.waitForTimeout(200);

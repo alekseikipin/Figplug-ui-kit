@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content fill</title>
+<meta name="kit" content="kit v0.2.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+<meta name="description" content='Regression fixture from the Phase 1 one-shot run "content-fill" (docs/prompts.md): the plugin part is verbatim, the three kit blocks are test/fixtures/clean stand-ins.'>
+<style data-kit="tokens">
+    /* Fixture tokens: a small subset of the real block. */
+    :root {
+      color-scheme: light;
+      --kit-control-height: 24px;
+      --kit-control-height-large: 32px;
+      --kit-field-bg: var(--figma-color-bg-secondary);
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
+      --kit-scrim: rgba(0, 0, 0, 0.5);
+    }
+    :root.figma-dark {
+      color-scheme: dark;
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+  <style data-kit="components">
+    /* == button == */
+    .kit-button {
+      height: var(--kit-control-height);
+      padding: 0 8px;
+      border: none;
+      border-radius: 5px;
+      color: var(--figma-color-text-onbrand);
+      background: var(--figma-color-bg-brand);
+    }
+    .kit-button:disabled { color: var(--figma-color-text-ondisabled); background: var(--figma-color-bg-disabled); }
+    .kit-button-large { height: var(--kit-control-height-large); }
+  </style>
+  <script data-kit="runtime">
+    (() => {
+      'use strict';
+      const KIT_PROTOCOL = 1;
+      /** @type {KitBounds} */
+      let bounds = { minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 };
+
+      /**
+       * @param {number} width
+       * @param {number} height
+       * @returns {KitSize}
+       */
+      function clampSize(width, height) {
+        return {
+          width: Math.round(Math.min(bounds.maxWidth, Math.max(bounds.minWidth, width))),
+          height: Math.round(Math.min(bounds.maxHeight, Math.max(bounds.minHeight, height))),
+        };
+      }
+
+      /** @param {KitUiToMainMessage} msg */
+      function post(msg) {
+        parent.postMessage({ pluginMessage: msg }, '*');
+      }
+
+      function fit() {
+        const root = document.querySelector('[data-kit-root]') ?? document.body;
+        const size = clampSize(window.innerWidth, Math.ceil(root.getBoundingClientRect().bottom + window.scrollY));
+        post({ type: 'kit:resize', width: size.width, height: size.height });
+      }
+
+      window.addEventListener('message', (event) => {
+        /** @type {KitMainToUiMessage | undefined} */
+        const msg = event.data && event.data.pluginMessage;
+        if (msg && msg.type === 'kit:init') {
+          bounds = msg.bounds;
+          fit();
+        }
+      });
+      document.addEventListener('DOMContentLoaded', () => post({ type: 'kit:ready', protocol: KIT_PROTOCOL }));
+      window.kit = Object.freeze({ version: '0.2.0', protocol: KIT_PROTOCOL, fit });
+    })();
+  </script>
+<style>
+/* Your styles. Content fill is built from kit classes only, so it adds no rules of its own. */
+</style>
+</head>
+<body>
+<main class="kit-app" data-kit-root>
+  <div class="kit-section kit-stack">
+    <h1 class="kit-heading">Placeholder content</h1>
+    <div class="kit-field">
+      <label class="kit-label" for="kind">Fill with</label>
+      <div class="kit-select">
+        <select id="kind" aria-describedby="kind-help">
+          <option value="name">Names</option>
+          <option value="email">Emails</option>
+          <option value="date">Dates</option>
+          <option value="number">Numbers</option>
+        </select>
+      </div>
+      <p class="kit-help" id="kind-help">Full names, like Maya Chen or Daniel Okafor. Each layer gets a different one.</p>
+    </div>
+  </div>
+  <hr class="kit-divider">
+  <div class="kit-section kit-stack">
+    <button class="kit-button kit-button-primary" id="fill" type="button" disabled>Fill text layers</button>
+    <p class="kit-help" id="status" role="status">Select the text layers to fill</p>
+  </div>
+</main>
+<button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+<script>
+'use strict';
+// Content fill. Speaks with code.ts: 'fill' out; 'selection', 'filled' and 'settings' back.
+// kit:* messages belong to the runtime. No HTML comments in this file: see docs/pitfalls.md.
+(() => {
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const today = new Date();
+  /** @type {Record<string, string>} */
+  const EXAMPLES = {
+    name: 'Full names, like Maya Chen or Daniel Okafor.',
+    email: 'Email addresses, like maya.chen@gmail.com.',
+    date: `Dates around today, like ${MONTHS[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}.`,
+    number: 'Whole numbers, like 48, 1,284 or 36,572.',
+  };
+  /** @type {Record<string, string>} */
+  const NOUNS = { name: 'names', email: 'emails', date: 'dates', number: 'numbers' };
+
+  const kind = /** @type {HTMLSelectElement} */ (document.getElementById('kind'));
+  const kindHelp = /** @type {HTMLElement} */ (document.getElementById('kind-help'));
+  const fill = /** @type {HTMLButtonElement} */ (document.getElementById('fill'));
+  const status = /** @type {HTMLElement} */ (document.getElementById('status'));
+
+  let textCount = 0;
+  let otherCount = 0;
+  let result = '';
+  // Once the person picks an option, a late 'settings' message must not overwrite it.
+  let touched = false;
+
+  /** @param {{ type: string } & Record<string, unknown>} message */
+  function post(message) {
+    parent.postMessage({ pluginMessage: message }, '*');
+  }
+
+  /** @param {number} n @param {string} word */
+  function plural(n, word) {
+    return `${n} ${word}${n === 1 ? '' : 's'}`;
+  }
+
+  function renderHelp() {
+    kindHelp.textContent = `${EXAMPLES[kind.value]} Each layer gets a different one.`;
+  }
+
+  function describeSelection() {
+    if (textCount === 0) return otherCount === 0 ? 'Select the text layers to fill' : 'No text layers in the selection';
+    const text = `${plural(textCount, 'text layer')} selected`;
+    return otherCount === 0 ? text : `${text}, ${plural(otherCount, 'other layer')} skipped`;
+  }
+
+  /** @param {{ kind: string, filled: number, missingFont: number, failed: number, error: string | null }} msg */
+  function describeResult(msg) {
+    if (msg.error) return `Could not fill: ${msg.error}`;
+    const skipped = [];
+    if (msg.missingFont > 0) skipped.push(`${plural(msg.missingFont, 'layer')} with a missing font`);
+    if (msg.failed > 0) skipped.push(`${plural(msg.failed, 'layer')} that could not be edited`);
+    if (msg.filled === 0 && skipped.length === 0) return 'Nothing filled: no text layers selected';
+    const done = msg.filled > 0
+      ? `Filled ${plural(msg.filled, 'layer')} with ${NOUNS[msg.kind] || 'content'}`
+      : 'Nothing filled';
+    return skipped.length > 0 ? `${done}; skipped ${skipped.join(' and ')}` : done;
+  }
+
+  function render() {
+    // The last result goes on its own line, so a narrow window never breaks it mid-phrase.
+    status.replaceChildren(describeSelection(), ...(result ? [document.createElement('br'), result] : []));
+    fill.disabled = textCount === 0;
+  }
+
+  function fillSelection() {
+    // aria-busy blocks the mouse but not Enter or Space, so the handler checks it too.
+    if (fill.disabled || fill.getAttribute('aria-busy') === 'true') return;
+    fill.setAttribute('aria-busy', 'true');
+    post({ type: 'fill', kind: kind.value });
+  }
+
+  kind.addEventListener('change', () => {
+    touched = true;
+    renderHelp();
+  });
+  fill.addEventListener('click', fillSelection);
+
+  // Registered at the top level, before the page finishes loading: Figma delivers the messages
+  // code.ts posted at startup (the first selection) as soon as the page has loaded.
+  window.addEventListener('message', (event) => {
+    const msg = event.data && event.data.pluginMessage;
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'selection' && typeof msg.text === 'number' && typeof msg.other === 'number') {
+      textCount = msg.text;
+      otherCount = msg.other;
+      render();
+    } else if (msg.type === 'filled' && typeof msg.filled === 'number') {
+      // code.ts always answers, also when nothing could be filled, so the button never sticks.
+      fill.removeAttribute('aria-busy');
+      result = describeResult(msg);
+      render();
+    } else if (msg.type === 'settings' && !touched && typeof msg.kind === 'string' && msg.kind in EXAMPLES) {
+      kind.value = msg.kind;
+      renderHelp();
+    }
+  });
+
+  renderHelp();
+  render();
+})();
+</script>
+</body>
+</html>

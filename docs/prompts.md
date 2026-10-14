@@ -20,7 +20,7 @@ A one-shot result only means something next to the setup that produced it. Recor
 |---|---|
 | Tool | Claude Code or Cursor (agent mode), with the version it reports |
 | Model id | The exact id the tool reports for the session (not a marketing name). Record it per run; it changes more often than the kit. |
-| Kit version | `0.2.0` (the `kit vX.Y.Z` in `ui.html`'s `<meta name="kit">` and the tokens block header) |
+| Kit version | `0.3.0` (the `kit vX.Y.Z` in `ui.html`'s `<meta name="kit">` and the tokens block header) |
 | Date | The day of the run, `YYYY-MM-DD` |
 | Figma | Desktop app version (shown in About Figma) |
 | Machine | OS and Node version (`node --version`) |

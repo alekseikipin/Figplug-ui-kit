@@ -21,6 +21,8 @@ The two directions are not symmetric. In the UI you wrap the payload in `{ plugi
 
 `KIT_PROTOCOL = 1` is declared in both `code.ts` and the `ui.html` runtime. The UI sends its number in `kit:ready`, and main echoes its own number in `kit:init`. A mismatch means the two files came from different kit releases: each side warns once (two `console.warn` lines, one from main and one from the runtime), naming both protocol numbers, and both carry on. `npm run audit` reports it as `protocol-mismatch`. Fix it by re-pasting the kit blocks of both files from the same release.
 
+The protocol number changes only when a message changes shape. A new message that the other side may safely ignore is added within the same protocol: kit 0.3.0 added `kit:fit` (main to UI) to protocol 1, and a 0.2.0 runtime ignores it like any other `kit:*` type it does not know. Each side ignores unknown `kit:*` types, so a newer half never breaks an older one; it just loses the new feature.
+
 ### `kit:ready` (UI to main)
 
 | Field | Type | Meaning |
@@ -57,7 +59,7 @@ The two directions are not symmetric. In the UI you wrap the payload in `{ plugi
 | `user` | `boolean`, optional | `true` when the person chose the size (drag, keyboard, double-click snap, Home), `false` for content fits. The kit runtime always sends it; main treats a missing field as `false`. |
 | `final` | `boolean`, optional | `true` when the gesture is over (pointer up, a key press, Escape after moving), `false` for mid-drag sizes and content fits. The runtime always sends it; main treats a missing field as `false`. |
 
-- **When:** on every content fit (`fit-content` mode, and Home or `kit.fit()` in `resizable` mode), on each animation frame of a drag (deduplicated), and once more with `final: true` when the gesture ends.
+- **When:** on every content fit (`fit-content` mode, and Home, `kit.fit()` or a `kit:fit` from main in `resizable` mode), on each animation frame of a drag (deduplicated), and once more with `final: true` when the gesture ends.
 - **Main does**, in this order:
   1. **Ignores it in `fixed` mode.** A `fixed` window keeps `options.size`. The runtime never asks for a size in that mode; the only way one arrives is a UI that gave up waiting for `kit:init` (main busy for more than 500 ms) and fell back to fitting its content.
   2. **Validates.** `width` and `height` must be finite numbers of 0 or more; anything else (a string, `NaN`, `Infinity`, a negative number, a missing field) drops the whole message. Main never throws on a malformed kit message and never passes a non-finite number to `figma.ui.resize`.
@@ -66,6 +68,25 @@ The two directions are not symmetric. In the UI you wrap the payload in `{ plugi
   5. **Saves**, only when `user === true` and `persist` is not `false`. With `final: true` it writes at once and cancels any pending write; without it, it waits until 400 ms pass without another resize by the person, then writes the latest one. A size equal to the one already stored is not written again. In `fit-content` mode only the width counts: it is what gets restored, and the stored height is just the height at the time. Sizes from content fits (`user` false or missing) are never saved: they are recomputed on every run.
 
 `user` and `final` must be the boolean `true`. A string `'true'` or the number `1` counts as absent.
+
+### `kit:fit` (main to UI)
+
+Kit 0.3.0. Ask the UI to measure `[data-kit-root]` again and fit the window height to it, keeping the width: the same fit as `kit.fit()` in the UI.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `type` | `'kit:fit'` | Nothing else; extra fields are ignored. |
+
+- **When:** whenever main calls `fit()` on the window `installKitWindow()` returned (`KitWindow.fit()` in `kit.d.ts`). Don't post it yourself; call `fit()`, which posts nothing in `fixed` mode or once a later `installKitWindow()` call has replaced the window, and never throws (on a closing plugin it does nothing).
+- **UI does:** in `fit-content` and `resizable` mode, measures the content and sends one `kit:resize` with the current width, the content's height, `user: false` and `final: false` (so main never saves it), unless that is already the size it last asked for. In `fixed` mode it does nothing. A `kit:fit` that arrives before the UI's first size request is applied by that request: Figma queues main's messages until the page has loaded, so `installKitWindow(...).fit()` straight away works, and in `resizable` mode the first size then has the content's height instead of the saved one.
+- **Main does** nothing more: the `kit:resize` that follows is handled like any other. A `kit:fit` sent from the UI to main is ignored.
+- **Order:** the UI handles messages in the order main posted them, so a fit posted right after a message that changes the UI's content measures what that message's handler rendered, as long as the handler renders synchronously. Details and a mode table: [window-chrome.md](window-chrome.md#fit-on-request-kitfit-and-kitwindowfit).
+
+```ts
+const win = installKitWindow({ mode: 'resizable' });
+figma.ui.postMessage({ type: 'layers', names }); // the UI renders the list
+win.fit();                                       // kit:fit: the window takes the list's height
+```
 
 ### What main stores
 
@@ -92,9 +113,11 @@ installKitWindow()
   clamp, resize, save after 400 ms of quiet
                        ◄───────────────────────── kit:resize { ..., user: true, final: true }   pointer up
   clamp, resize, save now (if changed)
+  win.fit()
+  kit:fit ─────────────────────────────────────► measure [data-kit-root]
+                       ◄───────────────────────── kit:resize { width, height, user: false, final: false }
+  clamp, resize (not saved)
 ```
-
-Phase 2 plans one more message, main to UI `kit:fit` (ask the UI to re-measure), with `KitWindow.fit()`. It does not exist yet; do not send it.
 
 ## Your own messages next to the kit's
 
@@ -151,7 +174,7 @@ For a plugin that already has its own `code.ts` (or `code.js`) and `ui.html`, su
 2. **Paste the `kit:window` block** at the top of `code.ts`, above your own code: everything from the `// ==== kit:window:start` line to the `// ==== kit:window:end` line, unchanged. A plain-JavaScript plugin copies the same block from `code.js` instead, and skips step 1.
 3. **Replace your `figma.showUI(...)` call with `installKitWindow(...)`**, and call it before your code posts anything to the UI. The size and title move into the options: `figma.showUI(__html__, { width: 300, height: 400, title: 'Export' })` becomes `installKitWindow({ size: { width: 300, height: 400 }, title: 'Export' })`. Keep only one: a second `showUI` call closes the kit's window. `themeColors` is always on.
 4. **Convert `figma.ui.onmessage = (msg) => {...}`** to `figma.ui.on('message', (msg) => {...})` with the same callback (see [above](#use-figmauionmessage-never-assign-figmauionmessage)), and let messages whose `type` starts with `kit:` fall through. A handler that checks for its own types already does.
-5. **Remove your own window sizing**: `figma.ui.resize` calls, any resize message of your own, and a size you keep in `clientStorage` for it. The kit does all three, and in `fit-content` mode the next content change would undo your resize anyway. If your code must set the size itself, use `installKitWindow({ mode: 'fixed' })`.
+5. **Remove your own window sizing**: `figma.ui.resize` calls, any resize message of your own, and a size you keep in `clientStorage` for it. The kit does all three, and in `fit-content` mode the next content change would undo your resize anyway. Where your code resized the window to fit new content, call `fit()` on the window `installKitWindow()` returns instead ([`kit:fit`](#kitfit-main-to-ui)). If your code must set the size itself, use `installKitWindow({ mode: 'fixed' })`.
 
 **UI (`ui.html`)**
 

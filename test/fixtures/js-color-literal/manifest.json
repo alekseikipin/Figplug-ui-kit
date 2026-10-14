@@ -1,0 +1,17 @@
+{
+  "name": "Fixture: js-color-literal",
+  "id": "kit-fixture-js-color-literal",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": [
+    "figma",
+    "figjam"
+  ],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ]
+  }
+}

@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rename layers</title>
+<meta name="kit" content="kit v0.2.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+<meta name="description" content='Regression fixture from the Phase 1 one-shot run "rename-layers" (docs/prompts.md): the plugin part is verbatim, the three kit blocks are test/fixtures/clean stand-ins.'>
+<style data-kit="tokens">
+    /* Fixture tokens: a small subset of the real block. */
+    :root {
+      color-scheme: light;
+      --kit-control-height: 24px;
+      --kit-control-height-large: 32px;
+      --kit-field-bg: var(--figma-color-bg-secondary);
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
+      --kit-scrim: rgba(0, 0, 0, 0.5);
+    }
+    :root.figma-dark {
+      color-scheme: dark;
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+  <style data-kit="components">
+    /* == button == */
+    .kit-button {
+      height: var(--kit-control-height);
+      padding: 0 8px;
+      border: none;
+      border-radius: 5px;
+      color: var(--figma-color-text-onbrand);
+      background: var(--figma-color-bg-brand);
+    }
+    .kit-button:disabled { color: var(--figma-color-text-ondisabled); background: var(--figma-color-bg-disabled); }
+    .kit-button-large { height: var(--kit-control-height-large); }
+  </style>
+  <script data-kit="runtime">
+    (() => {
+      'use strict';
+      const KIT_PROTOCOL = 1;
+      /** @type {KitBounds} */
+      let bounds = { minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 };
+
+      /**
+       * @param {number} width
+       * @param {number} height
+       * @returns {KitSize}
+       */
+      function clampSize(width, height) {
+        return {
+          width: Math.round(Math.min(bounds.maxWidth, Math.max(bounds.minWidth, width))),
+          height: Math.round(Math.min(bounds.maxHeight, Math.max(bounds.minHeight, height))),
+        };
+      }
+
+      /** @param {KitUiToMainMessage} msg */
+      function post(msg) {
+        parent.postMessage({ pluginMessage: msg }, '*');
+      }
+
+      function fit() {
+        const root = document.querySelector('[data-kit-root]') ?? document.body;
+        const size = clampSize(window.innerWidth, Math.ceil(root.getBoundingClientRect().bottom + window.scrollY));
+        post({ type: 'kit:resize', width: size.width, height: size.height });
+      }
+
+      window.addEventListener('message', (event) => {
+        /** @type {KitMainToUiMessage | undefined} */
+        const msg = event.data && event.data.pluginMessage;
+        if (msg && msg.type === 'kit:init') {
+          bounds = msg.bounds;
+          fit();
+        }
+      });
+      document.addEventListener('DOMContentLoaded', () => post({ type: 'kit:ready', protocol: KIT_PROTOCOL }));
+      window.kit = Object.freeze({ version: '0.2.0', protocol: KIT_PROTOCOL, fit });
+    })();
+  </script>
+<style>
+/* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
+/* The status text takes the free space, so the Rename button sits at the end of the row. */
+.rename-status { flex: 1 1 0; min-width: 0; }
+/* A start-number error makes its field taller; keep the fields beside it top-aligned. */
+.rename-top { align-items: flex-start; }
+/* The kit has no list component yet, so the preview is a plain list, tokens only. It scrolls on
+   its own past about seven rows, so the form and the Rename button stay in view. position:
+   relative keeps the rows' visually hidden text inside the scroll box. */
+.rename-preview {
+  position: relative; max-height: 180px; overflow-y: auto; margin: 0; padding: 0 var(--kit-spacer-2);
+  list-style: none; border-radius: var(--kit-radius-medium);
+  outline: var(--kit-border-width) solid var(--figma-color-border); outline-offset: -1px;
+}
+.rename-preview:focus-visible { outline-color: var(--figma-color-border-selected); }
+.rename-row { display: flex; align-items: center; gap: var(--kit-spacer-1); padding: var(--kit-spacer-1) 0; }
+.rename-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rename-arrow { color: var(--figma-color-icon-tertiary); }
+.rename-row[data-change="same"] .rename-to { color: var(--figma-color-text-secondary); }
+.rename-row[data-change="blank"] .rename-to { color: var(--figma-color-text-danger); }
+</style>
+</head>
+<body>
+<main class="kit-app" data-kit-root>
+  <h1 class="kit-visually-hidden">Rename layers</h1>
+  <div class="kit-section kit-stack">
+    <div class="kit-field">
+      <label class="kit-label" for="prefix">Prefix</label>
+      <input class="kit-input" id="prefix" type="text" autocomplete="off" spellcheck="false" placeholder="icon/">
+    </div>
+    <div class="kit-row">
+      <div class="kit-field">
+        <label class="kit-label" for="find">Find</label>
+        <input class="kit-input" id="find" type="text" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="kit-field">
+        <label class="kit-label" for="replace">Replace with</label>
+        <input class="kit-input" id="replace" type="text" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="kit-row">
+      <button class="kit-button kit-button-secondary" id="match-case" type="button" aria-pressed="false">Match case</button>
+    </div>
+  </div>
+  <hr class="kit-divider">
+  <div class="kit-section kit-stack">
+    <div class="kit-row">
+      <div class="kit-field">
+        <label class="kit-label" for="numbering">Numbering</label>
+        <div class="kit-select">
+          <select id="numbering">
+            <option value="none">None</option>
+            <option value="end">After the name</option>
+            <option value="start">Before the name</option>
+          </select>
+        </div>
+      </div>
+      <div class="kit-field">
+        <label class="kit-label" for="order">Order</label>
+        <div class="kit-select">
+          <select id="order" disabled>
+            <option value="layers">Layer order</option>
+            <option value="x">Left to right</option>
+            <option value="y">Top to bottom</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="kit-row rename-top">
+      <div class="kit-field">
+        <label class="kit-label" for="start">Start at</label>
+        <input class="kit-input" id="start" type="text" inputmode="numeric" autocomplete="off" value="1" disabled aria-describedby="start-help">
+        <p class="kit-help" id="start-help" hidden></p>
+      </div>
+      <div class="kit-field">
+        <label class="kit-label" for="digits">Digits</label>
+        <div class="kit-select">
+          <select id="digits" disabled>
+            <option value="1">1</option>
+            <option value="2">01</option>
+            <option value="3">001</option>
+            <option value="4">0001</option>
+          </select>
+        </div>
+      </div>
+      <div class="kit-field">
+        <label class="kit-label" for="separator">Separator</label>
+        <div class="kit-select">
+          <select id="separator" disabled>
+            <option value=" ">Space</option>
+            <option value="-">-</option>
+            <option value="_">_</option>
+            <option value=".">.</option>
+            <option value="">None</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <hr class="kit-divider">
+  <div class="kit-section kit-stack">
+    <h2 class="kit-heading" id="preview-heading">Preview</h2>
+    <p class="kit-help" id="preview-empty">Select the layers you want to rename. Their new names show up here.</p>
+    <ol class="rename-preview" id="preview" aria-labelledby="preview-heading" hidden></ol>
+  </div>
+  <hr class="kit-divider">
+  <div class="kit-section kit-row">
+    <p class="kit-help rename-status" id="status" role="status">Nothing selected</p>
+    <button class="kit-button kit-button-primary" id="rename" type="button" aria-disabled="true">Rename</button>
+  </div>
+</main>
+<button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+<template id="row-template">
+  <li class="rename-row">
+    <span class="rename-name kit-text-secondary" data-part="from"></span>
+    <svg class="kit-icon kit-icon-small rename-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9m-3-3 3 3-3 3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span class="kit-visually-hidden" data-part="joiner"></span>
+    <span class="rename-name rename-to" data-part="to"></span>
+  </li>
+</template>
+<script>
+'use strict';
+// Rename layers. The rules in the form turn each selected layer's name into a new one, the list
+// shows the result, and Rename sends exactly that list to code.ts, which applies it. Messages:
+// 'selection' and 'renamed' come in, 'rename' goes out; kit:* messages belong to the runtime.
+// No HTML comments in this file: see docs/pitfalls.md (Figma's sandbox and comment markers).
+(() => {
+  // Rows drawn in the preview. The counts and Rename always cover every selected layer.
+  const MAX_ROWS = 200;
+  const START_ERROR = 'Use a whole number.';
+
+  const byId = (/** @type {string} */ id) => document.getElementById(id);
+  const prefix = /** @type {HTMLInputElement} */ (byId('prefix'));
+  const find = /** @type {HTMLInputElement} */ (byId('find'));
+  const replace = /** @type {HTMLInputElement} */ (byId('replace'));
+  const matchCase = /** @type {HTMLButtonElement} */ (byId('match-case'));
+  const numbering = /** @type {HTMLSelectElement} */ (byId('numbering'));
+  const order = /** @type {HTMLSelectElement} */ (byId('order'));
+  const start = /** @type {HTMLInputElement} */ (byId('start'));
+  const startHelp = /** @type {HTMLElement} */ (byId('start-help'));
+  const digits = /** @type {HTMLSelectElement} */ (byId('digits'));
+  const separator = /** @type {HTMLSelectElement} */ (byId('separator'));
+  const heading = /** @type {HTMLElement} */ (byId('preview-heading'));
+  const empty = /** @type {HTMLElement} */ (byId('preview-empty'));
+  const preview = /** @type {HTMLOListElement} */ (byId('preview'));
+  const status = /** @type {HTMLElement} */ (byId('status'));
+  const renameButton = /** @type {HTMLButtonElement} */ (byId('rename'));
+  const rowTemplate = /** @type {HTMLTemplateElement} */ (byId('row-template'));
+
+  /**
+   * @typedef {{ id: string, name: string, x: number, y: number }} Layer
+   * @typedef {{ id: string, from: string, to: string, change: 'changed' | 'same' | 'blank' }} PreviewRow
+   */
+
+  /** The selected layers in layers-panel order, as code.ts last sent them. @type {Layer[]} */
+  let layers = [];
+  /** The renames sent with the last Rename, until code.ts answers. @type {PreviewRow[]} */
+  let pending = [];
+  /**
+   * After a Rename: the rows that were renamed, shown instead of the live preview until the person
+   * edits a rule or selects other layers, so a second Rename can't add the prefix twice by accident.
+   * @type {{ rows: PreviewRow[], selection: string } | null}
+   */
+  let applied = null;
+  /** What the last Rename did, in words. */
+  let result = '';
+
+  /** @param {{ type: string } & Record<string, unknown>} message */
+  function post(message) {
+    parent.postMessage({ pluginMessage: message }, '*');
+  }
+
+  const plural = (/** @type {number} */ n, /** @type {string} */ word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const selectionKey = () => layers.map((layer) => layer.id).join(',');
+
+  /** @param {string} text */
+  function escapeRegExp(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /** Every occurrence of `search`, replaced literally ($ in the replacement has no meaning). */
+  function findAndReplace(/** @type {string} */ name, /** @type {string} */ search, /** @type {string} */ replacement, /** @type {boolean} */ caseSensitive) {
+    if (!search) return name;
+    if (caseSensitive) return name.split(search).join(replacement);
+    return name.replace(new RegExp(escapeRegExp(search), 'giu'), () => replacement);
+  }
+
+  /** The first number, or null when the field doesn't hold a whole number. */
+  function readStart() {
+    const text = start.value.trim();
+    return /^\d{1,9}$/.test(text) ? Number(text) : null;
+  }
+
+  /** The layers in numbering order. Ties keep layer order, so the result never shuffles. */
+  function numberingOrder() {
+    const indexed = layers.map((layer, index) => ({ layer, index }));
+    if (order.value === 'x') indexed.sort((a, b) => a.layer.x - b.layer.x || a.layer.y - b.layer.y || a.index - b.index);
+    else if (order.value === 'y') indexed.sort((a, b) => a.layer.y - b.layer.y || a.layer.x - b.layer.x || a.index - b.index);
+    return indexed.map((entry) => entry.layer);
+  }
+
+  // The rules, in order: find and replace inside the current name, then the number before or
+  // after it, then the prefix in front of everything.
+  function buildPreview() {
+    const position = numbering.value;
+    const first = readStart();
+    const numbered = position !== 'none' && first !== null;
+    const caseSensitive = matchCase.getAttribute('aria-pressed') === 'true';
+    const width = Number(digits.value) || 1;
+    const join = separator.value;
+    const rows = (position === 'none' ? layers : numberingOrder()).map((layer, i) => {
+      let name = findAndReplace(layer.name, find.value, replace.value, caseSensitive);
+      if (numbered) {
+        const number = String(first + i).padStart(width, '0');
+        name = position === 'start' ? number + join + name : name + join + number;
+      }
+      const to = prefix.value + name;
+      /** @type {PreviewRow['change']} */
+      const change = to.trim() === '' ? 'blank' : to === layer.name ? 'same' : 'changed';
+      return { id: layer.id, from: layer.name, to, change };
+    });
+    return { rows, startInvalid: position !== 'none' && first === null };
+  }
+
+  /** @param {PreviewRow} row */
+  function rowElement(row) {
+    const li = /** @type {HTMLLIElement} */ (/** @type {HTMLElement} */ (rowTemplate.content.firstElementChild).cloneNode(true));
+    const part = (/** @type {string} */ name) => /** @type {HTMLElement} */ (li.querySelector(`[data-part="${name}"]`));
+    const to = row.change === 'blank' ? 'Empty name, skipped' : row.change === 'same' ? 'No change' : row.to;
+    li.dataset.change = row.change;
+    li.title = row.change === 'changed' ? `${row.from} → ${row.to}` : row.from;
+    part('from').textContent = row.from;
+    part('joiner').textContent = row.change === 'changed' ? ' becomes ' : ': ';
+    part('to').textContent = to;
+    return li;
+  }
+
+  /** @param {PreviewRow[]} rows */
+  function renderRows(rows) {
+    const items = rows.slice(0, MAX_ROWS).map(rowElement);
+    if (rows.length > MAX_ROWS) {
+      const more = document.createElement('li');
+      more.className = 'rename-row kit-text-secondary';
+      more.textContent = `And ${plural(rows.length - MAX_ROWS, 'more layer')}`;
+      items.push(more);
+    }
+    preview.replaceChildren(...items);
+    preview.hidden = rows.length === 0;
+    // A list that scrolls must be reachable from the keyboard; one that fits needs no Tab stop.
+    if (preview.scrollHeight > preview.clientHeight) preview.tabIndex = 0;
+    else preview.removeAttribute('tabindex');
+  }
+
+  function render() {
+    const numberingOn = numbering.value !== 'none';
+    for (const control of [order, start, digits, separator]) control.disabled = !numberingOn;
+
+    const plan = buildPreview();
+    // The error state is aria-invalid on the input; the kit recolours its ring and the help text
+    // it points at with aria-describedby.
+    if (plan.startInvalid) start.setAttribute('aria-invalid', 'true');
+    else start.removeAttribute('aria-invalid');
+    startHelp.textContent = plan.startInvalid ? START_ERROR : '';
+    startHelp.hidden = !plan.startInvalid;
+
+    empty.hidden = layers.length > 0;
+    let summary;
+    if (applied) {
+      heading.textContent = 'Renamed';
+      renderRows(applied.rows);
+      setRenameEnabled(false);
+      summary = result;
+    } else {
+      heading.textContent = 'Preview';
+      renderRows(layers.length > 0 ? plan.rows : []);
+      const changed = plan.rows.filter((row) => row.change === 'changed').length;
+      setRenameEnabled(changed > 0 && !plan.startInvalid);
+      summary = layers.length === 0 ? 'Nothing selected'
+        : plan.startInvalid ? 'Fix the start number to rename'
+        : changed === 0 ? 'Nothing to rename yet'
+        : `${changed} of ${plural(layers.length, 'layer')} to rename`;
+      // A Rename that changed nothing says why on a second line.
+      if (result) {
+        status.replaceChildren(summary, document.createElement('br'), result);
+        return;
+      }
+    }
+    status.textContent = summary;
+  }
+
+  // aria-disabled rather than disabled: the button keeps keyboard focus after a Rename, and the
+  // status text next to it says why it is off. It still gets clicks, so rename() checks it.
+  function setRenameEnabled(/** @type {boolean} */ enabled) {
+    if (enabled) renameButton.removeAttribute('aria-disabled');
+    else renameButton.setAttribute('aria-disabled', 'true');
+  }
+
+  function rename() {
+    // aria-busy blocks the mouse but not Enter or Space, so the handler checks it too.
+    if (renameButton.getAttribute('aria-disabled') === 'true' || renameButton.getAttribute('aria-busy') === 'true') return;
+    const plan = buildPreview();
+    if (plan.startInvalid) return;
+    pending = plan.rows.filter((row) => row.change === 'changed');
+    if (pending.length === 0) return;
+    renameButton.setAttribute('aria-busy', 'true');
+    post({ type: 'rename', renames: pending.map(({ id, from, to }) => ({ id, from, to })) });
+  }
+
+  /** @param {Record<string, unknown>} msg */
+  function describeResult(msg) {
+    const count = (/** @type {unknown} */ value) => (typeof value === 'number' ? value : 0);
+    const renamed = count(msg.renamed);
+    const skipped = count(msg.skipped);
+    const failed = count(msg.failed);
+    const parts = [renamed > 0 ? `Renamed ${plural(renamed, 'layer')}.` : 'Nothing renamed.'];
+    if (skipped > 0) parts.push(`${skipped} skipped: renamed or deleted since the preview.`);
+    if (failed > 0) parts.push(`${failed} failed${typeof msg.error === 'string' && msg.error ? `: ${msg.error}` : '.'}`);
+    return parts.join(' ');
+  }
+
+  // Any edit starts a fresh preview.
+  function edited() {
+    applied = null;
+    result = '';
+    render();
+  }
+
+  for (const field of [prefix, find, replace, start]) {
+    field.addEventListener('input', edited);
+    // Enter renames too. Deliberately not a <form>: a sandboxed iframe without allow-forms blocks
+    // form submission, and Figma's sandbox flags are not documented.
+    field.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || event.isComposing) return;
+      event.preventDefault();
+      rename();
+    });
+  }
+  for (const select of [numbering, order, digits, separator]) select.addEventListener('change', edited);
+  matchCase.addEventListener('click', () => {
+    matchCase.setAttribute('aria-pressed', String(matchCase.getAttribute('aria-pressed') !== 'true'));
+    edited();
+  });
+  renameButton.addEventListener('click', rename);
+
+  /** @param {unknown} value @returns {value is Layer} */
+  function isLayer(value) {
+    if (!value || typeof value !== 'object') return false;
+    const layer = /** @type {Record<string, unknown>} */ (value);
+    return typeof layer.id === 'string' && typeof layer.name === 'string' &&
+      typeof layer.x === 'number' && typeof layer.y === 'number';
+  }
+
+  // Registered at the top level, before the page finishes loading: Figma delivers the messages
+  // code.ts posted at startup (the first selection) as soon as the page has loaded.
+  window.addEventListener('message', (event) => {
+    const msg = event.data && event.data.pluginMessage;
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'selection' && Array.isArray(msg.layers)) {
+      layers = msg.layers.filter(isLayer);
+      // Other layers selected: the renamed list no longer describes them.
+      if (applied && applied.selection !== selectionKey()) {
+        applied = null;
+        result = '';
+      }
+      render();
+    } else if (msg.type === 'renamed') {
+      // code.ts always answers, also when renaming failed, so the button never stays busy.
+      renameButton.removeAttribute('aria-busy');
+      result = describeResult(msg);
+      const done = new Set(Array.isArray(msg.renamedIds) ? msg.renamedIds : []);
+      const rows = pending.filter((row) => done.has(row.id));
+      applied = rows.length > 0 ? { rows, selection: selectionKey() } : null;
+      pending = [];
+      render();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

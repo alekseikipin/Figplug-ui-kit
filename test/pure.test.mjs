@@ -1,4 +1,5 @@
-// Tests for the pure part of the ui.html window runtime: clampSize, nextSnap and sameSize.
+// Tests for the pure part of the ui.html runtime: clampSize, nextSnap, sameSize, widestSnap (End),
+// announceText (the live region's words) and placeMenu (where an open menu goes).
 // The block between the exact `/* kit:pure:start */` and `/* kit:pure:end */` lines is cut out
 // of ui.html and run in a fresh node:vm context with no window or document, which also proves
 // it stays DOM-free. Point KIT_UI_HTML at another file (any text holding the block) to test it:
@@ -38,7 +39,10 @@ function load() {
   const context = vm.createContext({});
   vm.runInContext(BLOCK.text, context, { filename: `${SOURCE_PATH}#kit:pure`, lineOffset: BLOCK.startLine });
   const get = (name) => vm.runInContext(name, context);
-  return { clampSize: get('clampSize'), nextSnap: get('nextSnap'), sameSize: get('sameSize') };
+  return {
+    clampSize: get('clampSize'), nextSnap: get('nextSnap'), sameSize: get('sameSize'),
+    widestSnap: get('widestSnap'), announceText: get('announceText'), placeMenu: get('placeMenu'),
+  };
 }
 
 // vm objects carry another realm's Object.prototype, so deepStrictEqual against a literal fails;
@@ -63,8 +67,7 @@ test('the pure block references nothing from the page', () => {
   for (const name of ['window', 'document', 'globalThis', 'self', 'parent', 'navigator', 'CONFIG', 'requestAnimationFrame', 'setTimeout']) {
     assert.doesNotMatch(code, new RegExp(`\\b${name}\\b`), `pure block must not use ${name}`);
   }
-  const { clampSize, nextSnap, sameSize } = load();
-  for (const fn of [clampSize, nextSnap, sameSize]) assert.equal(typeof fn, 'function');
+  for (const fn of Object.values(load())) assert.equal(typeof fn, 'function');
 });
 
 // ---- clampSize ----
@@ -226,4 +229,85 @@ test('sameSize agrees with clampSize output from the same realm and across calls
   const { clampSize, sameSize } = load();
   assert.equal(sameSize(clampSize(400.2, 299.8, BOUNDS), clampSize(399.6, 300.1, BOUNDS)), true);
   assert.equal(sameSize(clampSize(NaN, NaN, BOUNDS), clampSize(-1, -1, BOUNDS)), true);
+});
+
+// ---- widestSnap (End on the handle) ----
+
+test('widestSnap is the widest snap, whatever the width and the order', () => {
+  const { widestSnap } = load();
+  for (const width of [100, 320, 480, 640, 5000, NaN, Infinity]) assert.equal(widestSnap(width, SNAPS), 640, String(width));
+  const unsorted = [480, 640, 320];
+  assert.equal(widestSnap(320, unsorted), 640);
+  assert.deepEqual(unsorted, [480, 640, 320], 'the caller\'s array is not reordered');
+  assert.equal(widestSnap(320, [480]), 480, 'a single snap');
+});
+
+test('widestSnap skips junk snaps and, with none left, keeps the width (or 0), like nextSnap', () => {
+  const { widestSnap, nextSnap } = load();
+  assert.equal(widestSnap(320, [NaN, 480, Infinity, -5, 0, '9000', null]), 480);
+  for (const [width, snaps] of [[400, []], [400, [NaN, -1]], [400, null], [400, undefined], [NaN, []], [Infinity, null]]) {
+    assert.equal(widestSnap(width, snaps), nextSnap(width, snaps), `${width}, ${JSON.stringify(snaps)}`);
+  }
+  assert.equal(widestSnap(400, []), 400);
+  assert.equal(widestSnap(NaN, []), 0);
+});
+
+// ---- announceText (the resize handle's live region) ----
+
+test('announceText fills every {width} and {height} and leaves the rest as written', () => {
+  const { announceText } = load();
+  const size = { width: 384, height: 216 };
+  assert.equal(announceText('Window {width} by {height}', size), 'Window 384 by 216');
+  assert.equal(announceText('{height}×{width} ({width})', size), '216×384 (384)');
+  assert.equal(announceText('Fenstergröße {width} mal {height} Pixel', size), 'Fenstergröße 384 mal 216 Pixel');
+  assert.equal(announceText('{size} {Width} {width', size), '{size} {Width} {width', 'other braces are not placeholders');
+  assert.equal(announceText('No numbers', size), 'No numbers');
+  assert.equal(announceText('$& {width} $1', size), '$& 384 $1', 'replacement patterns in the template are plain text');
+});
+
+// ---- placeMenu (an open menu next to its invoker) ----
+
+const VIEW = { width: 320, height: 300 };
+const MENU = { width: 160, height: 120 };
+// An invoker 24px tall: left, top, bottom (and right, which placeMenu does not need).
+const at = (left, top) => ({ left, top, right: left + 80, bottom: top + 24 });
+
+test('placeMenu puts the menu 4px under the invoker, left edges aligned, when it fits', () => {
+  const { placeMenu } = load();
+  assert.deepEqual(plain(placeMenu(at(16, 16), MENU, VIEW)), { left: 16, top: 44 });
+  // Exactly fitting above the 8px bottom margin still goes below.
+  assert.deepEqual(plain(placeMenu(at(16, 300 - 8 - 120 - 4 - 24), MENU, VIEW)), { left: 16, top: 300 - 8 - 120 });
+});
+
+test('placeMenu flips above when the menu does not fit below and there is more room above', () => {
+  const { placeMenu } = load();
+  // Invoker near the bottom: 4px gap above it, the menu's bottom edge at invoker.top - 4.
+  assert.deepEqual(plain(placeMenu(at(16, 250), MENU, VIEW)), { left: 16, top: 250 - 4 - 120 });
+  // One pixel short of fitting below, with room above: flips.
+  assert.deepEqual(plain(placeMenu(at(16, 300 - 8 - 120 - 4 - 24 + 1), MENU, VIEW)), { left: 16, top: 145 - 4 - 120 });
+});
+
+test('placeMenu stays below when neither side fits and below is roomier, shifted up to keep 8px clear', () => {
+  const { placeMenu } = load();
+  const tall = { width: 160, height: 250 };
+  // Below: 300 - 8 - 44 = 248 of room; above: 16 - 4 - 8 = 4. Stays below, moved up to 300 - 8 - 250.
+  assert.deepEqual(plain(placeMenu(at(16, 16), tall, VIEW)), { left: 16, top: 42 });
+});
+
+test('placeMenu keeps 8px from every edge: shifted in from the right, never above or left of the margin', () => {
+  const { placeMenu } = load();
+  assert.deepEqual(plain(placeMenu(at(250, 16), MENU, VIEW)), { left: 320 - 8 - 160, top: 44 }, 'shifted in from the right');
+  assert.deepEqual(plain(placeMenu(at(2, 16), MENU, VIEW)), { left: 8, top: 44 }, 'invoker hanging off the left edge');
+  assert.deepEqual(plain(placeMenu(at(-50, -40), MENU, VIEW)), { left: 8, top: 8 }, 'invoker scrolled out above');
+  // Bigger than the viewport both ways: the top-left corner stays 8px in.
+  assert.deepEqual(plain(placeMenu(at(100, 100), { width: 400, height: 400 }, VIEW)), { left: 8, top: 8 });
+});
+
+test('placeMenu rounds to whole pixels and takes another gap and margin', () => {
+  const { placeMenu } = load();
+  const result = placeMenu({ left: 16.4, top: 16.2, bottom: 40.6 }, { width: 120.5, height: 99.5 }, VIEW);
+  assert.ok(Number.isInteger(result.left) && Number.isInteger(result.top), JSON.stringify(result));
+  assert.deepEqual(plain(result), { left: 16, top: 45 });
+  assert.deepEqual(plain(placeMenu(at(16, 16), MENU, VIEW, 0, 0)), { left: 16, top: 40 });
+  assert.deepEqual(plain(placeMenu(at(250, 16), MENU, VIEW, 8, 16)), { left: 320 - 16 - 160, top: 48 });
 });

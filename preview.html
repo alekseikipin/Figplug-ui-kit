@@ -4,20 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kit preview</title>
-<meta name="kit" content="kit v0.2.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+<meta name="kit" content="kit v0.3.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
 <style data-kit="tokens">
-/* kit tokens v0.2.0 · protocol 1 · MIT · https://github.com/alekseikipin/Figplug-ui-kit · issues: https://github.com/alekseikipin/Figplug-ui-kit/issues · re-paste all three data-kit blocks to upgrade */
-
-/* Colours come from Figma: showUI({ themeColors: true }) injects every --figma-color-* variable
-   and puts figma-light or figma-dark on <html>. color-scheme follows that class, never the OS,
-   so scrollbars and the native <select> popup match the theme the person picked in Figma. */
+/* kit tokens v0.3.0 · protocol 1 · MIT · https://github.com/alekseikipin/Figplug-ui-kit · issues: https://github.com/alekseikipin/Figplug-ui-kit/issues · re-paste all three data-kit blocks to upgrade */
+/* Measured from UI3 (docs/tokens.md); Figma injects only the colours. */
 :root { color-scheme: light; }
 :root.figma-dark { color-scheme: dark; }
-
-/* Figma injects colours only. Everything below is measured from UI3 (docs/tokens.md has the
-   sources) and assumes the browser's 16px root font size, so never change html { font-size }. */
 :root {
-  /* Spacing: same steps as Figma's --spacer-* scale. */
   --kit-spacer-0-5: 2px;
   --kit-spacer-1: 4px;
   --kit-spacer-1-5: 6px;
@@ -28,13 +21,11 @@
   --kit-spacer-5: 32px;
   --kit-spacer-6: 40px;
 
-  /* Radius: medium for controls, large for menus and dialogs. */
   --kit-radius-small: 2px;
   --kit-radius-medium: 5px;
   --kit-radius-large: 13px;
   --kit-radius-full: 9999px;
 
-  /* Controls: every control is 24px tall (large: 32px); icons are drawn in a 24px frame. */
   --kit-control-height: 24px;
   --kit-control-height-large: 32px;
   --kit-icon-size: 24px;
@@ -42,8 +33,6 @@
   --kit-border-width: 1px;
   --kit-focus-width: 1px;
 
-  /* Type: UI3 body text is 11px on a 16px line. 450/550 render exactly only with a variable
-     font (system-ui on macOS, variable Inter); static fonts round to the nearest weight. */
   --kit-font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --kit-font-size: 11px;
   --kit-line-height: 16px;
@@ -60,27 +49,21 @@
   --kit-line-height-small: 14px;
   --kit-letter-spacing-small: 0.045px;
 
-  /* Motion. */
   --kit-duration-small: 100ms;
   --kit-duration-medium: 200ms;
   --kit-duration-large: 400ms;
   --kit-easing: ease-out;
 
-  /* Layers, in Figma's order: toast below menus. Dialogs use the top layer and need none. */
   --kit-z-handle: 10;
   --kit-z-toast: 11;
   --kit-z-menu: 13;
+  --kit-z-tooltip: 13;
 
-  /* Elevation: the only literal colours in the kit, because Figma injects no shadow tokens.
-     Exact UI3 values (elevation 300 / 400 / 500) written as rgba. */
   --kit-shadow-tooltip: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 5px 12px 0px rgba(0, 0, 0, 0.13), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.15);
   --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
   --kit-shadow-dialog: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 24px 0px rgba(0, 0, 0, 0.18), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.08);
   --kit-scrim: rgba(0, 0, 0, 0.5);
 }
-
-/* Dark UI3 elevation: deeper drop shadows plus a faint inner edge that lifts a surface off the
-   dark editor behind it. */
 :root.figma-dark {
   --kit-shadow-tooltip: 0px 1px 3px 0px rgba(0, 0, 0, 0.5), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.3), 0px 5px 12px 0px rgba(0, 0, 0, 0.35), inset 0px 0.5px 0px 0px rgba(255, 255, 255, 0.08);
   --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35), inset 0px 0.5px 0px 0px rgba(255, 255, 255, 0.08);
@@ -88,11 +71,10 @@
 }
 </style>
 <style data-kit="components">
-/* kit components · colours are var(--figma-color-*) only · states are attributes, not classes · docs/components.md */
+/* kit components · tokens only, states as attributes · docs/components.md#implementation-notes */
 
 /* == base == */
 *, *::before, *::after { box-sizing: border-box; }
-/* The runtime toggles [hidden] on the resize handle; !important keeps kit display rules from undoing it. */
 [hidden] { display: none !important; }
 body {
   margin: 0; font-family: var(--kit-font-family); font-size: var(--kit-font-size); line-height: var(--kit-line-height);
@@ -100,37 +82,32 @@ body {
   color: var(--figma-color-text); background-color: var(--figma-color-bg);
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
 }
-/* Form controls do not inherit type and would fall back to the browser's 13px. */
 button, input, select, textarea { margin: 0; font: inherit; letter-spacing: inherit; color: inherit; }
 a { color: var(--figma-color-text-brand); text-decoration: none; }
 a:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: var(--kit-focus-width); border-radius: var(--kit-radius-small); }
 
 /* == layout == */
-/* flow-root keeps the last child's bottom margin inside the root, so the runtime's fit counts it. */
 .kit-app { display: flow-root; }
 .kit-section { padding: var(--kit-spacer-3); }
 .kit-divider { margin: 0; border: 0; border-top: var(--kit-border-width) solid var(--figma-color-border); }
 .kit-stack { display: flex; flex-direction: column; gap: var(--kit-spacer-2); }
 .kit-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--kit-spacer-2); }
-/* In a row, fields share the width and shrink; buttons keep theirs and wrap in a narrow window. */
-.kit-row > :is(.kit-field, .kit-input, .kit-input-icon, .kit-select) { flex: 1 1 0; min-width: 0; }
+.kit-row > :is(.kit-field, .kit-input, .kit-input-icon, .kit-select, .kit-number, .kit-color) { flex: 1 1 0; min-width: 0; }
 .kit-heading { margin: 0; font-size: var(--kit-font-size); line-height: var(--kit-line-height); letter-spacing: var(--kit-letter-spacing); font-weight: var(--kit-font-weight-strong); }
-.kit-text-secondary { color: var(--figma-color-text-secondary); }
+.kit-text-secondary { margin: 0; color: var(--figma-color-text-secondary); }
 .kit-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-/* Icons use a 24px frame (viewBox 0 0 24 24) and currentColor, so they take the colour of their container. */
 .kit-icon { display: block; flex: none; width: var(--kit-icon-size); height: var(--kit-icon-size); }
 .kit-icon-small { width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); }
 .kit-field { display: flex; flex-direction: column; gap: var(--kit-spacer-1); min-width: 0; }
-/* UI3 field labels are secondary text at regular weight; strong weight belongs to headings. */
 .kit-label { color: var(--figma-color-text-secondary); }
 .kit-help { margin: 0; color: var(--figma-color-text-secondary); }
 .kit-field:has(:is(input, select, textarea):is(:disabled, [aria-disabled="true"])) > .kit-label { color: var(--figma-color-text-disabled); }
 .kit-field:has([aria-invalid="true"]) > .kit-help { color: var(--figma-color-text-danger); }
+.kit-scroll { max-height: var(--kit-scroll-max-height, 240px); overflow: auto; }
+.kit-scroll:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: -1px; }
 
 /* == button == */
-/* Variants and states swap these private properties; one rule paints them. The ring is an
-   inset outline, not a border, so recolouring it never moves the label. */
-.kit-button {
+.kit-button, .kit-icon-button {
   --kit-button-bg: transparent; --kit-button-bg-hover: var(--figma-color-bg-hover); --kit-button-bg-pressed: var(--figma-color-bg-pressed);
   --kit-button-text: var(--figma-color-text); --kit-button-ring: var(--figma-color-border);
   position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center;
@@ -139,26 +116,22 @@ a:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border
   background-color: var(--kit-button-bg); color: var(--kit-button-text);
   text-decoration: none; white-space: nowrap; cursor: default; user-select: none;
 }
-.kit-button:hover { background-color: var(--kit-button-bg-hover); }
-.kit-button:active { background-color: var(--kit-button-bg-pressed); }
-.kit-button:focus-visible { outline-color: var(--figma-color-border-selected); }
-.kit-button-tertiary { --kit-button-ring: transparent; }
+:is(.kit-button, .kit-icon-button):hover { background-color: var(--kit-button-bg-hover); }
+:is(.kit-button, .kit-icon-button):active { background-color: var(--kit-button-bg-pressed); }
+:is(.kit-button, .kit-icon-button):focus-visible { outline-color: var(--figma-color-border-selected); }
+.kit-button-tertiary, .kit-icon-button { --kit-button-ring: transparent; }
 .kit-button-primary { --kit-button-bg: var(--figma-color-bg-brand); --kit-button-bg-hover: var(--figma-color-bg-brand-hover); --kit-button-bg-pressed: var(--figma-color-bg-brand-pressed); --kit-button-text: var(--figma-color-text-onbrand); --kit-button-ring: transparent; }
 .kit-button-danger { --kit-button-bg: var(--figma-color-bg-danger); --kit-button-bg-hover: var(--figma-color-bg-danger-hover); --kit-button-bg-pressed: var(--figma-color-bg-danger-pressed); --kit-button-text: var(--figma-color-text-ondanger); --kit-button-ring: transparent; }
-/* Filled buttons ring in two tones, a light line on the fill and a dark one outside, so focus reads on both. */
 .kit-button-primary:focus-visible { outline-color: var(--figma-color-border-onbrand-strong); box-shadow: 0 0 0 var(--kit-focus-width) var(--figma-color-border-selected-strong); }
 .kit-button-danger:focus-visible { outline-color: var(--figma-color-border-ondanger-strong); box-shadow: 0 0 0 var(--kit-focus-width) var(--figma-color-border-danger-strong); }
-.kit-button[aria-pressed="true"] { --kit-button-bg: var(--figma-color-bg-selected); --kit-button-bg-hover: var(--figma-color-bg-selected-hover); --kit-button-bg-pressed: var(--figma-color-bg-selected-pressed); --kit-button-text: var(--figma-color-text-brand); --kit-button-ring: transparent; }
-/* Disabled repaints the background itself, so it outranks :hover and :active by order alone. */
-.kit-button:is(:disabled, [aria-disabled="true"]) { --kit-button-bg: transparent; --kit-button-text: var(--figma-color-text-disabled); --kit-button-ring: var(--figma-color-border-disabled); background-color: var(--kit-button-bg); }
-.kit-button-tertiary:is(:disabled, [aria-disabled="true"]) { --kit-button-ring: transparent; }
+:is(.kit-button, .kit-icon-button)[aria-pressed="true"], .kit-icon-button[aria-expanded="true"] { --kit-button-bg: var(--figma-color-bg-selected); --kit-button-bg-hover: var(--figma-color-bg-selected-hover); --kit-button-bg-pressed: var(--figma-color-bg-selected-pressed); --kit-button-text: var(--figma-color-text-brand); --kit-button-ring: transparent; }
+/* Disabled after :hover and :active: it wins by order. */
+:is(.kit-button, .kit-icon-button):is(:disabled, [aria-disabled="true"]) { --kit-button-bg: transparent; --kit-button-text: var(--figma-color-text-disabled); --kit-button-ring: var(--figma-color-border-disabled); background-color: var(--kit-button-bg); }
+:is(.kit-button-tertiary, .kit-icon-button):is(:disabled, [aria-disabled="true"]) { --kit-button-ring: transparent; }
 .kit-button:is(.kit-button-primary, .kit-button-danger):is(:disabled, [aria-disabled="true"]) { --kit-button-bg: var(--figma-color-bg-disabled); --kit-button-text: var(--figma-color-text-ondisabled); --kit-button-ring: transparent; }
 .kit-button-large { height: var(--kit-control-height-large); padding: 0 var(--kit-spacer-2-5); }
-/* A leading 24px icon frame carries its own inner space, so it replaces the start padding. */
 .kit-button:has(> .kit-icon:first-child) { padding-left: 0; }
 .kit-button-large:has(> .kit-icon:first-child) { padding-left: var(--kit-spacer-1); }
-/* Loading keeps the label's width but paints it transparent under a spinner (sized by
-   aspect-ratio so the only heights on button rules are 24/32). */
 .kit-button[aria-busy="true"] { color: transparent; pointer-events: none; }
 .kit-button[aria-busy="true"]::after {
   content: ""; position: absolute; inset: 0; width: var(--kit-spacer-2-5); aspect-ratio: 1; margin: auto;
@@ -166,46 +139,36 @@ a:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border
   animation: kit-spin 800ms linear infinite;
 }
 @keyframes kit-spin { to { transform: rotate(1turn); } }
-@media (prefers-reduced-motion: reduce) { .kit-button[aria-busy="true"]::after { animation: none; } } /* static ring */
+@media (prefers-reduced-motion: reduce) { .kit-button[aria-busy="true"]::after { animation: none; } }
 
 /* == input == */
-/* Filled field, inset-outline ring. UI3 inputs have no pressed state. */
-.kit-input {
-  display: block; width: 100%; min-width: 0; height: var(--kit-control-height); padding: 0 var(--kit-spacer-2);
+.kit-input, .kit-textarea {
+  display: block; width: 100%; min-width: 0; padding: 0 var(--kit-spacer-2);
   border: 0; border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid transparent; outline-offset: -1px;
   background-color: var(--figma-color-bg-secondary); color: var(--figma-color-text); appearance: none;
 }
-/* opacity: Firefox fades placeholders on top of the token. */
-.kit-input::placeholder { color: var(--figma-color-text-tertiary); opacity: 1; }
-.kit-input:hover { outline-color: var(--figma-color-border); }
-.kit-input[aria-invalid="true"] { outline-color: var(--figma-color-border-danger-strong); }
-.kit-input:is(:disabled, [aria-disabled="true"]) { outline-color: var(--figma-color-border-disabled); background-color: var(--figma-color-bg); color: var(--figma-color-text-disabled); }
-.kit-input:is(:disabled, [aria-disabled="true"])::placeholder { color: var(--figma-color-text-disabled); }
-/* Focus comes after the states so an invalid or aria-disabled field still shows where focus is;
-   the error stays visible in the red .kit-help text. */
-.kit-input:focus-visible { outline-color: var(--figma-color-border-selected); }
-/* type="search": drop the browser's clear button, whose colour no token controls. */
+.kit-input { height: var(--kit-control-height); }
+:is(.kit-input, .kit-textarea)::placeholder { color: var(--figma-color-text-tertiary); opacity: 1; }
+:is(.kit-input, .kit-textarea):hover, :where(.kit-color:hover) > .kit-input { outline-color: var(--figma-color-border); }
+:is(.kit-input, .kit-textarea)[aria-invalid="true"] { outline-color: var(--figma-color-border-danger-strong); }
+:is(.kit-input, .kit-textarea):is(:disabled, [aria-disabled="true"]) { outline-color: var(--figma-color-border-disabled); background-color: var(--figma-color-bg); color: var(--figma-color-text-disabled); }
+:is(.kit-input, .kit-textarea):is(:disabled, [aria-disabled="true"])::placeholder { color: var(--figma-color-text-disabled); }
+/* Focus after the states, so it always shows. */
+:is(.kit-input, .kit-textarea):focus-visible { outline-color: var(--figma-color-border-selected); }
 .kit-input::-webkit-search-cancel-button, .kit-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
-/* The icon fills the field's 24px start slot; clicks fall through to the input. */
-.kit-input-icon { position: relative; display: block; min-width: 0; }
+.kit-input-icon, .kit-select, .kit-number, .kit-color { position: relative; display: block; min-width: 0; }
 .kit-input-icon > .kit-icon { position: absolute; top: 0; bottom: 0; left: 0; margin: auto 0; color: var(--figma-color-icon-secondary); pointer-events: none; }
 .kit-input-icon > .kit-icon-small { left: var(--kit-spacer-1); }
-.kit-input-icon > .kit-input { padding-left: var(--kit-icon-size); }
 .kit-input-icon:has(> .kit-input:is(:disabled, [aria-disabled="true"])) > .kit-icon { color: var(--figma-color-icon-disabled); }
 
 /* == select == */
-/* Native <select>: the system popup, typeahead and screen-reader support come free; only the
-   closed control is styled. The wrapper exists because <select> cannot draw ::after. */
-.kit-select { position: relative; display: block; min-width: 0; }
 .kit-select > select {
   display: block; width: 100%; min-width: 0; height: var(--kit-control-height); padding: 0 var(--kit-icon-size) 0 var(--kit-spacer-2);
   border: 0; border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid var(--figma-color-border); outline-offset: -1px;
   background-color: var(--figma-color-bg); color: var(--figma-color-text);
   text-overflow: ellipsis; white-space: nowrap; cursor: default; appearance: none;
 }
-/* Windows and Linux paint the open list from these; without them dark mode can show light on light. */
 .kit-select :is(option, optgroup) { background-color: var(--figma-color-bg); color: var(--figma-color-text); }
-/* Caret: two borders of a rotated square in the 24px end slot. No image, and forced colours keep it. */
 .kit-select::after {
   content: ""; position: absolute; top: calc(50% - 5px); right: 9px; width: 6px; aspect-ratio: 1;
   border: solid; border-width: 0 var(--kit-border-width) var(--kit-border-width) 0;
@@ -214,670 +177,737 @@ a:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border
 .kit-select:hover::after { color: var(--figma-color-icon-secondary-hover); }
 .kit-select > select[aria-invalid="true"] { outline-color: var(--figma-color-border-danger-strong); }
 .kit-select > select:is(:disabled, [aria-disabled="true"]) { outline-color: var(--figma-color-border-disabled); color: var(--figma-color-text-disabled); }
-.kit-select > select:focus-visible { outline-color: var(--figma-color-border-selected); } /* after the states, as for inputs */
+.kit-select > select:focus-visible { outline-color: var(--figma-color-border-selected); }
 .kit-select:has(> select:is(:disabled, [aria-disabled="true"]))::after { color: var(--figma-color-icon-disabled); }
 
 /* == resize-handle == */
-/* 24px target in the window corner. It ships [hidden]; the runtime shows it when kit:init turns
-   the chrome on. Grip = a resizable textarea's two diagonal lines, in icon-secondary (>= 3:1). */
 .kit-resize-handle {
   position: fixed; right: 0; bottom: 0; z-index: var(--kit-z-handle);
   width: var(--kit-control-height); height: var(--kit-control-height); padding: 0; border: 0; border-radius: var(--kit-radius-medium);
   outline: var(--kit-focus-width) solid transparent; outline-offset: -1px;
   background: transparent; color: var(--figma-color-icon-secondary); cursor: nwse-resize;
-  touch-action: none; user-select: none; /* pen and touch drags reach the pointer handlers */
+  touch-action: none; user-select: none;
 }
-/* A fit-content window follows its content's height, so only the width can be dragged. */
 html[data-kit-mode="fit-content"] .kit-resize-handle { cursor: ew-resize; }
 .kit-resize-handle::before, .kit-resize-handle::after { content: ""; position: absolute; border-top: var(--kit-border-width) solid; transform: rotate(-45deg); }
 .kit-resize-handle::before { right: 2.5px; bottom: 7.5px; width: 11px; }
 .kit-resize-handle::after { right: 3px; bottom: 5.5px; width: 6px; }
-.kit-resize-handle:hover, .kit-resize-handle:active { color: var(--figma-color-icon); }
+.kit-resize-handle:is(:hover, :active) { color: var(--figma-color-icon); }
 .kit-resize-handle:focus-visible { outline-color: var(--figma-color-border-selected); }
-/* Keep the last row of content clear of the grip while the chrome is on. */
 html[data-kit-chrome="on"] .kit-app { padding-bottom: var(--kit-spacer-4); }
-/* A trailing .kit-section already pads 16px; 8px more keeps the 24px handle clear of it. */
 html[data-kit-chrome="on"] .kit-app:has(> .kit-section:last-child) { padding-bottom: var(--kit-spacer-2); }
+
+/* == textarea == */
+.kit-textarea { padding-block: var(--kit-spacer-1); resize: none; overflow-wrap: break-word; }
+
+/* == checkbox == */
+.kit-checkbox, .kit-radio { display: flex; gap: var(--kit-spacer-2); width: fit-content; max-width: 100%; padding: var(--kit-spacer-1) 0; cursor: default; }
+:is(.kit-checkbox, .kit-radio) > input {
+  --kit-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4.5 8.5 2.5 2.5 4.5-5.5' fill='none' stroke='currentColor' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  display: inline-grid; place-content: center; flex: none; width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); margin: 0;
+  border: var(--kit-border-width) solid var(--figma-color-border-strong); border-radius: var(--kit-radius-medium);
+  outline: var(--kit-focus-width) solid transparent; outline-offset: -1px; appearance: none;
+}
+:is(.kit-checkbox, .kit-radio) > input::before { content: ""; width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); background-color: var(--kit-mark-color, transparent); mask: var(--kit-mark) center / contain no-repeat; }
+.kit-checkbox > input:indeterminate { --kit-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='4' y='7.4' width='8' height='1.25' rx='.6'/%3E%3C/svg%3E"); }
+:is(.kit-checkbox, .kit-radio):hover > input:enabled { --kit-mark-color: var(--figma-color-icon-tertiary); }
+:is(.kit-checkbox, .kit-radio) > input:is(:checked, [type="checkbox"]:indeterminate) { --kit-mark-color: var(--figma-color-icon-onbrand); border-color: transparent; background-color: var(--figma-color-bg-brand); }
+:is(.kit-checkbox, .kit-radio) > input[aria-invalid="true"] { border-color: var(--figma-color-border-danger-strong); }
+:is(.kit-checkbox, .kit-radio) > input:disabled { border-color: var(--figma-color-border-disabled-strong); }
+:is(.kit-checkbox, .kit-radio) > input:disabled:is(:checked, [type="checkbox"]:indeterminate) { --kit-mark-color: var(--figma-color-icon-ondisabled); background-color: var(--figma-color-bg-disabled); }
+:is(.kit-checkbox, .kit-radio):has(> :disabled) { color: var(--figma-color-text-disabled); }
+:is(.kit-checkbox, .kit-radio) > input:focus-visible { outline-color: var(--figma-color-border-selected); }
+:is(.kit-checkbox, .kit-radio) > input:is(:checked, [type="checkbox"]:indeterminate):focus-visible { border-color: var(--figma-color-border-onbrand-strong); outline-color: var(--figma-color-border-selected-strong); outline-offset: 0; }
+:is(.kit-checkbox, .kit-radio) + .kit-help { margin-top: calc(-1 * var(--kit-spacer-1)); padding-left: var(--kit-spacer-4); }
+
+/* == radio == */
+.kit-radio > input { --kit-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='3'/%3E%3C/svg%3E"); border-radius: var(--kit-radius-full); }
+
+/* == number == */
+.kit-number > .kit-input { appearance: textfield; }
+.kit-number > .kit-input::-webkit-inner-spin-button { display: none; }
+.kit-number-prefix { position: absolute; inset: 0 auto 0 0; display: flex; align-items: center; justify-content: center; width: var(--kit-icon-size); color: var(--figma-color-text-secondary); pointer-events: none; }
+:is(.kit-input-icon, .kit-color) > .kit-input, .kit-number-prefix + .kit-input { padding-left: var(--kit-icon-size); }
+.kit-number:has(> .kit-input:is(:disabled, [aria-disabled="true"])) > .kit-number-prefix { color: var(--figma-color-text-disabled); }
+
+/* == color == */
+.kit-color-swatch {
+  position: absolute; top: var(--kit-spacer-1); left: var(--kit-spacer-1); width: var(--kit-icon-size-small); height: var(--kit-icon-size-small);
+  padding: 0; border: 0; border-radius: var(--kit-radius-small); outline: var(--kit-border-width) solid var(--figma-color-border); outline-offset: -1px; background: none; appearance: none;
+}
+.kit-color-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.kit-color-swatch::-webkit-color-swatch { border: 0; border-radius: var(--kit-radius-small); }
+.kit-color-swatch::-moz-color-swatch { border: 0; border-radius: var(--kit-radius-small); }
+.kit-color-swatch:focus-visible { outline-color: var(--figma-color-border-selected); outline-offset: var(--kit-focus-width); }
+
+/* == icon-button == */
+.kit-icon-button { --kit-button-text: var(--figma-color-icon); width: var(--kit-control-height); padding: 0; }
+.kit-icon-button:hover { --kit-button-text: var(--figma-color-icon-hover); }
+.kit-icon-button:is([aria-pressed="true"], [aria-expanded="true"]) { --kit-button-text: var(--figma-color-icon-brand); }
+.kit-icon-button:is(:disabled, [aria-disabled="true"]) { --kit-button-text: var(--figma-color-icon-disabled); }
+
+/* == section-header == */
+.kit-section-header { display: flex; align-items: center; gap: var(--kit-spacer-1); min-height: var(--kit-spacer-6); padding: 0 var(--kit-spacer-2) 0 var(--kit-spacer-3); }
+.kit-section-header > :is(h1, h2, h3, h4) { flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; font: inherit; font-weight: var(--kit-font-weight-strong); text-overflow: ellipsis; white-space: nowrap; }
+.kit-section-header + .kit-section { padding-top: 0; }
+
+/* == list == */
+.kit-list { margin: 0; padding: 0; list-style: none; }
+.kit-list-row {
+  --kit-list-hover: var(--figma-color-bg-hover); --kit-list-pressed: var(--figma-color-bg-pressed);
+  --kit-list-icon: var(--figma-color-icon-secondary); --kit-list-meta: var(--figma-color-text-secondary);
+  display: flex; align-items: center; gap: var(--kit-spacer-1); width: 100%; min-height: var(--kit-control-height-large); padding: 0 var(--kit-spacer-2);
+  border: 0; border-radius: var(--kit-radius-medium); background-color: transparent; color: var(--figma-color-text); text-align: start;
+}
+.kit-list-row:has(> .kit-list-row-icon:first-child) { padding-left: 0; }
+.kit-list-row-icon { color: var(--kit-list-icon); }
+.kit-list-row-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kit-list-row-meta { flex: none; color: var(--kit-list-meta); }
+button.kit-list-row:hover { background-color: var(--kit-list-hover); }
+button.kit-list-row:active { background-color: var(--kit-list-pressed); }
+.kit-list-row:is([aria-selected="true"], [aria-current="true"]) {
+  --kit-list-hover: var(--figma-color-bg-selected-hover); --kit-list-pressed: var(--figma-color-bg-selected-pressed);
+  --kit-list-icon: var(--figma-color-icon-onselected); --kit-list-meta: var(--figma-color-text-onselected-secondary);
+  background-color: var(--figma-color-bg-selected); color: var(--figma-color-text-onselected);
+}
+/* :is(*, :hover) lifts disabled over the hover rule. */
+.kit-list-row:is(:disabled, [aria-disabled="true"]):is(*, :hover) { --kit-list-icon: var(--figma-color-icon-disabled); --kit-list-meta: var(--figma-color-text-disabled); background-color: transparent; color: var(--figma-color-text-disabled); }
+.kit-list-row:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: -1px; }
+
+/* == empty == */
+.kit-empty { display: flex; flex-direction: column; align-items: center; gap: var(--kit-spacer-1); padding: var(--kit-spacer-5) var(--kit-spacer-3); text-align: center; color: var(--figma-color-text-secondary); }
+.kit-empty > .kit-icon { color: var(--figma-color-icon-tertiary); }
+.kit-empty-title { margin: 0; font: inherit; font-weight: var(--kit-font-weight-strong); color: var(--figma-color-text); }
+.kit-empty-text { max-width: 240px; margin: 0; }
+.kit-empty > .kit-button { margin-top: var(--kit-spacer-2); }
+
+/* == notice == */
+.kit-notice {
+  --kit-notice-icon: var(--figma-color-icon-secondary);
+  display: flex; align-items: flex-start; padding: var(--kit-spacer-1); border-radius: var(--kit-radius-medium);
+  outline: var(--kit-border-width) solid transparent; outline-offset: -1px; background-color: var(--figma-color-bg-secondary);
+}
+.kit-notice > .kit-icon { color: var(--kit-notice-icon); }
+.kit-notice-text { flex: 1 1 auto; min-width: 0; margin: 0; padding: var(--kit-spacer-1); overflow-wrap: break-word; }
+.kit-notice[data-kit-tone="info"] { --kit-notice-icon: var(--figma-color-icon-brand); outline-color: var(--figma-color-border-brand); background-color: var(--figma-color-bg-brand-tertiary); }
+.kit-notice[data-kit-tone="success"] { --kit-notice-icon: var(--figma-color-icon-success); outline-color: var(--figma-color-border-success); background-color: var(--figma-color-bg-success-tertiary); }
+.kit-notice[data-kit-tone="warning"] { --kit-notice-icon: var(--figma-color-icon-warning); outline-color: var(--figma-color-border-warning); background-color: var(--figma-color-bg-warning-tertiary); }
+.kit-notice[data-kit-tone="danger"] { --kit-notice-icon: var(--figma-color-icon-danger); outline-color: var(--figma-color-border-danger); background-color: var(--figma-color-bg-danger-tertiary); }
+
+/* == footer == */
+.kit-footer {
+  position: sticky; bottom: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--kit-spacer-2);
+  padding: var(--kit-spacer-2) var(--kit-spacer-3); border-top: var(--kit-border-width) solid var(--figma-color-border); background-color: var(--figma-color-bg);
+}
+.kit-footer > :is(.kit-text-secondary, .kit-help) { flex: 1 1 auto; }
+:root:has(.kit-footer) { scroll-padding-bottom: var(--kit-spacer-6); }
+html[data-kit-chrome="on"] .kit-footer { padding-right: var(--kit-spacer-5); }
+html[data-kit-chrome="on"] .kit-app:has(> .kit-footer:last-child) { padding-bottom: 0; }
+
+/* == tabs == */
+.kit-tabs { display: flex; flex-direction: column; gap: var(--kit-spacer-2); min-width: 0; }
+.kit-tablist { display: flex; flex-wrap: wrap; gap: var(--kit-spacer-2); }
+.kit-tab { position: relative; display: flex; align-items: center; height: var(--kit-control-height); padding: 0 var(--kit-spacer-2); border-radius: var(--kit-radius-medium); color: var(--figma-color-text-secondary); white-space: nowrap; user-select: none; }
+.kit-tab > input[type="radio"] { position: absolute; inset: 0; margin: 0; opacity: 0; }
+.kit-tab:hover { color: var(--figma-color-text-secondary-hover); }
+.kit-tab:has(> :checked) { background-color: var(--figma-color-bg-secondary); color: var(--figma-color-text); font-weight: var(--kit-font-weight-strong); }
+.kit-tab:has(> :disabled) { color: var(--figma-color-text-disabled); }
+.kit-tab:has(> :focus-visible) { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: -1px; }
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(1) > :checked)) > :nth-child(2),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(2) > :checked)) > :nth-child(3),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(3) > :checked)) > :nth-child(4),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(4) > :checked)) > :nth-child(5),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(5) > :checked)) > :nth-child(6),
+.kit-tabs:not(:has(> .kit-tablist > :nth-child(6) > :checked)) > :nth-child(7) { display: none; }
+
+/* == tooltip == */
+.kit-tooltip-host { position: relative; display: inline-flex; max-width: 100%; }
+.kit-tooltip {
+  position: absolute; top: calc(100% + var(--kit-spacer-1)); left: 50%; z-index: var(--kit-z-tooltip); width: max-content; max-width: 200px;
+  padding: var(--kit-spacer-1) var(--kit-spacer-2); border-radius: var(--kit-radius-medium); box-shadow: var(--kit-shadow-tooltip);
+  background-color: var(--figma-color-bg-inverse); color: var(--figma-color-text-oninverse); white-space: normal;
+  translate: -50% 0; scale: 0; visibility: hidden; transition: visibility 0s, scale 0s;
+}
+.kit-tooltip::before { content: ""; position: absolute; inset: calc(-1 * var(--kit-spacer-1)); }
+.kit-tooltip-host:hover > .kit-tooltip { scale: 1; visibility: visible; transition-delay: var(--kit-duration-large); }
+.kit-tooltip-host:has(:focus-visible) > .kit-tooltip { scale: 1; visibility: visible; transition-delay: 0s; }
+.kit-tooltip-start { left: 0; translate: none; }
+.kit-tooltip-end { left: auto; right: 0; translate: none; }
+.kit-tooltip-above { top: auto; bottom: calc(100% + var(--kit-spacer-1)); }
+
+/* == menu == */
+.kit-menu {
+  position: fixed; inset: auto; min-width: 120px; max-width: calc(100vw - var(--kit-spacer-3)); max-height: calc(100vh - var(--kit-spacer-3)); overflow: auto;
+  margin: 0; padding: var(--kit-spacer-2); border: 0; border-radius: var(--kit-radius-large); box-shadow: var(--kit-shadow-menu);
+  background-color: var(--figma-color-bg); color: var(--figma-color-text);
+}
+.kit-menu-item { display: flex; align-items: center; width: 100%; height: var(--kit-control-height); padding: 0 var(--kit-spacer-2); border: 0; border-radius: var(--kit-radius-medium); outline: 0; background-color: transparent; text-align: start; white-space: nowrap; }
+.kit-menu-item:is(:hover, :focus-visible) { background-color: var(--figma-color-bg-brand); color: var(--figma-color-text-onbrand); }
+.kit-menu-item:is(:disabled, [aria-disabled="true"]) { background-color: transparent; color: var(--figma-color-text-disabled); }
+.kit-menu-separator { margin: var(--kit-spacer-2) 0; border: 0; border-top: var(--kit-border-width) solid var(--figma-color-border); }
+
+/* == forced-colors == */
+@media (forced-colors: active) {
+  :is(.kit-checkbox, .kit-radio) > input { appearance: auto; }
+  :is(.kit-checkbox, .kit-radio) > input::before { content: none; }
+  .kit-list-row:is([aria-selected="true"], [aria-current="true"]), .kit-menu-item:is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"]) { outline: var(--kit-focus-width) solid; }
+}
 </style>
 <script data-kit="runtime">
 (() => {
-  'use strict';
-  // kit window runtime · docs/window-chrome.md
-  // Talks to installKitWindow() in code.ts: posts kit:ready, takes mode and bounds from kit:init,
-  // and asks for every size change with kit:resize. code.ts owns persistence; this side owns
-  // gestures, measuring and deduping. Message shapes live in kit.d.ts.
+'use strict';
+// kit runtime · how and why: docs/window-chrome.md#implementation-notes · menus: docs/components.md#menu
+const KIT_PROTOCOL = 1; // as in code.ts
+const KIT_VERSION = '0.3.0';
 
-  // Must equal KIT_PROTOCOL in code.ts. Bump both together when a kit:* message changes shape.
-  const KIT_PROTOCOL = 1;
-  const KIT_VERSION = '0.2.0';
+// Never edit CONFIG here: override it with data-kit-config (docs/window-chrome.md#customising-config).
+const CONFIG = {
+  snapWidths: [320, 480, 640],
+  step: 8,
+  bigStep: 32,
+  initTimeoutMs: 500,
+  fallbackMode: /** @type {KitMode} */ ('fit-content'),
+  strings: {
+    resizeLabel: 'Resize window',
+    resizeHint: 'Drag, or use the arrow keys. Shift for bigger steps, Enter to snap, Home to fit, End for the widest size.',
+    announce: 'Window {width} by {height}',
+  },
+};
 
-  /**
-   * Defaults. Don't edit them here (this block must stay byte-identical to the release so the
-   * audit can spot drift and upgrades are a re-paste). Override any field from your own markup
-   * with a script element of type="application/json" carrying data-kit-config, whose text is
-   * JSON such as { "snapWidths": [300, 400] }. See docs/window-chrome.md, "Customising CONFIG".
-   * @type {{ snapWidths: number[], step: number, bigStep: number, initTimeoutMs: number, fallbackMode: KitMode, strings: { resizeLabel: string } }}
-   */
-  const CONFIG = {
-    snapWidths: [320, 480, 640], // double-click, Enter and Space cycle through these widths
-    step: 8,                     // px per arrow key...
-    bigStep: 32,                 // ...and per Shift+arrow
-    initTimeoutMs: 500,          // stop waiting for code.ts after this (e.g. ui.html opened in a browser)
-    fallbackMode: 'fit-content', // used only when kit:init never arrives; the real mode comes from code.ts
-    strings: { resizeLabel: 'Resize window' },
-  };
+/* kit:pure:start */
+// DOM-free: test/pure.test.mjs runs this block alone in node:vm.
+const KIT_GENEROUS_BOUNDS = Object.freeze({ minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 });
 
-  /* kit:pure:start */
-  // Pure, DOM-free and deterministic: test/pure.test.mjs cuts these lines out and runs them in
-  // node:vm, so nothing here may touch the page or anything declared outside this block.
+/** @param {Partial<KitBounds> | null | undefined} bounds */
+function sanitizeBounds(bounds) {
+  /** @type {Partial<KitBounds>} */ const b = bounds !== null && typeof bounds === 'object' ? bounds : {};
+  /** @param {unknown} v @param {number} fallback */
+  const pick = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : fallback);
+  const g = KIT_GENEROUS_BOUNDS;
+  const minWidth = Math.max(g.minWidth, pick(b.minWidth, g.minWidth));
+  const maxWidth = Math.max(minWidth, pick(b.maxWidth, g.maxWidth));
+  const minHeight = Math.max(g.minHeight, pick(b.minHeight, g.minHeight));
+  const maxHeight = Math.max(minHeight, pick(b.maxHeight, g.maxHeight));
+  return { minWidth, maxWidth, minHeight, maxHeight };
+}
 
-  // Figma's documented floor for showUI and figma.ui.resize is 70 x 0. It documents no ceiling;
-  // 4096 is ours, so a runaway number can't ask for an absurd window before kit:init arrives.
-  const KIT_GENEROUS_BOUNDS = Object.freeze({ minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 });
+/** @param {number} width @param {number} height @param {Partial<KitBounds> | null} [bounds] */
+function clampSize(width, height, bounds) {
+  const b = sanitizeBounds(bounds);
+  /** @param {unknown} v @param {number} min @param {number} max */
+  const axis = (v, min, max) => (typeof v !== 'number' || Number.isNaN(v) ? min : Math.min(max, Math.max(min, Math.round(v))));
+  return { width: axis(width, b.minWidth, b.maxWidth), height: axis(height, b.minHeight, b.maxHeight) };
+}
 
-  /**
-   * Repair any bounds-like value: finite whole numbers, never under 70 x 0, and min <= max. When
-   * min > max, min wins (as in CSS and as code.ts does). Missing or junk fields take the generous
-   * default, so the result is always safe to clamp against.
-   * @param {Partial<KitBounds> | null | undefined} bounds
-   * @returns {KitBounds}
-   */
-  function sanitizeBounds(bounds) {
-    /** @type {Partial<KitBounds>} */
-    const b = bounds !== null && typeof bounds === 'object' ? bounds : {};
-    /** @param {unknown} value @param {number} fallback */
-    const pick = (value, fallback) => (typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : fallback);
-    const g = KIT_GENEROUS_BOUNDS;
-    const minWidth = Math.max(g.minWidth, pick(b.minWidth, g.minWidth));
-    const maxWidth = Math.max(minWidth, pick(b.maxWidth, g.maxWidth));
-    const minHeight = Math.max(g.minHeight, pick(b.minHeight, g.minHeight));
-    const maxHeight = Math.max(minHeight, pick(b.maxHeight, g.maxHeight));
-    return { minWidth, maxWidth, minHeight, maxHeight };
+/** @param {readonly number[]} snaps */
+function sortedSnaps(snaps) {
+  return (Array.isArray(snaps) ? snaps : []).filter((s) => Number.isFinite(s) && s > 0).sort((a, b) => a - b);
+}
+
+/** @param {number} width @param {readonly number[]} snaps */
+function nextSnap(width, snaps) {
+  const list = sortedSnaps(snaps);
+  if (list.length === 0) return Number.isFinite(width) ? width : 0;
+  for (const snap of list) if (snap > width) return snap;
+  return list[0];
+}
+
+/** @param {number} width @param {readonly number[]} snaps */
+function widestSnap(width, snaps) {
+  const list = sortedSnaps(snaps);
+  return list.length > 0 ? list[list.length - 1] : nextSnap(width, list);
+}
+
+/** @param {string} template @param {KitSize} size */
+function announceText(template, size) {
+  return String(template).replace(/\{(width|height)\}/g, (_, key) => String(key === 'width' ? size.width : size.height));
+}
+
+/** @param {{ left: number, top: number, bottom: number }} anchor @param {KitSize} menu @param {KitSize} viewport */
+function placeMenu(anchor, menu, viewport, gap = 4, margin = 8) {
+  const below = anchor.bottom + gap;
+  const roomBelow = viewport.height - margin - below;
+  const roomAbove = anchor.top - gap - margin;
+  const top = menu.height <= roomBelow || roomBelow >= roomAbove ? below : anchor.top - gap - menu.height;
+  /** @param {number} value @param {number} size @param {number} room */
+  const clamp = (value, size, room) => Math.round(Math.max(margin, Math.min(value, room - margin - size)));
+  return { left: clamp(anchor.left, menu.width, viewport.width), top: clamp(top, menu.height, viewport.height) };
+}
+
+/** @param {KitSize | null | undefined} a @param {KitSize | null | undefined} b */
+function sameSize(a, b) {
+  return !!a && !!b && a.width === b.width && a.height === b.height;
+}
+/* kit:pure:end */
+
+/** @type {KitMode} */ let mode = CONFIG.fallbackMode;
+/** @type {KitBounds} */ let bounds = KIT_GENEROUS_BOUNDS;
+/** @type {KitSize | null} */ let initSize = null;
+/** @type {KitSize | null} */ let defaultSize = null;
+/** @type {KitSize | null} */ let lastSent = null;
+/** @type {{ width: number, height: number, user: boolean } | null} */ let queued = null;
+/** @type {{ controller: AbortController, pointerId: number, x: number, y: number, start: KitSize, last: KitSize, moved: boolean } | null} */ let drag = null;
+/** @type {number | null} */ let headingWidth = null; // asked for, not reached yet: fits and keys start from it
+/** @type {number | null} */ let headingHeight = null;
+/** @type {number | null} */ let refitAtWidth = null;
+/** @type {number | undefined} */ let initTimer;
+/** @type {HTMLElement | null} */ let handle = null;
+/** @type {HTMLElement | null} */ let announcer = null;
+/** @type {ResizeObserver | null} */ let observer = null;
+/** @type {Element | null} */ let observedRoot = null;
+let chrome = false, configured = false, fontsLoaded = false, warnedProtocol = false;
+let started = false, fitRequested = false, pressMoved = false;
+let frame = 0, announceTimer = 0, retargetTimer = 0;
+
+/** @param {KitUiToMainMessage} message */
+function post(message) {
+  if (window.parent !== window) window.parent.postMessage({ pluginMessage: message }, '*');
+}
+
+/** @param {unknown} v @returns {v is KitMode} */
+function isMode(v) { return v === 'fit-content' || v === 'resizable' || v === 'fixed'; }
+
+/** @param {unknown} v @returns {v is KitSize} */
+function isSize(v) {
+  const size = /** @type {Record<string, unknown>} */ (v);
+  return v !== null && typeof v === 'object' && Number.isFinite(size.width) && Number.isFinite(size.height);
+}
+
+function chromeOn() { return configured && chrome && mode !== 'fixed'; }
+
+function viewportSize() {
+  return window.innerWidth > 0 || !initSize ? { width: window.innerWidth, height: window.innerHeight } : initSize;
+}
+
+// Where the window is, or is about to be.
+function currentSize() {
+  const at = queued || (drag && drag.last);
+  const view = viewportSize();
+  return at ? { width: at.width, height: at.height } : { width: headingWidth ?? view.width, height: headingHeight ?? view.height };
+}
+
+function findRoot() { return document.querySelector('[data-kit-root]') || document.body || document.documentElement; }
+
+function contentHeight() {
+  if (!(window.innerWidth > 0)) return viewportSize().height;
+  const root = findRoot();
+  const body = document.body;
+  /** @param {string} value */
+  const px = (value) => parseFloat(value) || 0;
+  let bottom = root.getBoundingClientRect().bottom + window.scrollY + px(getComputedStyle(root).marginBottom);
+  if (body && root !== body && body.contains(root)) {
+    const style = getComputedStyle(body);
+    bottom += px(style.paddingBottom) + px(style.borderBottomWidth) + px(style.marginBottom);
   }
+  return Math.ceil(bottom);
+}
 
-  /**
-   * Clamp a requested size into bounds and round it to whole pixels. Never returns NaN or
-   * Infinity: NaN (or a non-number) and -Infinity land on the minimum, +Infinity on the maximum.
-   * @param {number} width
-   * @param {number} height
-   * @param {Partial<KitBounds> | null} [bounds]
-   * @returns {KitSize}
-   */
-  function clampSize(width, height, bounds) {
-    const b = sanitizeBounds(bounds);
-    /** @param {unknown} value @param {number} min @param {number} max */
-    const axis = (value, min, max) => (typeof value !== 'number' || Number.isNaN(value) ? min : Math.min(max, Math.max(min, Math.round(value))));
-    return { width: axis(width, b.minWidth, b.maxWidth), height: axis(height, b.minHeight, b.maxHeight) };
+/** The one way to ask for a size. @param {number} width @param {number} height @param {{ immediate?: boolean, final?: boolean, user?: boolean }} [options] */
+function requestSize(width, height, options = {}) {
+  const size = clampSize(width, height, bounds);
+  const user = options.user === true;
+  if (options.immediate || options.final) {
+    cancelFrame();
+    send(size, user, options.final === true);
+    return;
   }
+  queued = { width: size.width, height: size.height, user: user || (queued !== null && queued.user) }; // a fit merged into a drag frame stays the person's
+  if (!frame) frame = requestAnimationFrame(flushFrame);
+}
 
-  /**
-   * The snap after `width`: the narrowest snap strictly wider than it, wrapping to the narrowest
-   * of all once `width` is at or past the widest. Order doesn't matter; non-finite and
-   * non-positive entries are skipped. With no usable snaps the width comes back unchanged (0 if
-   * it isn't finite), so the result can always be fed to clampSize.
-   * @param {number} width
-   * @param {readonly number[]} snaps
-   * @returns {number}
-   */
-  function nextSnap(width, snaps) {
-    const list = (Array.isArray(snaps) ? snaps : [])
-      .filter((s) => typeof s === 'number' && Number.isFinite(s) && s > 0)
-      .sort((a, b) => a - b);
-    if (list.length === 0) return typeof width === 'number' && Number.isFinite(width) ? width : 0;
-    for (const snap of list) if (snap > width) return snap;
-    return list[0];
-  }
+function cancelFrame() {
+  if (frame) cancelAnimationFrame(frame);
+  frame = 0;
+  queued = null;
+}
 
-  /**
-   * True when both sizes exist and match exactly. A missing size is never "the same", so the
-   * first request after startup is always sent.
-   * @param {KitSize | null | undefined} a
-   * @param {KitSize | null | undefined} b
-   */
-  function sameSize(a, b) {
-    return !!a && !!b && a.width === b.width && a.height === b.height;
-  }
-  /* kit:pure:end */
+function flushFrame() {
+  const next = queued;
+  cancelFrame();
+  if (next) send(next, next.user, false);
+}
 
-  /** @typedef {{ width: number, height: number, user: boolean }} KitQueuedSize */
-  /** @typedef {{ controller: AbortController, pointerId: number, x: number, y: number, start: KitSize, last: KitSize, moved: boolean }} KitDragState */
+/** @param {KitSize} size @param {boolean} user @param {boolean} final */
+function send(size, user, final) {
+  if (!final && sameSize(size, lastSent)) return; // finals always go
+  lastSent = size;
+  const track = chromeOn();
+  headingWidth = track && size.width !== window.innerWidth ? size.width : null;
+  headingHeight = track && size.height !== window.innerHeight ? size.height : null;
+  post({ type: 'kit:resize', width: size.width, height: size.height, user, final });
+}
 
-  // ---- State. Mode, chrome and bounds come only from kit:init (or the fallback): code.ts is the
-  // single source of truth, so the two files can never disagree about limits.
-  /** @type {KitMode} */
-  let mode = CONFIG.fallbackMode;
-  /** @type {KitBounds} */
-  let bounds = KIT_GENEROUS_BOUNDS;
-  let chrome = false;
-  /** @type {KitSize | null} */
-  let initSize = null;
-  /** @type {KitSize | null} */
-  let defaultSize = null;
-  let configured = false; // kit:init applied, or the fallback took over
-  let fontsLoaded = false;
-  let started = false;    // the first size request has gone out
-  let warnedProtocol = false;
-  /** @type {number | undefined} */
-  let initTimer;
-  /** @type {HTMLElement | null} */
-  let handle = null;
+function fitNow() {
+  if (!started || mode === 'fixed') return;
+  watchRootSoon();
+  requestSize(currentSize().width, contentHeight());
+}
 
-  // ---- Request bookkeeping. Every size change goes through requestSize(), so the queued frame,
-  // lastSent and the dedupe can't drift apart (the old script's direct sends did exactly that).
-  /** @type {KitSize | null} */
-  let lastSent = null;
-  /** @type {KitQueuedSize | null} */
-  let queued = null;
-  let frame = 0;
-  // The viewport lags one host round trip behind a request. Until the size last asked for has
-  // landed, fits and gestures must start from it, per axis: a reflow from an older in-flight
-  // size would drag the window back, and fast keys would each add their step to the same stale
-  // size. Set in send(), cleared by onViewportResize() once the viewport gets there.
-  /** @type {number | null} */
-  let headingWidth = null;
-  /** @type {number | null} */
-  let headingHeight = null;
-  // resizable Home changes the width, and content only reflows once that width lands; the
-  // fitted height is measured again then.
-  /** @type {number | null} */
-  let refitAtWidth = null;
-  /** @type {KitDragState | null} */
-  let drag = null;
-  // Whether the last press on the handle turned into a drag: the dblclick that the second press
-  // of a double-click produces must not snap on top of that drag.
-  let pressMoved = false;
-  /** @type {ResizeObserver | null} */
-  let observer = null;
-  /** @type {Element | null} */
-  let observedRoot = null;
-  let retargetTimer = 0;
-
-  /** @param {KitUiToMainMessage} message */
-  function post(message) {
-    // Opened directly in a browser there is no parent; the init timeout covers that case.
-    if (window.parent === window) return;
-    window.parent.postMessage({ pluginMessage: message }, '*');
-  }
-
-  /** @param {unknown} value @returns {value is KitMode} */
-  function isMode(value) {
-    return value === 'fit-content' || value === 'resizable' || value === 'fixed';
-  }
-
-  /** @param {unknown} value @returns {value is KitSize} */
-  function isSize(value) {
-    if (value === null || typeof value !== 'object') return false;
-    const size = /** @type {Record<string, unknown>} */ (value);
-    return typeof size.width === 'number' && Number.isFinite(size.width) && typeof size.height === 'number' && Number.isFinite(size.height);
-  }
-
-  function chromeOn() {
-    return configured && chrome && mode !== 'fixed';
-  }
-
-  /** @returns {KitSize} */
-  function viewportSize() {
-    // A plugin window shown with visible:false may not be laid out yet (0 x 0); until it is, the
-    // size code.ts reported in kit:init is the better answer.
-    if (window.innerWidth > 0 || !initSize) return { width: window.innerWidth, height: window.innerHeight };
-    return initSize;
-  }
-
-  /** @returns {number} */
-  function targetWidth() {
-    if (queued) return queued.width;
-    if (drag) return drag.last.width;
-    if (headingWidth !== null) return headingWidth;
-    return viewportSize().width;
-  }
-
-  /** Where the window is, or is about to be. @returns {KitSize} */
-  function currentSize() {
-    const height = queued ? queued.height : drag ? drag.last.height : headingHeight !== null ? headingHeight : viewportSize().height;
-    return { width: targetWidth(), height };
-  }
-
-  function findRoot() {
-    return document.querySelector('[data-kit-root]') || document.body || document.documentElement;
-  }
-
-  /**
-   * The height the content needs, whatever the window's height is now: the root's bottom edge
-   * in document coordinates plus whatever spacing sits below it. This only works because the
-   * root's height comes from its content: a root with height:100% or min-height:100vh tracks the
-   * window instead, so the window can never shrink (docs/window-chrome.md).
-   * @returns {number}
-   */
-  function contentHeight() {
-    if (!(window.innerWidth > 0)) return viewportSize().height; // not laid out: nothing to measure
-    const root = findRoot();
-    const px = (/** @type {string} */ value) => parseFloat(value) || 0;
-    let bottom = root.getBoundingClientRect().bottom + window.scrollY + px(getComputedStyle(root).marginBottom);
-    const body = document.body;
-    if (body && root !== body && body.contains(root)) {
-      const style = getComputedStyle(body);
-      bottom += px(style.paddingBottom) + px(style.borderBottomWidth) + px(style.marginBottom);
-    }
-    return Math.ceil(bottom);
-  }
-
-  function defaultWidth() {
-    return defaultSize ? defaultSize.width : viewportSize().width;
-  }
-
-  /**
-   * The single way to ask for a size. Coalesces to one message per frame unless `immediate` or
-   * `final`; either of those cancels the queued frame first, so a stale frame can never land on
-   * top of a revert or a final size.
-   * @param {number} width
-   * @param {number} height
-   * @param {{ immediate?: boolean, final?: boolean, user?: boolean }} [options]
-   */
-  function requestSize(width, height, options = {}) {
-    const size = clampSize(width, height, bounds);
-    const user = options.user === true;
-    if (options.immediate || options.final) {
-      cancelFrame();
-      send(size, user, options.final === true);
-      return;
-    }
-    // A fit merged into a queued drag frame keeps the drag's user flag: the width is still theirs.
-    queued = { width: size.width, height: size.height, user: user || (queued !== null && queued.user) };
-    if (!frame) frame = requestAnimationFrame(flushFrame);
-  }
-
-  function cancelFrame() {
-    if (frame) cancelAnimationFrame(frame);
-    frame = 0;
-    queued = null;
-  }
-
-  function flushFrame() {
-    frame = 0;
-    const next = queued;
-    queued = null;
-    if (next) send({ width: next.width, height: next.height }, next.user, false);
-  }
-
-  /** @param {KitSize} size @param {boolean} user @param {boolean} final */
-  function send(size, user, final) {
-    // Finals always go out: code.ts persists on them, and an Escape revert must win.
-    if (!final && sameSize(size, lastSent)) return;
-    lastSent = size;
-    // A floating window (chrome on) lands on every size code.ts applies. A docked panel (chrome
-    // off: Dev Mode, Buzz) is sized by Figma and may never match, so there the viewport is the truth.
-    const track = chromeOn();
-    headingWidth = track && size.width !== window.innerWidth ? size.width : null;
-    headingHeight = track && size.height !== window.innerHeight ? size.height : null;
-    /** @type {KitResizeMessage} */
-    const message = { type: 'kit:resize', width: size.width, height: size.height, user, final };
-    post(message);
-  }
-
-  /** @param {{ immediate?: boolean, final?: boolean, user?: boolean }} options */
-  function fitNow(options) {
-    if (!started || mode === 'fixed') return; // before the first fit there is nothing to redo
-    watchRootSoon();
-    requestSize(targetWidth(), contentHeight(), options);
-  }
-
-  // ---- Fit-content observation. The root is looked up on every fit, never cached once, so
-  // replacing the demo markup (or adding [data-kit-root] later) keeps fitting.
-  function syncObserver() {
-    const wanted = started && mode === 'fit-content';
-    if (!wanted) {
-      if (observer) observer.disconnect();
-      observer = null;
-      observedRoot = null;
-      window.clearTimeout(retargetTimer);
-      retargetTimer = 0;
-      return;
-    }
-    if (!observer) observer = new ResizeObserver(() => fitNow({}));
+function syncObserver() {
+  if (started && mode === 'fit-content') {
+    if (!observer) observer = new ResizeObserver(fitNow);
     watchRoot();
+    return;
   }
+  if (observer) observer.disconnect();
+  observer = null;
+  observedRoot = null;
+  clearTimeout(retargetTimer);
+  retargetTimer = 0;
+}
 
-  // A replaced root reports one last 0 x 0 size as it leaves the page, and the fit it triggers
-  // already measures the new root (contentHeight() looks it up). Moving the observer waits for
-  // the next task: observe() on a shallower element from inside an observer callback makes the
-  // browser fire a "ResizeObserver loop completed with undelivered notifications" error event.
-  function watchRootSoon() {
-    if (!observer || retargetTimer || findRoot() === observedRoot) return;
-    retargetTimer = window.setTimeout(() => {
-      retargetTimer = 0;
-      watchRoot();
-    }, 0);
-  }
+// A task later: observe() inside the observer's own callback raises a loop error.
+function watchRootSoon() {
+  if (!observer || retargetTimer || findRoot() === observedRoot) return;
+  retargetTimer = setTimeout(() => { retargetTimer = 0; watchRoot(); }, 0);
+}
 
-  function watchRoot() {
-    if (!observer) return;
-    const root = findRoot();
-    if (root === observedRoot) return;
-    if (observedRoot) observer.unobserve(observedRoot);
-    observer.observe(root);
-    observedRoot = root;
-  }
+function watchRoot() {
+  const root = findRoot();
+  if (!observer || root === observedRoot) return;
+  if (observedRoot) observer.unobserve(observedRoot);
+  observer.observe(root);
+  observedRoot = root;
+}
 
-  // The first request doubles as "ready to show": code.ts keeps the window hidden until the
-  // first kit:resize (or its own 500 ms cap), so it waits for fonts and for the real mode.
-  function start() {
-    if (started || !configured || !fontsLoaded) return;
-    started = true;
-    // kit:init's size is where code.ts has put the window (the restored or the default size).
-    // The viewport can still be a host round trip behind it, and asking for the viewport's size
-    // would undo the restore. A docked panel (chrome off) keeps its own size.
-    const base = initSize && chromeOn() ? initSize : viewportSize();
-    if (mode === 'fit-content') requestSize(base.width, contentHeight(), { immediate: true });
-    // resizable never auto-fits: keep the saved or default size, just announce readiness.
-    else if (mode === 'resizable') requestSize(base.width, base.height, { immediate: true });
-    // fixed: visible from the start and never resized by the kit.
+function start() {
+  if (started || !configured || !fontsLoaded) return;
+  started = true;
+  const base = initSize && chromeOn() ? initSize : viewportSize();
+  if (mode === 'fit-content') requestSize(base.width, contentHeight(), { immediate: true });
+  else if (mode === 'resizable') requestSize(base.width, takeFitRequest() ? contentHeight() : base.height, { immediate: true });
+  syncObserver();
+}
+
+function onFitMessage() { if (started) fitNow(); else fitRequested = true; }
+function takeFitRequest() { const asked = fitRequested; fitRequested = false; return asked; }
+
+/** @param {KitMode} nextMode @param {boolean} nextChrome @param {Partial<KitBounds> | null} nextBounds @param {KitSize | null} size @param {KitSize | null} fallbackDefault */
+function configure(nextMode, nextChrome, nextBounds, size, fallbackDefault) {
+  mode = nextMode;
+  chrome = nextChrome;
+  bounds = sanitizeBounds(nextBounds);
+  initSize = size ? clampSize(size.width, size.height, bounds) : null;
+  const base = fallbackDefault || viewportSize();
+  defaultSize = clampSize(base.width, base.height, bounds);
+  configured = true;
+  const on = chromeOn();
+  Object.assign(document.documentElement.dataset, { kitChrome: on ? 'on' : 'off', kitMode: mode });
+  if (handle) handle.hidden = !on;
+  if (!started) start();
+  else {
     syncObserver();
+    if (mode === 'fit-content') fitNow();
+    else if (mode === 'resizable' && initSize && on) requestSize(initSize.width, takeFitRequest() ? contentHeight() : initSize.height, { immediate: true });
   }
+}
 
-  /**
-   * @param {KitMode} nextMode
-   * @param {boolean} nextChrome
-   * @param {Partial<KitBounds> | null} nextBounds
-   * @param {KitSize | null} size
-   * @param {KitSize | null} fallbackDefault
-   */
-  function configure(nextMode, nextChrome, nextBounds, size, fallbackDefault) {
-    mode = nextMode;
-    chrome = nextChrome;
-    bounds = sanitizeBounds(nextBounds);
-    initSize = size ? clampSize(size.width, size.height, bounds) : null;
-    const base = fallbackDefault || viewportSize();
-    defaultSize = clampSize(base.width, base.height, bounds);
-    configured = true;
-
-    const on = chromeOn();
-    const html = document.documentElement;
-    html.dataset.kitChrome = on ? 'on' : 'off'; // CSS reserves the grip corner only while 'on'
-    html.dataset.kitMode = mode;                // lets CSS pick the handle cursor per mode
-    if (handle) handle.hidden = !on;
-
-    if (!started) start();
-    else {
-      // kit:init arrived after the fallback had already started: the real mode wins. Main may
-      // apply the fallback's fit after it sent kit:init, so ask again for the size kit:init
-      // reported (resizable), or refit (fit-content). Main ignores kit:resize in fixed mode.
-      syncObserver();
-      if (mode === 'fit-content') fitNow({});
-      else if (mode === 'resizable' && initSize && chromeOn()) requestSize(initSize.width, initSize.height, { immediate: true });
-    }
+/** @param {KitInitMessage} msg */
+function applyInit(msg) {
+  clearTimeout(initTimer);
+  if (msg.protocol !== KIT_PROTOCOL && !warnedProtocol) {
+    warnedProtocol = true;
+    const theirs = typeof msg.protocol === 'string' ? JSON.stringify(msg.protocol) : String(msg.protocol);
+    console.warn(`kit: code.ts speaks protocol ${theirs}, this ui.html speaks ${KIT_PROTOCOL}. Re-paste the kit blocks of both files from one release.`);
   }
+  configure(isMode(msg.mode) ? msg.mode : CONFIG.fallbackMode, msg.chrome === true, msg.bounds, isSize(msg.size) ? msg.size : null, isSize(msg.defaultSize) ? msg.defaultSize : null);
+}
 
-  /** @param {KitInitMessage} msg */
-  function applyInit(msg) {
-    window.clearTimeout(initTimer);
-    if (msg.protocol !== KIT_PROTOCOL && !warnedProtocol) {
-      warnedProtocol = true;
-      // A string is quoted, so "1" and 1 read differently in the warning.
-      const theirs = typeof msg.protocol === 'string' ? JSON.stringify(msg.protocol) : String(msg.protocol);
-      console.warn(`kit: code.ts speaks protocol ${theirs}, this ui.html speaks ${KIT_PROTOCOL}. Re-paste the kit:window block (code.ts) and the three data-kit blocks (ui.html) from the same kit release.`);
-    }
-    // Validated field by field: a malformed init degrades to defaults instead of throwing.
-    configure(
-      isMode(msg.mode) ? msg.mode : CONFIG.fallbackMode,
-      msg.chrome === true,
-      msg.bounds,
-      isSize(msg.size) ? msg.size : null,
-      isSize(msg.defaultSize) ? msg.defaultSize : null,
-    );
-  }
+function useFallback() {
+  if (!configured) configure(CONFIG.fallbackMode, false, null, null, null); // no chrome: nothing would save
+}
 
-  function useFallback() {
-    if (configured) return;
-    // No code.ts answered: no chrome (nothing would persist), generous bounds, still fit.
-    configure(isMode(CONFIG.fallbackMode) ? CONFIG.fallbackMode : 'fit-content', false, null, null, null);
-  }
+/** Host messages pass untouched. @param {MessageEvent} e */
+function onMessage(e) {
+  const msg = e.data && e.data.pluginMessage;
+  const type = msg !== null && typeof msg === 'object' ? msg.type : undefined;
+  if (type === 'kit:init') applyInit(msg);
+  else if (type === 'kit:fit') onFitMessage();
+}
 
-  /** @param {unknown} value @returns {value is KitMainToUiMessage} */
-  function isKitMessage(value) {
-    return value !== null && typeof value === 'object' && /** @type {{ type?: unknown }} */ (value).type === 'kit:init';
-  }
-
-  /** @param {MessageEvent} event */
-  function onMessage(event) {
-    // Host messages (any type not starting with 'kit:') fall straight through: no
-    // stopPropagation, no preventDefault, so the plugin's own listeners see every message.
-    const data = event.data;
-    /** @type {unknown} */
-    const msg = data !== null && typeof data === 'object' ? data.pluginMessage : undefined;
-    if (!isKitMessage(msg)) return;
-    if (msg.type === 'kit:init') applyInit(msg);
-  }
-
-  function onViewportResize() {
-    if (headingWidth !== null && window.innerWidth === headingWidth) headingWidth = null;
-    if (headingHeight !== null && window.innerHeight === headingHeight) headingHeight = null;
-    if (refitAtWidth !== null && window.innerWidth === refitAtWidth) {
-      refitAtWidth = null;
-      if (mode === 'resizable' && !drag) requestSize(window.innerWidth, contentHeight(), { final: true, user: true });
-    }
-  }
-
-  // ---- Gestures. The handle is the <button data-kit-resize> in the markup; without it the
-  // window still fits, there is just nothing to drag.
-
-  /**
-   * @param {KitSize} base
-   * @returns {KitSize}
-   */
-  function snapTarget(base) {
-    // Snaps outside the bounds would clamp to the current size and look like a dead key.
-    const usable = CONFIG.snapWidths.filter((w) => w >= bounds.minWidth && w <= bounds.maxWidth);
-    const width = nextSnap(base.width, usable.length > 0 ? usable : CONFIG.snapWidths);
-    return { width, height: mode === 'resizable' ? base.height : contentHeight() };
-  }
-
-  /** @param {PointerEvent} event */
-  function onPointerDown(event) {
-    // Primary button of the primary pointer only: right-click or a second finger never drags.
-    if (event.button !== 0 || !event.isPrimary || drag || !chromeOn() || !handle) return;
-    pressMoved = false;
-    const el = handle;
-    try {
-      el.setPointerCapture(event.pointerId);
-    } catch {
-      return; // no live pointer (synthetic event): without capture the drag could never end
-    }
-    // preventDefault stops text selection, but it also cancels the focus a mousedown would
-    // give; focus explicitly so Escape reaches this frame and keys continue from here.
-    // focusVisible:false: a script focus() otherwise draws the keyboard ring after a mouse drag
-    // (browsers without the option ignore it).
-    event.preventDefault();
-    el.focus({ preventScroll: true, focusVisible: false });
+function onViewportResize() {
+  if (headingWidth !== null && window.innerWidth === headingWidth) headingWidth = null;
+  if (headingHeight !== null && window.innerHeight === headingHeight) headingHeight = null;
+  if (refitAtWidth !== null && window.innerWidth === refitAtWidth) {
     refitAtWidth = null;
-    const now = currentSize();
-    const start = clampSize(now.width, now.height, bounds);
-    // One controller per drag: aborting it removes every listener below at once, however the
-    // drag ends, so nothing outlives it (the old {once:true} listeners did, after Escape).
-    const controller = new AbortController();
-    const signal = controller.signal;
-    drag = { controller, pointerId: event.pointerId, x: event.clientX, y: event.clientY, start, last: start, moved: false };
-    el.addEventListener('pointermove', onPointerMove, { signal });
-    el.addEventListener('pointerup', commitDrag, { signal });
-    el.addEventListener('pointercancel', commitDrag, { signal }); // the person did move: keep it
-    el.addEventListener('lostpointercapture', commitDrag, { signal });
-    window.addEventListener('keydown', onDragKey, { signal, capture: true });
+    if (mode === 'resizable' && !drag) requestSize(window.innerWidth, contentHeight(), { final: true, user: true });
   }
+  placeOpenMenu();
+}
 
-  /** @param {PointerEvent} event */
-  function onPointerMove(event) {
-    const d = drag;
-    if (!d || event.pointerId !== d.pointerId) return;
-    // clientX/Y are stable across the resize: the window grows from its top-left corner.
-    const width = d.start.width + (event.clientX - d.x);
-    const height = mode === 'resizable' ? d.start.height + (event.clientY - d.y) : contentHeight();
-    const target = clampSize(width, height, bounds);
-    const changed = mode === 'resizable' ? !sameSize(target, d.start) : target.width !== d.start.width;
-    if (!d.moved && !changed) return; // a click that wobbles inside one pixel is still a click
-    d.moved = true;
-    d.last = target;
-    requestSize(target.width, target.height, { user: true });
-  }
+// ---- Gestures (docs/window-chrome.md#gestures-and-keys)
 
-  /** @param {PointerEvent} event */
-  function commitDrag(event) {
-    // Only the dragging pointer ends the drag: a second finger or a stray tap lifting does not.
-    if (drag && event.pointerId === drag.pointerId) endDrag(true);
-  }
+/** @param {KitSize} base */
+function snapTarget(base, widest = false) {
+  const usable = CONFIG.snapWidths.filter((w) => w >= bounds.minWidth && w <= bounds.maxWidth);
+  const snaps = usable.length > 0 ? usable : CONFIG.snapWidths;
+  const width = widest ? widestSnap(base.width, snaps) : nextSnap(base.width, snaps);
+  return { width, height: mode === 'resizable' ? base.height : contentHeight() };
+}
 
-  /** @param {KeyboardEvent} event */
-  function onDragKey(event) {
-    if (event.key !== 'Escape') return;
-    // Escape belongs to the drag while one is active, so the host's own Escape (close a panel,
-    // close the plugin) doesn't fire as well. Only another capture listener on window still
-    // sees it: stopPropagation can't stop listeners on the same target.
-    event.preventDefault();
-    event.stopPropagation();
-    endDrag(false);
-  }
+function scheduleAnnounce() {
+  clearTimeout(announceTimer);
+  announceTimer = setTimeout(() => {
+    announceTimer = 0;
+    if (announcer) announcer.textContent = announceText(CONFIG.strings.announce, currentSize());
+  }, 150);
+}
 
-  /** @param {boolean} keep true commits the last size, false reverts to the start size */
-  function endDrag(keep) {
-    const d = drag;
-    if (!d) return;
-    drag = null;
-    pressMoved = d.moved;
-    d.controller.abort();
-    if (handle && handle.hasPointerCapture(d.pointerId)) handle.releasePointerCapture(d.pointerId);
-    if (!d.moved) return; // plain click, or Escape before any change: nothing to persist or undo
-    const size = keep ? d.last : d.start;
-    // fit-content measures the height now. The drag's own height was measured before its width
-    // landed and the content reflowed; sent as the final, it would overwrite the observer's
-    // newer fit, and with the root's size unchanged nothing would ever correct it.
-    requestSize(size.width, mode === 'resizable' ? size.height : contentHeight(), { final: true, user: true });
-  }
+/** @param {PointerEvent} e */
+function onPointerDown(e) {
+  if (e.button !== 0 || !e.isPrimary || drag || !chromeOn() || !handle) return;
+  pressMoved = false;
+  const el = handle;
+  try { el.setPointerCapture(e.pointerId); } catch { return; } // no live pointer: the drag could never end
+  // preventDefault cancels the focus too; Escape needs it, so focus by hand.
+  e.preventDefault();
+  el.focus({ preventScroll: true, focusVisible: false });
+  refitAtWidth = null;
+  clearTimeout(announceTimer);
+  const now = currentSize();
+  const start = clampSize(now.width, now.height, bounds);
+  const controller = new AbortController(); // its abort() removes these
+  const signal = controller.signal;
+  drag = { controller, pointerId: e.pointerId, x: e.clientX, y: e.clientY, start, last: start, moved: false };
+  el.addEventListener('pointermove', onPointerMove, { signal });
+  el.addEventListener('pointerup', commitDrag, { signal });
+  el.addEventListener('pointercancel', commitDrag, { signal });
+  el.addEventListener('lostpointercapture', commitDrag, { signal });
+  window.addEventListener('keydown', onDragKey, { signal, capture: true });
+}
 
-  /** @param {MouseEvent} event */
-  function onDoubleClick(event) {
-    // A second press that dragged already resized the window: no snap on top of it.
-    if (event.button !== 0 || drag || pressMoved || !chromeOn()) return;
-    event.preventDefault();
-    refitAtWidth = null;
-    const next = snapTarget(currentSize());
-    requestSize(next.width, next.height, { final: true, user: true });
-  }
+/** @param {PointerEvent} e */
+function onPointerMove(e) {
+  const d = drag;
+  if (!d || e.pointerId !== d.pointerId) return;
+  const width = d.start.width + (e.clientX - d.x);
+  const height = mode === 'resizable' ? d.start.height + (e.clientY - d.y) : contentHeight();
+  const target = clampSize(width, height, bounds);
+  const changed = mode === 'resizable' ? !sameSize(target, d.start) : target.width !== d.start.width;
+  if (!d.moved && !changed) return;
+  d.moved = true;
+  d.last = target;
+  requestSize(target.width, target.height, { user: true });
+}
 
-  /** @param {KeyboardEvent} event */
-  function onKeyDown(event) {
-    if (drag || !chromeOn() || event.altKey || event.ctrlKey || event.metaKey) return;
-    const base = currentSize();
-    const step = event.shiftKey ? CONFIG.bigStep : CONFIG.step;
-    /** @type {KitSize} */
-    let next;
-    switch (event.key) {
-      case 'ArrowLeft':
-      case 'ArrowRight':
-        next = {
-          width: base.width + (event.key === 'ArrowRight' ? step : -step),
-          height: mode === 'resizable' ? base.height : contentHeight(),
-        };
-        break;
-      case 'ArrowUp':
-      case 'ArrowDown':
-        if (mode !== 'resizable') return; // fit-content owns the height; let the page scroll
-        next = { width: base.width, height: base.height + (event.key === 'ArrowDown' ? step : -step) };
-        break;
-      case 'Enter':
-      case ' ':
-      case 'Home':
-        event.preventDefault();
-        if (event.repeat) return; // holding Enter would spin through the snaps
-        if (event.key === 'Home') {
-          next = { width: defaultWidth(), height: contentHeight() };
-          if (mode === 'resizable' && next.width !== window.innerWidth) refitAtWidth = clampSize(next.width, 0, bounds).width;
-        } else next = snapTarget(base);
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    if (event.key !== 'Home') refitAtWidth = null; // a newer gesture replaces Home's pending refit
-    requestSize(next.width, next.height, { final: true, user: true });
-  }
+/** @param {PointerEvent} e */
+function commitDrag(e) {
+  if (drag && e.pointerId === drag.pointerId) endDrag(true);
+}
 
-  // Merge <script type="application/json" data-kit-config> over CONFIG. Unknown keys and values
-  // of the wrong shape are ignored with one warning, so a typo can't break the window.
-  function applyConfigOverrides() {
-    const el = document.querySelector('script[type="application/json"][data-kit-config]');
-    if (!el) return;
-    /** @type {unknown} */
-    let raw;
-    try { raw = JSON.parse(el.textContent || '{}'); } catch (error) {
-      console.warn('[kit] data-kit-config is not valid JSON; using defaults.', error);
+/** @param {KeyboardEvent} e */
+function onDragKey(e) {
+  if (e.key !== 'Escape') return;
+  e.preventDefault();
+  e.stopPropagation();
+  endDrag(false);
+}
+
+/** @param {boolean} keep */
+function endDrag(keep) {
+  const d = drag;
+  if (!d) return;
+  drag = null;
+  pressMoved = d.moved;
+  d.controller.abort();
+  if (handle && handle.hasPointerCapture(d.pointerId)) handle.releasePointerCapture(d.pointerId);
+  if (!d.moved) return;
+  const size = keep ? d.last : d.start;
+  // fit-content measures again: the content reflowed at the last width.
+  requestSize(size.width, mode === 'resizable' ? size.height : contentHeight(), { final: true, user: true });
+}
+
+/** @param {MouseEvent} e */
+function onDoubleClick(e) {
+  if (e.button !== 0 || drag || pressMoved || !chromeOn()) return;
+  e.preventDefault();
+  refitAtWidth = null;
+  const next = snapTarget(currentSize());
+  requestSize(next.width, next.height, { final: true, user: true });
+}
+
+/** @param {KeyboardEvent} e */
+function onKeyDown(e) {
+  if (drag || !chromeOn() || e.altKey || e.ctrlKey || e.metaKey) return;
+  const base = currentSize();
+  const step = e.shiftKey ? CONFIG.bigStep : CONFIG.step;
+  /** @type {KitSize} */
+  let next;
+  switch (e.key) {
+    case 'ArrowLeft': case 'ArrowRight':
+      next = { width: base.width + (e.key === 'ArrowRight' ? step : -step), height: mode === 'resizable' ? base.height : contentHeight() };
+      break;
+    case 'ArrowUp': case 'ArrowDown':
+      if (mode !== 'resizable') return; // let the page scroll
+      next = { width: base.width, height: base.height + (e.key === 'ArrowDown' ? step : -step) };
+      break;
+    case 'Enter': case ' ': case 'Home': case 'End':
+      e.preventDefault();
+      if (e.repeat) return;
+      if (e.key === 'Home') {
+        next = { width: defaultSize ? defaultSize.width : viewportSize().width, height: contentHeight() };
+        if (mode === 'resizable' && next.width !== window.innerWidth) refitAtWidth = clampSize(next.width, 0, bounds).width;
+      } else next = snapTarget(base, e.key === 'End');
+      break;
+    default:
       return;
-    }
-    /** @param {unknown} v @returns {v is Record<string, unknown>} */
-    const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
-    if (!isObject(raw)) {
-      console.warn('[kit] data-kit-config must be a JSON object, such as {"snapWidths": [300, 400]}; using defaults.');
-      return;
-    }
-    /** @param {unknown} v */
-    const positive = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
-    /** @type {string[]} */
-    const ignored = [];
-    for (const key of Object.keys(raw)) {
-      const v = raw[key];
-      if (key === 'snapWidths' && Array.isArray(v) && v.length > 0 && v.every(positive)) CONFIG.snapWidths = v.slice();
-      // Whole pixels, at least 1: a fractional step rounds back to the same width, a dead key.
-      else if ((key === 'step' || key === 'bigStep') && typeof v === 'number' && Number.isInteger(v) && v >= 1) CONFIG[key] = v;
-      // setTimeout treats anything past 2^31 - 1 ms as 0.
-      else if (key === 'initTimeoutMs' && typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 0x7fffffff) CONFIG.initTimeoutMs = v;
-      else if (key === 'fallbackMode' && isMode(v)) CONFIG.fallbackMode = v;
-      else if (key === 'strings' && isObject(v)) {
-        for (const name of Object.keys(v)) {
-          const text = v[name];
-          // A blank label would leave the handle without an accessible name.
-          if (name === 'resizeLabel' && typeof text === 'string' && text.trim() !== '') CONFIG.strings.resizeLabel = text;
-          else ignored.push('strings.' + name);
-        }
-      } else ignored.push(key);
-    }
-    if (ignored.length > 0) console.warn('[kit] data-kit-config: ignored ' + ignored.join(', ') + ' (unknown key or wrong type).');
   }
+  e.preventDefault();
+  if (e.key !== 'Home') refitAtWidth = null;
+  requestSize(next.width, next.height, { final: true, user: true });
+  scheduleAnnounce();
+}
 
-  // ---- Startup. Listeners registered here are the only long-lived ones: three on the handle,
-  // two on window. Everything a drag adds is removed when it ends.
-  function boot() {
-    applyConfigOverrides();
-    mode = CONFIG.fallbackMode;
-    const found = document.querySelector('[data-kit-resize]');
-    handle = found instanceof HTMLElement ? found : null;
-    if (handle) {
-      handle.setAttribute('aria-label', CONFIG.strings.resizeLabel);
-      handle.addEventListener('pointerdown', onPointerDown);
-      handle.addEventListener('dblclick', onDoubleClick);
-      handle.addEventListener('keydown', onKeyDown);
-    }
-    window.addEventListener('message', onMessage);
-    window.addEventListener('resize', onViewportResize);
+/** @param {HTMLElement} el */
+function describeHandle(el) {
+  /** @param {string} tag */
+  const add = (tag) => document.body.appendChild(Object.assign(document.createElement(tag), { className: 'kit-visually-hidden' }));
+  const hint = document.getElementById('kit-resize-hint') || Object.assign(add('p'), { id: 'kit-resize-hint' });
+  hint.textContent = CONFIG.strings.resizeHint;
+  const ids = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+  if (ids.indexOf(hint.id) < 0) el.setAttribute('aria-describedby', ids.concat(hint.id).join(' '));
+  const region = document.querySelector('[data-kit-announce]');
+  announcer = region instanceof HTMLElement ? region : add('div');
+  if (!region) announcer.setAttribute('data-kit-announce', '');
+  announcer.setAttribute('aria-live', 'polite');
+}
 
-    // Measuring before web fonts settle fits the fallback font's line heights. A font that never
-    // settles (a request that hangs) must not keep the window from fitting, so the wait is capped
-    // at CONFIG.initTimeoutMs; in fit-content mode the observer refits when the font swaps in.
-    /** @type {Promise<unknown>} */
-    const fonts = 'fonts' in document ? document.fonts.ready : Promise.resolve();
-    const fontCap = new Promise((resolve) => window.setTimeout(resolve, CONFIG.initTimeoutMs));
-    Promise.race([fonts.catch(() => undefined), fontCap]).then(() => {
-      fontsLoaded = true;
-      start();
-    });
-
-    initTimer = window.setTimeout(useFallback, CONFIG.initTimeoutMs);
-    post({ type: 'kit:ready', protocol: KIT_PROTOCOL });
+// ---- Menus (docs/components.md#menu): the popover API opens and closes them; this adds the rest.
+/** @type {HTMLElement | null} */ let menuOpen = null;
+/** @type {HTMLElement | null} */ let menuInvoker = null;
+/** @param {unknown} el @returns {el is HTMLElement} */
+function isMenu(el) { return el instanceof HTMLElement && el.matches('.kit-menu[popover]'); }
+/** @param {ParentNode} root @param {string} selector @param {(el: HTMLElement) => boolean} keep */
+function elements(root, selector, keep) { return Array.from(root.querySelectorAll(selector)).filter(/** @returns {el is HTMLElement} */ (el) => el instanceof HTMLElement && keep(el)); }
+/** @param {HTMLElement} menu */
+function menuInvokers(menu) { return elements(document, '[popovertarget]', (el) => el.getAttribute('popovertarget') === menu.id); }
+/** @param {HTMLElement} menu */
+function menuItems(menu) { return elements(menu, '.kit-menu-item', (el) => !el.matches(':disabled, [aria-disabled="true"]')); }
+function placeOpenMenu() {
+  if (!menuOpen || !menuInvoker || !menuOpen.matches(':popover-open')) return;
+  Object.assign(menuOpen.style, { left: '0px', top: '0px' });
+  const { clientWidth: width, clientHeight: height } = document.documentElement;
+  const at = placeMenu(menuInvoker.getBoundingClientRect(), menuOpen.getBoundingClientRect(), { width, height });
+  Object.assign(menuOpen.style, { left: at.left + 'px', top: at.top + 'px' });
+}
+/** @param {Event} e */
+function onMenuToggle(e) {
+  const menu = e.target;
+  const { newState, source } = /** @type {ToggleEvent} */ (e);
+  if (!isMenu(menu)) return;
+  const open = newState === 'open';
+  if (e.type === 'beforetoggle') {
+    if (open) {
+      menuOpen = menu;
+      menuInvoker = source instanceof HTMLElement ? source : menuInvoker && menuInvoker.getAttribute('popovertarget') === menu.id ? menuInvoker : menuInvokers(menu)[0] || null;
+      requestAnimationFrame(placeOpenMenu);
+    } else if (menuOpen === menu) menuOpen = null;
+    return;
   }
+  for (const el of menuInvokers(menu)) el.setAttribute('aria-expanded', String(open));
+  if (!open || menu !== menuOpen) return;
+  placeOpenMenu();
+  const first = menuItems(menu)[0];
+  if (first) first.focus({ preventScroll: true });
+}
+/** @param {KeyboardEvent} e */
+function onMenuKey(e) {
+  const el = e.target;
+  if (!(el instanceof HTMLElement) || e.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+  const menu = el.closest('.kit-menu');
+  if (e.key === 'Escape' && menuOpen && menuOpen.matches(':popover-open')) {
+    e.preventDefault();
+    e.stopPropagation(); // the menu's Escape, not the host's
+    menuOpen.hidePopover();
+    if (menuInvoker) menuInvoker.focus();
+  } else if (!isMenu(menu)) {
+    const target = document.getElementById(el.getAttribute('popovertarget') || '');
+    if (e.key !== 'ArrowDown' || !isMenu(target) || target.matches(':popover-open')) return;
+    e.preventDefault();
+    menuInvoker = el;
+    target.showPopover({ source: el });
+  } else if (e.key === 'Tab') menu.hidePopover();
+  else {
+    const items = menuItems(menu);
+    const before = items.filter((item) => el.compareDocumentPosition(item) & Node.DOCUMENT_POSITION_PRECEDING);
+    const after = items.filter((item) => el.compareDocumentPosition(item) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const last = items[items.length - 1];
+    const next = /** @type {Record<string, HTMLElement | undefined>} */ ({ ArrowDown: after[0] || items[0], ArrowUp: before[before.length - 1] || last, Home: items[0], End: last })[e.key];
+    if (!next) return;
+    e.preventDefault();
+    next.focus();
+  }
+}
+/** @param {Event} e */
+function onMenuScroll(e) { if (menuOpen && !(e.target instanceof Node && menuOpen.contains(e.target))) placeOpenMenu(); }
+/** @param {MouseEvent} e */
+function onMenuClick(e) {
+  const item = e.target instanceof Element ? e.target.closest('.kit-menu-item') : null;
+  const menu = item && item.closest('.kit-menu');
+  if (!item || !isMenu(menu) || item.matches('[aria-disabled="true"]')) return;
+  // After every click listener: a host's preventDefault() keeps it open.
+  setTimeout(() => { if (!e.defaultPrevented && menu.matches(':popover-open')) menu.hidePopover(); }, 0);
+}
 
-  /** @type {KitUiApi} */
-  const api = Object.freeze({ version: KIT_VERSION, protocol: KIT_PROTOCOL, fit: () => fitNow({}) });
-  window.kit = api;
+function applyConfigOverrides() {
+  const el = document.querySelector('script[type="application/json"][data-kit-config]');
+  if (!el) return;
+  /** @param {unknown} v @returns {v is Record<string, unknown>} */
+  const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  /** @type {unknown} */ let raw;
+  try { raw = JSON.parse(el.textContent || '{}'); } catch (error) {
+    return console.warn('[kit] data-kit-config is not valid JSON; using defaults.', error);
+  }
+  if (!isObject(raw)) return console.warn('[kit] data-kit-config must be a JSON object; using defaults.');
+  /** @type {string[]} */ const ignored = [];
+  for (const [key, v] of Object.entries(raw)) {
+    if (key === 'snapWidths' && Array.isArray(v) && v.length > 0 && v.every((n) => typeof n === 'number' && Number.isFinite(n) && n > 0)) CONFIG.snapWidths = v.slice();
+    else if ((key === 'step' || key === 'bigStep') && typeof v === 'number' && Number.isInteger(v) && v >= 1) CONFIG[key] = v;
+    else if (key === 'initTimeoutMs' && typeof v === 'number' && v >= 0 && v <= 0x7fffffff) CONFIG.initTimeoutMs = v;
+    else if (key === 'fallbackMode' && isMode(v)) CONFIG.fallbackMode = v;
+    else if (key === 'strings' && isObject(v)) {
+      for (const [name, text] of Object.entries(v)) {
+        if ((name === 'resizeLabel' || name === 'resizeHint' || name === 'announce') && typeof text === 'string' && text.trim() !== '') CONFIG.strings[name] = text;
+        else ignored.push('strings.' + name);
+      }
+    } else ignored.push(key);
+  }
+  if (ignored.length > 0) console.warn('[kit] data-kit-config: ignored ' + ignored.join(', ') + ' (unknown key or wrong type).');
+}
 
-  // This script sits in <head>, before the handle and the root exist.
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
-  else boot();
+// The only long-lived listeners: three on the handle, two on window, five on document.
+function boot() {
+  applyConfigOverrides();
+  mode = CONFIG.fallbackMode;
+  const found = document.querySelector('[data-kit-resize]');
+  handle = found instanceof HTMLElement ? found : null;
+  if (handle) {
+    handle.setAttribute('aria-label', CONFIG.strings.resizeLabel);
+    describeHandle(handle);
+    handle.addEventListener('pointerdown', onPointerDown);
+    handle.addEventListener('dblclick', onDoubleClick);
+    handle.addEventListener('keydown', onKeyDown);
+  }
+  window.addEventListener('message', onMessage);
+  window.addEventListener('resize', onViewportResize);
+  if (typeof HTMLElement.prototype.showPopover === 'function') {
+    document.addEventListener('beforetoggle', onMenuToggle, true);
+    document.addEventListener('toggle', onMenuToggle, true);
+    document.addEventListener('keydown', onMenuKey, true);
+    document.addEventListener('click', onMenuClick, true);
+    document.addEventListener('scroll', onMenuScroll, { capture: true, passive: true });
+  }
+  /** @type {Promise<unknown>} */
+  const fonts = 'fonts' in document ? document.fonts.ready : Promise.resolve();
+  const fontCap = new Promise((resolve) => setTimeout(resolve, CONFIG.initTimeoutMs));
+  Promise.race([fonts.catch(() => undefined), fontCap]).then(() => { fontsLoaded = true; start(); });
+  initTimer = setTimeout(useFallback, CONFIG.initTimeoutMs);
+  post({ type: 'kit:ready', protocol: KIT_PROTOCOL });
+}
+
+window.kit = Object.freeze({ version: KIT_VERSION, protocol: KIT_PROTOCOL, fit: () => fitNow() });
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+else boot();
 })();
 </script>
 <link rel="stylesheet" href="tokens.figma-fallback.css">
@@ -930,12 +960,35 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
 .preview-caption { color: var(--figma-color-text-secondary); }
 .preview-na { color: var(--figma-color-text-tertiary); }
 .kit-demo-handle { position: relative; transform: translateZ(0); width: var(--kit-spacer-6); height: var(--kit-spacer-6); border: var(--kit-border-width) dashed var(--figma-color-border); border-radius: var(--kit-radius-medium); background-color: var(--figma-color-bg); }
+/* Phase 2 gallery. Wide rows put three plugin-sized cells on a line (about 330px each at full width). */
+.preview-states-wide { grid-template-columns: 120px repeat(3, minmax(0, 1fr)); }
+.preview-states-wide > .preview-row-title { grid-row: span 2; }
+.preview-states-wide > .preview-cell { align-items: stretch; }
+@media (max-width: 900px) {
+  .preview-states-wide { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .preview-states-wide > .preview-row-title { grid-row: auto; grid-column: 1 / -1; }
+}
+/* A dashed outline stands in for the plugin window's edges. */
+.preview-surface { border: var(--kit-border-width) dashed var(--figma-color-border); border-radius: var(--kit-radius-medium); background-color: var(--figma-color-bg); }
+.preview-surface > .kit-footer { position: static; }
+.preview-scroll { height: 136px; overflow: auto; }
+.preview-scroll:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: -1px; }
+.preview-scroll > .kit-footer { position: sticky; }
+/* data-kit-demo-open: static copies of an open menu or tooltip, drawn in place. Only this page uses
+   the attribute; the kit's own CSS never matches it. */
+.kit-menu[data-kit-demo-open] { position: relative; }
+.kit-tooltip[data-kit-demo-open] { scale: 1; visibility: visible; }
+/* Room under (or above) each tooltip's control. */
+:is([data-preview-component="tooltip"], [data-preview-extra="tooltip"]) > .preview-cell { padding-bottom: var(--kit-spacer-6); }
+.preview-cell-end { align-items: flex-end; }
+:is([data-preview-component="tooltip"], [data-preview-extra="tooltip"]) > .preview-cell-above { padding-bottom: 0; }
+.preview-cell-above > .kit-tooltip-host { margin-top: var(--kit-spacer-6); }
 </style>
 </head>
 <body>
 <header class="preview-toolbar">
   <h1 class="preview-title">Kit preview</h1>
-  <span class="kit-text-secondary">v0.2.0 · protocol 1</span>
+  <span class="kit-text-secondary">v0.3.0 · protocol 1</span>
   <div class="preview-group" role="group" aria-label="Theme">
     <span class="kit-text-secondary" aria-hidden="true">Theme</span>
     <button class="kit-button kit-button-tertiary" type="button" data-preview-theme="light" aria-pressed="true">Light</button>
@@ -993,7 +1046,7 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
   <hr class="kit-divider">
   <section class="kit-section kit-stack" id="gallery" aria-labelledby="gallery-heading">
     <h2 class="kit-heading preview-section-title" id="gallery-heading">Components</h2>
-    <p class="kit-help">Every Phase 1 component in every state. Hover, focus and pressed are forced with data-kit-demo-state (a preview-only copy of the kit's own :hover, :focus-visible and :active rules); the real states work too. Markup is the same as in a plugin: view the source to copy it.</p>
+    <p class="kit-help">Every kit component in every state: the Phase 1 controls first, then the Phase 2 components. Hover, focus and pressed are forced with data-kit-demo-state (a preview-only copy of the kit's own :hover, :focus-visible and :active rules); the real states work too. Markup is the same as in a plugin: view the source to copy it.</p>
 
     <h3 class="kit-heading" id="g-button">Button</h3>
     <div class="preview-states" data-preview-component="button-primary" role="group" aria-labelledby="g-button g-button-primary">
@@ -1115,6 +1168,316 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
       <div class="preview-cell" data-state="disabled"><span class="preview-caption">Disabled</span><span class="preview-na">None: it is hidden instead</span></div>
       <div class="preview-cell" data-state="hidden"><span class="preview-caption">Chrome off (Dev Mode, Buzz, fixed)</span><div class="kit-demo-handle"><button class="kit-resize-handle" type="button" aria-label="Resize window, hidden" hidden></button></div></div>
     </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-p2">Phase 2 components</h3>
+    <p class="kit-help">Same conventions as above: states are attributes, and hover, focus and pressed are forced with data-kit-demo-state. Wide rows use plugin-sized cells. The open menus and the open tooltip are static copies shown in place with data-kit-demo-open, a preview-only attribute; the first menu and every tooltip host also work for real.</p>
+
+    <h3 class="kit-heading" id="g-empty">Empty state</h3>
+    <div class="preview-states preview-states-wide" data-preview-component="empty" role="group" aria-labelledby="g-empty">
+      <h4 class="preview-row-title">Empty state</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Default</span><div class="preview-surface"><div class="kit-empty"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 6.5 6 3-6 3-6-3zM6 13.5l6 3 6-3" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg><p class="kit-empty-title">No layers selected</p><p class="kit-empty-text">Select one or more layers on the canvas to rename them.</p></div></div></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Action hover</span><div class="preview-surface"><div class="kit-empty"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11.5" cy="11.5" r="4" fill="none" stroke="currentColor"/><path d="m14.5 14.5 3 3" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><p class="kit-empty-title">No matches</p><p class="kit-empty-text">No layer name contains “Hero”.</p><button class="kit-button kit-button-secondary" type="button" data-kit-demo-state="hover">Clear search</button></div></div></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Action focus</span><div class="preview-surface"><div class="kit-empty"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11.5" cy="11.5" r="4" fill="none" stroke="currentColor"/><path d="m14.5 14.5 3 3" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><p class="kit-empty-title">No matches</p><p class="kit-empty-text">No layer name contains “Hero”.</p><button class="kit-button kit-button-secondary" type="button" data-kit-demo-state="focus">Clear search</button></div></div></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Action pressed</span><div class="preview-surface"><div class="kit-empty"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><p class="kit-empty-title">No frames yet</p><p class="kit-empty-text">Create one to start.</p><button class="kit-button kit-button-primary" type="button" data-kit-demo-state="active">Create frame</button></div></div></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Action disabled</span><div class="preview-surface"><div class="kit-empty"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><p class="kit-empty-title">No frames yet</p><p class="kit-empty-text">This file is view-only.</p><button class="kit-button kit-button-primary" type="button" disabled>Create frame</button></div></div></div>
+      <div class="preview-cell" data-state="loading"><span class="preview-caption">Action loading</span><div class="preview-surface"><div class="kit-empty"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><p class="kit-empty-title">No frames yet</p><p class="kit-empty-text">Create one to start.</p><button class="kit-button kit-button-primary" type="button" aria-busy="true">Create frame</button></div></div></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-list">List</h3>
+    <div class="preview-states preview-states-wide" data-preview-component="list" role="group" aria-labelledby="g-list">
+      <h4 class="preview-row-title">Rows</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Static rows (li)</span><div class="preview-surface">
+        <ul class="kit-list" aria-label="Frames">
+          <li class="kit-list-row"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Header</span><span class="kit-list-row-meta">1440 × 80</span></li>
+          <li class="kit-list-row"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Hero</span><span class="kit-list-row-meta">1440 × 720</span></li>
+          <li class="kit-list-row"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h8M12 8v8.5" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Footnote with a long name that does not fit</span><span class="kit-list-row-meta">Text</span></li>
+        </ul></div></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Hover (button rows)</span><div class="preview-surface">
+        <ul class="kit-list" aria-label="Layers, hover">
+          <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Rectangle 1</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+          <li><button class="kit-list-row" type="button" data-kit-demo-state="hover"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Rectangle 2</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+        </ul></div></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Focus</span><div class="preview-surface">
+        <ul class="kit-list" aria-label="Layers, focus">
+          <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Rectangle 1</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+          <li><button class="kit-list-row" type="button" data-kit-demo-state="focus"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Rectangle 2</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+        </ul></div></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><div class="preview-surface">
+        <ul class="kit-list" aria-label="Layers, pressed">
+          <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Rectangle 1</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+          <li><button class="kit-list-row" type="button" data-kit-demo-state="active"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Rectangle 2</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+        </ul></div></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Disabled</span><div class="preview-surface">
+        <ul class="kit-list" aria-label="Layers, disabled">
+          <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Rectangle 1</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+          <li><button class="kit-list-row" type="button" disabled><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11h8v6H8z M9.5 11V9.5a2.5 2.5 0 0 1 5 0V11" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg><span class="kit-list-row-label">Locked layer</span><span class="kit-list-row-meta">Locked</span></button></li>
+        </ul></div></div>
+      <div class="preview-cell" data-state="selected"><span class="preview-caption">Selected (aria-current)</span><div class="preview-surface">
+        <ul class="kit-list" aria-label="Layers, selected">
+          <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Rectangle 1</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+          <li><button class="kit-list-row" type="button" aria-current="true"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Rectangle 2</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+        </ul></div></div>
+    </div>
+    <div class="preview-states preview-states-wide" data-preview-extra="list" role="group" aria-labelledby="g-list g-list-more">
+      <h4 class="preview-row-title" id="g-list-more">Also</h4>
+      <div class="preview-cell"><span class="preview-caption">Selected hover, selected focus</span><div class="preview-surface">
+        <ul class="kit-list" aria-label="Layers, selected states">
+          <li><button class="kit-list-row" type="button" aria-current="true" data-kit-demo-state="hover"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Selected, hover</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+          <li><button class="kit-list-row" type="button" aria-current="true" data-kit-demo-state="focus"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h9v9h-9z" fill="none" stroke="currentColor"/></svg><span class="kit-list-row-label">Selected, focus</span><span class="kit-list-row-meta">100 × 100</span></button></li>
+        </ul></div></div>
+      <div class="preview-cell"><span class="preview-caption">Text only</span><div class="preview-surface">
+        <ul class="kit-list" aria-label="Renames">
+          <li class="kit-list-row"><span class="kit-list-row-label">Rectangle 1 → Card</span><span class="kit-list-row-meta">Frame</span></li>
+          <li class="kit-list-row"><span class="kit-list-row-label">Rectangle 2 → Card 2</span><span class="kit-list-row-meta">Frame</span></li>
+        </ul></div></div>
+      <div class="preview-cell"><span class="preview-caption">Long, in a .kit-scroll region (max height 128px here)</span><div class="preview-surface">
+        <div class="kit-scroll" style="--kit-scroll-max-height: 128px" tabindex="0" role="region" aria-label="Variables, scrolling">
+          <ul class="kit-list"><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/50</span><span class="kit-list-row-meta">Color</span></li><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/150</span><span class="kit-list-row-meta">Color</span></li><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/250</span><span class="kit-list-row-meta">Color</span></li><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/350</span><span class="kit-list-row-meta">Color</span></li><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/450</span><span class="kit-list-row-meta">Color</span></li><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/550</span><span class="kit-list-row-meta">Color</span></li><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/650</span><span class="kit-list-row-meta">Color</span></li><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/750</span><span class="kit-list-row-meta">Color</span></li><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/850</span><span class="kit-list-row-meta">Color</span></li><li class="kit-list-row"><span class="kit-list-row-label">color/neutral/950</span><span class="kit-list-row-meta">Color</span></li></ul></div></div></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-footer">Sticky footer</h3>
+    <p class="kit-help">In a plugin the footer sticks to the window's bottom edge and, while the chrome is on, keeps its buttons clear of the resize grip. Here the footers sit in place, except in the scrolling cell.</p>
+    <div class="preview-states preview-states-wide" data-preview-component="footer" role="group" aria-labelledby="g-footer">
+      <h4 class="preview-row-title">Footer</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Default</span><div class="preview-surface"><footer class="kit-footer"><p class="kit-text-secondary">3 layers selected</p><div class="kit-row"><button class="kit-button kit-button-secondary" type="button">Cancel</button><button class="kit-button kit-button-primary" type="button">Rename</button></div></footer></div></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Hover</span><div class="preview-surface"><footer class="kit-footer"><p class="kit-text-secondary">3 layers selected</p><div class="kit-row"><button class="kit-button kit-button-secondary" type="button">Cancel</button><button class="kit-button kit-button-primary" type="button" data-kit-demo-state="hover">Rename</button></div></footer></div></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Focus</span><div class="preview-surface"><footer class="kit-footer"><p class="kit-text-secondary">3 layers selected</p><div class="kit-row"><button class="kit-button kit-button-secondary" type="button">Cancel</button><button class="kit-button kit-button-primary" type="button" data-kit-demo-state="focus">Rename</button></div></footer></div></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><div class="preview-surface"><footer class="kit-footer"><p class="kit-text-secondary">3 layers selected</p><div class="kit-row"><button class="kit-button kit-button-secondary" type="button">Cancel</button><button class="kit-button kit-button-primary" type="button" data-kit-demo-state="active">Rename</button></div></footer></div></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Disabled</span><div class="preview-surface"><footer class="kit-footer"><p class="kit-text-secondary">Nothing selected</p><div class="kit-row"><button class="kit-button kit-button-secondary" type="button">Cancel</button><button class="kit-button kit-button-primary" type="button" disabled>Rename</button></div></footer></div></div>
+      <div class="preview-cell" data-state="sticky"><span class="preview-caption">Sticky over scrolling content</span><div class="preview-surface preview-scroll" tabindex="0" role="region" aria-label="Scrolling plugin content">
+        <div class="kit-section kit-stack">
+          <div class="kit-field"><label class="kit-label" for="g-footer-find">Find</label><input class="kit-input" id="g-footer-find" type="text" value="Rectangle"></div>
+          <div class="kit-field"><label class="kit-label" for="g-footer-replace">Replace with</label><input class="kit-input" id="g-footer-replace" type="text" value="Card"></div>
+          <div class="kit-field"><label class="kit-label" for="g-footer-scope">Scope</label><div class="kit-select"><select id="g-footer-scope"><option>Selection</option><option>Page</option></select></div></div>
+        </div>
+        <footer class="kit-footer"><button class="kit-button kit-button-secondary" type="button">Cancel</button><button class="kit-button kit-button-primary" type="button">Replace all</button></footer>
+      </div></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-notice">Inline notice</h3>
+    <div class="preview-states preview-states-wide" data-preview-component="notice" role="group" aria-labelledby="g-notice">
+      <h4 class="preview-row-title">Notice</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Default (info)</span><div class="kit-notice" data-kit-tone="info" role="status"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="M12 11.5v3M12 9.25v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><p class="kit-notice-text">Hidden layers are skipped.</p></div></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Dismiss hover</span><div class="kit-notice" data-kit-tone="info" role="status"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="M12 11.5v3M12 9.25v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><p class="kit-notice-text">Hidden layers are skipped.</p><button class="kit-icon-button" type="button" aria-label="Dismiss, hover" data-kit-demo-state="hover"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></div></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Dismiss focus</span><div class="kit-notice" data-kit-tone="info" role="status"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="M12 11.5v3M12 9.25v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><p class="kit-notice-text">Hidden layers are skipped.</p><button class="kit-icon-button" type="button" aria-label="Dismiss, focus" data-kit-demo-state="focus"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></div></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Dismiss pressed</span><div class="kit-notice" data-kit-tone="info" role="status"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="M12 11.5v3M12 9.25v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><p class="kit-notice-text">Hidden layers are skipped.</p><button class="kit-icon-button" type="button" aria-label="Dismiss, pressed" data-kit-demo-state="active"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></div></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Disabled</span><span class="preview-na">None: a notice is not a control; its buttons disable as usual</span></div>
+      <div class="preview-cell" data-state="danger"><span class="preview-caption">Danger (role="alert")</span><div class="kit-notice" data-kit-tone="danger" role="alert"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="M12 9.25v3.25M12 14.75v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><p class="kit-notice-text">2 layers could not be renamed: they are locked.</p></div></div>
+    </div>
+    <div class="preview-states preview-states-wide" data-preview-extra="notice" role="group" aria-labelledby="g-notice g-notice-more">
+      <h4 class="preview-row-title" id="g-notice-more">Tones</h4>
+      <div class="preview-cell"><span class="preview-caption">Success</span><div class="kit-notice" data-kit-tone="success" role="status"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="m9.75 12.25 1.5 1.5 3-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="kit-notice-text">Renamed 12 layers.</p></div></div>
+      <div class="preview-cell"><span class="preview-caption">Warning, with an action</span><div class="kit-notice" data-kit-tone="warning" role="status"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.75 17.75 17H6.25z" fill="none" stroke="currentColor" stroke-linejoin="round"/><path d="M12 10.75v2.5M12 15.25v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><p class="kit-notice-text">3 names are duplicates.</p><button class="kit-button kit-button-secondary" type="button">Review</button></div></div>
+      <div class="preview-cell"><span class="preview-caption">Neutral, text only</span><div class="kit-notice" role="status"><p class="kit-notice-text">Names are applied in layer order, top to bottom, and can be undone with Cmd+Z.</p></div></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-checkbox">Checkbox</h3>
+    <div class="preview-states" data-preview-component="checkbox" role="group" aria-labelledby="g-checkbox">
+      <h4 class="preview-row-title">Checkbox</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Default</span><label class="kit-checkbox"><input type="checkbox">Include hidden</label></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Hover</span><label class="kit-checkbox" data-kit-demo-state="hover"><input type="checkbox">Include hidden</label></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Focus, checked</span><label class="kit-checkbox"><input type="checkbox" checked data-kit-demo-state="focus">Include hidden</label></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><span class="preview-na">None: UI3 checkboxes have no pressed state</span></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Disabled</span><label class="kit-checkbox"><input type="checkbox" disabled>Include hidden</label><label class="kit-checkbox"><input type="checkbox" checked disabled>Include locked</label><label class="kit-checkbox"><input type="checkbox" disabled data-preview-indeterminate>Some layers</label></div>
+      <div class="preview-cell" data-state="checked"><span class="preview-caption">Checked, indeterminate</span><label class="kit-checkbox"><input type="checkbox" checked>Include hidden</label><label class="kit-checkbox"><input type="checkbox" data-preview-indeterminate>Some layers</label></div>
+    </div>
+    <div class="preview-states" data-preview-extra="checkbox" role="group" aria-labelledby="g-checkbox g-checkbox-more">
+      <h4 class="preview-row-title" id="g-checkbox-more">Also</h4>
+      <div class="preview-cell"><span class="preview-caption">Focus, unchecked</span><label class="kit-checkbox"><input type="checkbox" data-kit-demo-state="focus">Include hidden</label></div>
+      <div class="preview-cell"><span class="preview-caption">Focus, indeterminate</span><label class="kit-checkbox"><input type="checkbox" data-preview-indeterminate data-kit-demo-state="focus">Some layers</label></div>
+      <div class="preview-cell kit-field"><span class="preview-caption">Error</span><label class="kit-checkbox"><input type="checkbox" aria-invalid="true" aria-describedby="g-checkbox-error-help">I have a license</label><p class="kit-help" id="g-checkbox-error-help">Required to export.</p></div>
+      <div class="preview-cell kit-field"><span class="preview-caption">With help text</span><label class="kit-checkbox"><input type="checkbox" checked aria-describedby="g-checkbox-help">Keep ratio</label><p class="kit-help" id="g-checkbox-help">Width drives height.</p></div>
+      <div class="preview-cell"><span class="preview-caption">Long label wraps</span><label class="kit-checkbox"><input type="checkbox">Rename nested layers inside instances too</label></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-radio">Radio</h3>
+    <div class="preview-states" data-preview-component="radio" role="group" aria-labelledby="g-radio">
+      <h4 class="preview-row-title">Radio</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Default</span><label class="kit-radio"><input type="radio" name="g-radio-default">Selection</label></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Hover</span><label class="kit-radio" data-kit-demo-state="hover"><input type="radio" name="g-radio-hover">Selection</label></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Focus, checked</span><label class="kit-radio"><input type="radio" name="g-radio-focus" checked data-kit-demo-state="focus">Selection</label></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><span class="preview-na">None, as for checkboxes</span></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Disabled</span><label class="kit-radio"><input type="radio" name="g-radio-disabled" checked disabled>Page</label><label class="kit-radio"><input type="radio" name="g-radio-disabled" disabled>Document</label></div>
+      <div class="preview-cell" data-state="checked"><span class="preview-caption">Checked</span><div class="kit-stack" role="radiogroup" aria-label="Scope"><label class="kit-radio"><input type="radio" name="g-radio-checked" checked>Selection</label><label class="kit-radio"><input type="radio" name="g-radio-checked">Page</label></div></div>
+    </div>
+    <div class="preview-states" data-preview-extra="radio" role="group" aria-labelledby="g-radio g-radio-more">
+      <h4 class="preview-row-title" id="g-radio-more">Also</h4>
+      <div class="preview-cell"><span class="preview-caption">Focus, unchecked</span><label class="kit-radio"><input type="radio" name="g-radio-focus-off" data-kit-demo-state="focus">Selection</label></div>
+      <div class="preview-cell kit-field"><span class="preview-caption">Error</span><div class="kit-stack" role="radiogroup" aria-label="Format, error"><label class="kit-radio"><input type="radio" name="g-radio-error" aria-invalid="true" aria-describedby="g-radio-error-help">PNG</label><label class="kit-radio"><input type="radio" name="g-radio-error" aria-invalid="true" aria-describedby="g-radio-error-help">SVG</label></div><p class="kit-help" id="g-radio-error-help">Pick a format.</p></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-textarea">Textarea</h3>
+    <div class="preview-states" data-preview-component="textarea" role="group" aria-labelledby="g-textarea">
+      <h4 class="preview-row-title">Textarea</h4>
+      <div class="preview-cell kit-field" data-state="default"><label class="kit-label" for="g-textarea-default">Default</label><textarea class="kit-textarea" id="g-textarea-default" rows="3" placeholder="One name per line"></textarea></div>
+      <div class="preview-cell kit-field" data-state="hover"><label class="kit-label" for="g-textarea-hover">Hover</label><textarea class="kit-textarea" id="g-textarea-hover" rows="3" data-kit-demo-state="hover">Card
+Card 2</textarea></div>
+      <div class="preview-cell kit-field" data-state="focus"><label class="kit-label" for="g-textarea-focus">Focus</label><textarea class="kit-textarea" id="g-textarea-focus" rows="3" data-kit-demo-state="focus">Card
+Card 2</textarea></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><span class="preview-na">None, as for inputs</span></div>
+      <div class="preview-cell kit-field" data-state="disabled"><label class="kit-label" for="g-textarea-disabled">Disabled</label><textarea class="kit-textarea" id="g-textarea-disabled" rows="3" disabled>Card
+Card 2</textarea></div>
+      <div class="preview-cell kit-field" data-state="error"><label class="kit-label" for="g-textarea-error">Error</label><textarea class="kit-textarea" id="g-textarea-error" rows="3" aria-invalid="true" aria-describedby="g-textarea-error-help">Card
+</textarea><p class="kit-help" id="g-textarea-error-help">Line 2 is empty.</p></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-section-header">Section header</h3>
+    <div class="preview-states preview-states-wide" data-preview-component="section-header" role="group" aria-labelledby="g-section-header">
+      <h4 class="preview-row-title">Header</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Default</span><div class="preview-surface"><header class="kit-section-header"><h4>Layers</h4><button class="kit-icon-button" type="button" aria-label="Add layer"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.5v9M7.5 12h9" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></header></div></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Button hover</span><div class="preview-surface"><header class="kit-section-header"><h4>Layers</h4><button class="kit-icon-button" type="button" aria-label="Add layer, hover" data-kit-demo-state="hover"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.5v9M7.5 12h9" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></header></div></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Button focus</span><div class="preview-surface"><header class="kit-section-header"><h4>Layers</h4><button class="kit-icon-button" type="button" aria-label="Add layer, focus" data-kit-demo-state="focus"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.5v9M7.5 12h9" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></header></div></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Button pressed</span><div class="preview-surface"><header class="kit-section-header"><h4>Layers</h4><button class="kit-icon-button" type="button" aria-label="Add layer, pressed" data-kit-demo-state="active"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.5v9M7.5 12h9" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></header></div></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Button disabled</span><div class="preview-surface"><header class="kit-section-header"><h4>Layers</h4><button class="kit-icon-button" type="button" aria-label="Add layer, disabled" disabled><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.5v9M7.5 12h9" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></header></div></div>
+      <div class="preview-cell" data-state="selected"><span class="preview-caption">Toggle on; long title</span><div class="preview-surface"><header class="kit-section-header"><h4>Export settings for every selected frame</h4><button class="kit-icon-button" type="button" aria-label="Lock settings" aria-pressed="true"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11h8v6H8z M9.5 11V9.5a2.5 2.5 0 0 1 5 0V11" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg></button><button class="kit-icon-button" type="button" aria-label="Add setting"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.5v9M7.5 12h9" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></header></div></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-icon-button">Icon button</h3>
+    <div class="preview-states" data-preview-component="icon-button" role="group" aria-labelledby="g-icon-button">
+      <h4 class="preview-row-title">Icon button</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Default</span><button class="kit-icon-button" type="button" aria-label="Align left"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6.5v11M10.5 9.5h6M10.5 14.5h4" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Hover</span><button class="kit-icon-button" type="button" aria-label="Align left, hover" data-kit-demo-state="hover"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6.5v11M10.5 9.5h6M10.5 14.5h4" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Focus</span><button class="kit-icon-button" type="button" aria-label="Align left, focus" data-kit-demo-state="focus"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6.5v11M10.5 9.5h6M10.5 14.5h4" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><button class="kit-icon-button" type="button" aria-label="Align left, pressed" data-kit-demo-state="active"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6.5v11M10.5 9.5h6M10.5 14.5h4" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Disabled</span><button class="kit-icon-button" type="button" aria-label="Align left, disabled" disabled><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6.5v11M10.5 9.5h6M10.5 14.5h4" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></div>
+      <div class="preview-cell" data-state="selected"><span class="preview-caption">Selected (aria-pressed)</span><button class="kit-icon-button" type="button" aria-label="Lock ratio" aria-pressed="true"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11h8v6H8z M9.5 11V9.5a2.5 2.5 0 0 1 5 0V11" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg></button></div>
+    </div>
+    <div class="preview-states" data-preview-extra="icon-button" role="group" aria-labelledby="g-icon-button g-icon-button-more">
+      <h4 class="preview-row-title" id="g-icon-button-more">Also</h4>
+      <div class="preview-cell"><span class="preview-caption">Selected hover</span><button class="kit-icon-button" type="button" aria-label="Lock ratio, hover" aria-pressed="true" data-kit-demo-state="hover"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11h8v6H8z M9.5 11V9.5a2.5 2.5 0 0 1 5 0V11" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg></button></div>
+      <div class="preview-cell"><span class="preview-caption">Menu open (aria-expanded)</span><button class="kit-icon-button" type="button" aria-label="More, open" aria-haspopup="menu" aria-expanded="true"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 12h.01M12 12h.01M16.5 12h.01" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+      <div class="preview-cell"><span class="preview-caption">Disabled, aria-pressed</span><button class="kit-icon-button" type="button" aria-label="Lock ratio, disabled" aria-pressed="true" disabled><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11h8v6H8z M9.5 11V9.5a2.5 2.5 0 0 1 5 0V11" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg></button></div>
+      <div class="preview-cell"><span class="preview-caption">16px icon</span><button class="kit-icon-button" type="button" aria-label="Close"><svg class="kit-icon kit-icon-small" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 4.5 7 7m0-7-7 7" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-number">Number field</h3>
+    <div class="preview-states" data-preview-component="number" role="group" aria-labelledby="g-number">
+      <h4 class="preview-row-title">Number</h4>
+      <div class="preview-cell kit-field" data-state="default"><label class="kit-label" for="g-number-default">Default</label><div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">W</span><input class="kit-input" id="g-number-default" type="number" value="320" min="1"></div></div>
+      <div class="preview-cell kit-field" data-state="hover"><label class="kit-label" for="g-number-hover">Hover</label><div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">W</span><input class="kit-input" id="g-number-hover" type="number" value="320" min="1" data-kit-demo-state="hover"></div></div>
+      <div class="preview-cell kit-field" data-state="focus"><label class="kit-label" for="g-number-focus">Focus</label><div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">W</span><input class="kit-input" id="g-number-focus" type="number" value="320" min="1" data-kit-demo-state="focus"></div></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><span class="preview-na">None, as for inputs</span></div>
+      <div class="preview-cell kit-field" data-state="disabled"><label class="kit-label" for="g-number-disabled">Disabled</label><div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">W</span><input class="kit-input" id="g-number-disabled" type="number" value="320" disabled></div></div>
+      <div class="preview-cell kit-field" data-state="error"><label class="kit-label" for="g-number-error">Error</label><div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">W</span><input class="kit-input" id="g-number-error" type="number" value="0" min="1" aria-invalid="true" aria-describedby="g-number-error-help"></div><p class="kit-help" id="g-number-error-help">At least 1.</p></div>
+    </div>
+    <div class="preview-states" data-preview-extra="number" role="group" aria-labelledby="g-number g-number-more">
+      <h4 class="preview-row-title" id="g-number-more">Also</h4>
+      <div class="preview-cell kit-field"><label class="kit-label" for="g-number-icon">Icon prefix</label><div class="kit-number"><span class="kit-number-prefix" aria-hidden="true"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 16.5v-5a4 4 0 0 1 4-4h5" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></span><input class="kit-input" id="g-number-icon" type="number" value="8" min="0"></div></div>
+      <div class="preview-cell kit-field"><label class="kit-label" for="g-number-plain">No prefix</label><div class="kit-number"><input class="kit-input" id="g-number-plain" type="number" value="12" min="1" max="50"></div></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-color">Colour field</h3>
+    <div class="preview-states" data-preview-component="color" role="group" aria-labelledby="g-color">
+      <h4 class="preview-row-title">Swatch + hex</h4>
+      <div class="preview-cell kit-field" data-state="default"><label class="kit-label" for="g-color-default">Default</label><div class="kit-color"><input class="kit-color-swatch" type="color" value="#0d99ff" aria-label="Pick the default colour"><input class="kit-input" id="g-color-default" type="text" value="0D99FF" spellcheck="false"></div></div>
+      <div class="preview-cell kit-field" data-state="hover"><label class="kit-label" for="g-color-hover">Hover</label><div class="kit-color" data-kit-demo-state="hover"><input class="kit-color-swatch" type="color" value="#ffffff" aria-label="Pick the hover colour"><input class="kit-input" id="g-color-hover" type="text" value="FFFFFF" spellcheck="false"></div></div>
+      <div class="preview-cell kit-field" data-state="focus"><label class="kit-label" for="g-color-focus">Focus</label><div class="kit-color"><input class="kit-color-swatch" type="color" value="#14ae5c" aria-label="Pick the focus colour"><input class="kit-input" id="g-color-focus" type="text" value="14AE5C" spellcheck="false" data-kit-demo-state="focus"></div></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><span class="preview-na">None: the swatch opens the system picker</span></div>
+      <div class="preview-cell kit-field" data-state="disabled"><label class="kit-label" for="g-color-disabled">Disabled</label><div class="kit-color"><input class="kit-color-swatch" type="color" value="#f24822" aria-label="Pick the disabled colour" disabled><input class="kit-input" id="g-color-disabled" type="text" value="F24822" spellcheck="false" disabled></div></div>
+      <div class="preview-cell kit-field" data-state="error"><label class="kit-label" for="g-color-error">Error</label><div class="kit-color"><input class="kit-color-swatch" type="color" value="#000000" aria-label="Pick the error colour"><input class="kit-input" id="g-color-error" type="text" value="12G" spellcheck="false" aria-invalid="true" aria-describedby="g-color-error-help"></div><p class="kit-help" id="g-color-error-help">Use 6 hex digits.</p></div>
+    </div>
+    <div class="preview-states" data-preview-extra="color" role="group" aria-labelledby="g-color g-color-more">
+      <h4 class="preview-row-title" id="g-color-more">Also</h4>
+      <div class="preview-cell kit-field"><label class="kit-label" for="g-color-swatch-focus">Swatch focus</label><div class="kit-color"><input class="kit-color-swatch" type="color" value="#9747ff" aria-label="Pick the swatch focus colour" data-kit-demo-state="focus"><input class="kit-input" id="g-color-swatch-focus" type="text" value="9747FF" spellcheck="false"></div></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-tooltip">Tooltip</h3>
+    <p class="kit-help">Point at, or Tab to, the buttons in the first and the last-but-one cells: those tooltips are live.</p>
+    <div class="preview-states" data-preview-component="tooltip" role="group" aria-labelledby="g-tooltip">
+      <h4 class="preview-row-title">Tooltip</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Default (hidden)</span><span class="kit-tooltip-host"><button class="kit-icon-button" type="button" aria-label="Align left" aria-describedby="g-tip-default"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6.5v11M10.5 9.5h6M10.5 14.5h4" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button><span class="kit-tooltip" role="tooltip" id="g-tip-default">Align left edges</span></span></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Hover (after 400 ms)</span><span class="kit-tooltip-host" data-kit-demo-state="hover"><button class="kit-icon-button" type="button" aria-label="Align left, hover" aria-describedby="g-tip-hover"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6.5v11M10.5 9.5h6M10.5 14.5h4" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button><span class="kit-tooltip" role="tooltip" id="g-tip-hover">Align left edges</span></span></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Keyboard focus (at once)</span><span class="kit-tooltip-host"><button class="kit-icon-button" type="button" aria-label="Align left, focus" aria-describedby="g-tip-focus" data-kit-demo-state="focus"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6.5v11M10.5 9.5h6M10.5 14.5h4" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button><span class="kit-tooltip" role="tooltip" id="g-tip-focus">Align left edges</span></span></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><span class="preview-na">None: the control's own pressed look</span></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">On aria-disabled (live)</span><span class="kit-tooltip-host"><button class="kit-button kit-button-primary" type="button" aria-disabled="true" aria-describedby="g-tip-disabled">Export</button><span class="kit-tooltip" role="tooltip" id="g-tip-disabled">Select a frame first</span></span></div>
+      <div class="preview-cell preview-cell-end" data-state="open"><span class="preview-caption">Open, long text wraps (kit-tooltip-end)</span><span class="kit-tooltip-host"><button class="kit-icon-button" type="button" aria-label="Tidy up" aria-describedby="g-tip-open"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 7.5h3v3h-3zM13.5 7.5h3v3h-3zM7.5 13.5h3v3h-3zM13.5 13.5h3v3h-3z" fill="none" stroke="currentColor"/></svg></button><span class="kit-tooltip kit-tooltip-end" role="tooltip" id="g-tip-open" data-kit-demo-open>Spaces the selected layers evenly in a grid</span></span></div>
+    </div>
+    <div class="preview-states" data-preview-extra="tooltip" role="group" aria-labelledby="g-tooltip g-tooltip-more">
+      <h4 class="preview-row-title" id="g-tooltip-more">Placement</h4>
+      <div class="preview-cell"><span class="preview-caption">kit-tooltip-start</span><span class="kit-tooltip-host"><button class="kit-button kit-button-secondary" type="button" aria-describedby="g-tip-start">Start</button><span class="kit-tooltip kit-tooltip-start" role="tooltip" id="g-tip-start" data-kit-demo-open>Aligned to the start</span></span></div>
+      <div class="preview-cell preview-cell-end"><span class="preview-caption">kit-tooltip-end</span><span class="kit-tooltip-host"><button class="kit-button kit-button-secondary" type="button" aria-describedby="g-tip-end">End</button><span class="kit-tooltip kit-tooltip-end" role="tooltip" id="g-tip-end" data-kit-demo-open>Aligned to the end</span></span></div>
+      <div class="preview-cell preview-cell-above"><span class="preview-caption">kit-tooltip-above</span><span class="kit-tooltip-host"><button class="kit-button kit-button-secondary" type="button" aria-describedby="g-tip-above">Above</button><span class="kit-tooltip kit-tooltip-above" role="tooltip" id="g-tip-above" data-kit-demo-open>Shown above</span></span></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-tabs">Tabs</h3>
+    <div class="preview-states preview-states-wide" data-preview-component="tabs" role="group" aria-labelledby="g-tabs">
+      <h4 class="preview-row-title">Tabs</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Default</span><div class="kit-tabs"><div class="kit-tablist" role="radiogroup" aria-label="Format, default"><label class="kit-tab"><input type="radio" name="g-tabs-default" checked>PNG</label><label class="kit-tab"><input type="radio" name="g-tabs-default">SVG</label><label class="kit-tab"><input type="radio" name="g-tabs-default">PDF</label></div><div class="kit-tabpanel"><p class="kit-help">PNG panel: scale and background.</p></div><div class="kit-tabpanel"><p class="kit-help">SVG panel: outline text.</p></div><div class="kit-tabpanel"><p class="kit-help">PDF panel: one page per frame.</p></div></div></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Hover (SVG)</span><div class="kit-tabs"><div class="kit-tablist" role="radiogroup" aria-label="Format, hover"><label class="kit-tab"><input type="radio" name="g-tabs-hover" checked>PNG</label><label class="kit-tab" data-kit-demo-state="hover"><input type="radio" name="g-tabs-hover">SVG</label><label class="kit-tab"><input type="radio" name="g-tabs-hover">PDF</label></div><div class="kit-tabpanel"><p class="kit-help">PNG panel: scale and background.</p></div><div class="kit-tabpanel"><p class="kit-help">SVG panel: outline text.</p></div><div class="kit-tabpanel"><p class="kit-help">PDF panel: one page per frame.</p></div></div></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Focus</span><div class="kit-tabs"><div class="kit-tablist" role="radiogroup" aria-label="Format, focus"><label class="kit-tab"><input type="radio" name="g-tabs-focus" checked data-kit-demo-state="focus">PNG</label><label class="kit-tab"><input type="radio" name="g-tabs-focus">SVG</label><label class="kit-tab"><input type="radio" name="g-tabs-focus">PDF</label></div><div class="kit-tabpanel"><p class="kit-help">PNG panel: scale and background.</p></div><div class="kit-tabpanel"><p class="kit-help">SVG panel: outline text.</p></div><div class="kit-tabpanel"><p class="kit-help">PDF panel: one page per frame.</p></div></div></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><span class="preview-na">None: a tab is checked on click</span></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Disabled (PDF)</span><div class="kit-tabs"><div class="kit-tablist" role="radiogroup" aria-label="Format, disabled"><label class="kit-tab"><input type="radio" name="g-tabs-disabled" checked>PNG</label><label class="kit-tab"><input type="radio" name="g-tabs-disabled">SVG</label><label class="kit-tab"><input type="radio" name="g-tabs-disabled" disabled>PDF</label></div><div class="kit-tabpanel"><p class="kit-help">PNG panel: scale and background.</p></div><div class="kit-tabpanel"><p class="kit-help">SVG panel: outline text.</p></div><div class="kit-tabpanel"><p class="kit-help">PDF panel: one page per frame.</p></div></div></div>
+      <div class="preview-cell" data-state="selected"><span class="preview-caption">Second tab selected</span><div class="kit-tabs"><div class="kit-tablist" role="radiogroup" aria-label="Format, selected"><label class="kit-tab"><input type="radio" name="g-tabs-selected">PNG</label><label class="kit-tab"><input type="radio" name="g-tabs-selected" checked>SVG</label><label class="kit-tab"><input type="radio" name="g-tabs-selected">PDF</label></div><div class="kit-tabpanel"><p class="kit-help">PNG panel: scale and background.</p></div><div class="kit-tabpanel"><p class="kit-help">SVG panel: outline text.</p></div><div class="kit-tabpanel"><p class="kit-help">PDF panel: one page per frame.</p></div></div></div>
+    </div>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-menu-states">Menu states</h3>
+    <p class="kit-help">Every state of the menu visuals. The first trigger opens a real popover menu; the other cells are static copies of an open menu.</p>
+    <div class="preview-states" data-preview-component="menu" role="group" aria-labelledby="g-menu-states">
+      <h4 class="preview-row-title">Menu</h4>
+      <div class="preview-cell" data-state="default"><span class="preview-caption">Closed (trigger)</span><button class="kit-button kit-button-secondary" type="button" popovertarget="g-menu-states-popover" aria-haspopup="menu" aria-expanded="false">Sort layers</button>
+        <div class="kit-menu" id="g-menu-states-popover" popover role="menu" aria-label="Sort layers"><button class="kit-menu-item" role="menuitem" type="button">By name</button><button class="kit-menu-item" role="menuitem" type="button">By position</button><button class="kit-menu-item" role="menuitem" type="button" aria-disabled="true">By colour</button><hr class="kit-menu-separator"><button class="kit-menu-item" role="menuitem" type="button">Reverse order</button></div></div>
+      <div class="preview-cell" data-state="hover"><span class="preview-caption">Item hover</span><div class="kit-menu" role="menu" aria-label="Sort, hover" data-kit-demo-open><button class="kit-menu-item" role="menuitem" type="button" tabindex="-1" data-kit-demo-state="hover">By name</button><button class="kit-menu-item" role="menuitem" type="button" tabindex="-1">By position</button></div></div>
+      <div class="preview-cell" data-state="focus"><span class="preview-caption">Item focus (keyboard)</span><div class="kit-menu" role="menu" aria-label="Sort, focus" data-kit-demo-open><button class="kit-menu-item" role="menuitem" type="button" tabindex="-1">By name</button><button class="kit-menu-item" role="menuitem" type="button" tabindex="-1" data-kit-demo-state="focus">By position</button></div></div>
+      <div class="preview-cell" data-state="active"><span class="preview-caption">Pressed</span><span class="preview-na">None: an item acts on click and the menu closes</span></div>
+      <div class="preview-cell" data-state="disabled"><span class="preview-caption">Disabled items</span><div class="kit-menu" role="menu" aria-label="Sort, disabled" data-kit-demo-open><button class="kit-menu-item" role="menuitem" type="button" tabindex="-1" aria-disabled="true" data-kit-demo-state="hover">By colour (hover)</button><button class="kit-menu-item" role="menuitem" type="button" disabled>By size</button></div></div>
+      <div class="preview-cell" data-state="open"><span class="preview-caption">Open</span><button class="kit-icon-button" type="button" aria-label="More actions, open" aria-haspopup="menu" aria-expanded="true"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 12h.01M12 12h.01M16.5 12h.01" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <div class="kit-menu" role="menu" aria-label="More actions" data-kit-demo-open><button class="kit-menu-item" role="menuitem" type="button" tabindex="-1">Rename…</button><button class="kit-menu-item" role="menuitem" type="button" tabindex="-1">Duplicate</button><hr class="kit-menu-separator"><button class="kit-menu-item" role="menuitem" type="button" tabindex="-1">Delete</button></div></div>
+    </div>
+    <script>
+    'use strict';
+    // Gallery only: "indeterminate" has no HTML attribute, so the boxes that show it get the property.
+    for (const box of document.querySelectorAll('input[data-preview-indeterminate]')) /** @type {HTMLInputElement} */ (box).indeterminate = true;
+    </script>
+    <hr class="kit-divider">
+
+    <h3 class="kit-heading" id="g-menu-live">Menu, live</h3>
+    <p class="kit-help">Real menus, run by the runtime block in this page. Click a button, or focus it and press ArrowDown or Enter; ArrowDown, ArrowUp, Home and End move between the items (disabled ones are skipped), Enter chooses one, Escape and Tab close the menu. A menu near the bottom of the window opens above its button.</p>
+    <div class="kit-row" id="g-menu-demo">
+      <button class="kit-button kit-button-secondary" type="button" id="g-menu-button" popovertarget="g-menu" aria-haspopup="menu" aria-expanded="false">Options</button>
+      <div class="kit-menu" id="g-menu" popover role="menu" aria-labelledby="g-menu-button">
+        <button class="kit-menu-item" role="menuitem" type="button">Rename</button>
+        <button class="kit-menu-item" role="menuitem" type="button">Duplicate</button>
+        <button class="kit-menu-item" role="menuitem" type="button" disabled>Lock (disabled)</button>
+        <hr class="kit-menu-separator">
+        <button class="kit-menu-item" role="menuitem" type="button" aria-disabled="true">Publish (aria-disabled)</button>
+        <button class="kit-menu-item" role="menuitem" type="button">Delete</button>
+      </div>
+      <button class="kit-icon-button" type="button" id="g-menu-more" popovertarget="g-menu-2" aria-haspopup="menu" aria-expanded="false" aria-label="More actions"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12h.01M12 12h.01M16 12h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <div class="kit-menu" id="g-menu-2" popover role="menu" aria-labelledby="g-menu-more">
+        <button class="kit-menu-item" role="menuitem" type="button">Copy link</button>
+        <button class="kit-menu-item" role="menuitem" type="button">Copy as PNG</button>
+      </div>
+      <p class="kit-text-secondary" id="g-menu-chosen" aria-live="polite">Chosen: nothing yet</p>
+    </div>
+    <script>
+    'use strict';
+    // Host code for the live menus: a click handler on the items, as a plugin would write it. The
+    // runtime closes the menu after this handler has run. An aria-disabled item still reaches it,
+    // so it checks the attribute (a disabled one gets no click at all).
+    (() => {
+      const chosen = /** @type {HTMLElement} */ (document.getElementById('g-menu-chosen'));
+      for (const item of document.querySelectorAll('#g-menu-demo .kit-menu-item')) {
+        item.addEventListener('click', () => {
+          if (item.getAttribute('aria-disabled') === 'true') return;
+          chosen.textContent = `Chosen: ${item.textContent}`;
+        });
+      }
+    })();
+    </script>
   </section>
 </main>
 <script>
@@ -1224,7 +1587,8 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
   const record = { messages: /** @type {any[]} */ ([]), calls: /** @type {any[]} */ ([]) };
   const sources = { ui: '', code: '', fallback: '', name: 'Plugin', id: 'kit-preview' };
   /** The document outlives plugin runs, as in Figma: nodes and the selection survive a reload. */
-  const page = { type: 'PAGE', name: 'Page 1', children: /** @type {any[]} */ ([]), selection: /** @type {any[]} */ ([]) };
+  const page = { id: '0:1', type: 'PAGE', name: 'Page 1', children: /** @type {any[]} */ ([]), selection: /** @type {any[]} */ ([]) };
+  const placeholders = new Map(); // the frames "Set the selection" makes up when the page has too few layers
   let nodeCount = 0;
   let runCount = 0;
   let run = null; // the current plugin run, or null before the first and after a close
@@ -1279,15 +1643,21 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
     return doc.replace(/<head\b[^>]*>/i, (tag) => tag + head);
   }
 
-  /** code.js with the demo's installKitWindow({ mode }) call switched to the chosen mode. */
+  /**
+   * code.js with installKitWindow wrapped so the window opens in the chosen mode, whatever the
+   * plugin passes: installKitWindow(), ({ mode, bounds, size }), an options variable. Function
+   * declarations are hoisted, so a line placed before code.js's first statement swaps the binding
+   * before the plugin's own call runs. The directive prologue stays first, so strict code stays strict.
+   */
   function codeForMode(/** @type {string} */ code, /** @type {string} */ mode) {
-    const at = code.indexOf('// ---- Your plugin starts here ----');
-    const call = /installKitWindow\(\{\s*mode:\s*'[a-z-]+'\s*\}\)/;
-    if (at < 0 || !call.test(code.slice(at))) {
-      if (mode !== 'fit-content') log('error', 'mode switch: the demo installKitWindow({ mode }) call was not found; running code.js as is');
+    if (!/\bfunction\s+installKitWindow\s*\(/.test(code)) {
+      if (mode !== 'fit-content') log('error', 'mode switch: code.js declares no installKitWindow; running it as is');
       return code;
     }
-    return code.slice(0, at) + code.slice(at).replace(call, `installKitWindow({ mode: '${mode}' })`);
+    const prologue = /^\s*(['"])use strict\1;?/.exec(code);
+    const head = prologue ? prologue[0] : '';
+    const wrap = `\ntry { installKitWindow = ((install) => function (options) { return install(Object.assign({}, options, { mode: ${JSON.stringify(mode)} })); })(installKitWindow); } catch (e) { /* not a function declaration: run as is */ }\n`;
+    return head + wrap + code.slice(head.length);
   }
 
   function setWindowState(/** @type {'hidden' | 'shown' | 'closed'} */ state) {
@@ -1333,13 +1703,39 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
     log('host', `plugin closed (${why})`);
   }
 
-  function fire(/** @type {string} */ type) {
+  /** Runs a run's handlers for one event: figma.on (r.events) or currentPage.on (r.pageEvents). */
+  function fire(/** @type {string} */ type, /** @type {unknown} */ arg, /** @type {'events' | 'pageEvents'} */ table = 'events') {
     const r = run;
     if (!r) return;
-    for (const h of (r.events[type] || []).slice()) {
-      if (h.once) r.events[type].splice(r.events[type].indexOf(h), 1);
-      try { h.cb(); } catch (error) { fail(`figma.on('${type}')`, error); }
+    const list = r[table][type] || [];
+    for (const h of list.slice()) {
+      if (h.once) list.splice(list.indexOf(h), 1);
+      try { h.cb(arg); } catch (error) { fail(`${table === 'events' ? 'figma' : 'figma.currentPage'}.on('${type}')`, error); }
     }
+  }
+
+  // currentPage.on('nodechange'): the stub's own node changes (creates, name writes), batched per
+  // task like Figma's, each { id, type, origin: 'LOCAL', node } (plus properties on a change).
+  let nodeChanges = /** @type {any[]} */ ([]);
+  function nodeChanged(/** @type {any} */ change) {
+    if (!run) return;
+    nodeChanges.push(change);
+    if (nodeChanges.length === 1) window.setTimeout(() => { const batch = nodeChanges; nodeChanges = []; fire('nodechange', { nodeChanges: batch }, 'pageEvents'); }, 0);
+  }
+
+  /** A stub scene node: plain fields, and a name whose writes are recorded and reported as a nodechange. */
+  function makeNode(/** @type {string} */ id, /** @type {string} */ type, /** @type {string} */ name) {
+    let current = name;
+    const n = {
+      id, type, x: 0, y: 0, width: 100, height: 100, fills: /** @type {unknown[]} */ ([]),
+      get name() { return current; },
+      set name(/** @type {unknown} */ value) {
+        current = String(value);
+        call('node.name', id, current);
+        nodeChanged({ id, type: 'PROPERTY_CHANGE', origin: 'LOCAL', properties: ['name'], node: n });
+      },
+    };
+    return n;
   }
 
   function setSelection(/** @type {any[]} */ nodes) {
@@ -1352,20 +1748,36 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
     const node = (/** @type {string} */ type) => {
       if (r.editor === 'dev') throw new Error('figma stub: Dev Mode is read-only, nodes cannot be created');
       nodeCount++;
-      const n = { id: `1:${nodeCount}`, type, name: `${type === 'ELLIPSE' ? 'Ellipse' : 'Rectangle'} ${nodeCount}`, x: 0, y: 0, width: 100, height: 100, fills: [] };
+      const n = makeNode(`1:${nodeCount}`, type, `${type === 'ELLIPSE' ? 'Ellipse' : 'Rectangle'} ${nodeCount}`);
       page.children.push(n);
       call(type === 'ELLIPSE' ? 'createEllipse' : 'createRectangle');
+      nodeChanged({ id: n.id, type: 'CREATE', origin: 'LOCAL', node: n });
       return n;
     };
-    const on = (/** @type {string} */ type, /** @type {Function} */ cb, once = false) => { (r.events[type] = r.events[type] || []).push({ cb, once }); };
-    const off = (/** @type {string} */ type, /** @type {Function} */ cb) => {
-      const list = r.events[type] || [];
-      const i = list.findIndex((h) => h.cb === cb);
+    const find = (/** @type {unknown} */ id) => (id === page.id ? currentPage
+      : page.children.find((n) => n.id === id) || page.selection.find((n) => n.id === id) || placeholders.get(id) || null);
+    const on = (/** @type {string} */ type, /** @type {Function} */ cb, once = false, table = 'events') => { (r[table][type] = r[table][type] || []).push({ cb, once }); };
+    const off = (/** @type {string} */ type, /** @type {Function} */ cb, table = 'events') => {
+      const list = r[table][type] || [];
+      const i = list.findIndex((/** @type {{ cb: Function }} */ h) => h.cb === cb);
       if (i >= 0) list.splice(i, 1);
     };
     const later = (/** @type {Function} */ fn) => new Promise((resolve, reject) => {
       r.setTimeout(() => { try { resolve(fn()); } catch (error) { reject(error); } }, 5);
     });
+    const currentPage = {
+      get id() { return page.id; },
+      get type() { return page.type; },
+      get name() { return page.name; },
+      get children() { return page.children.slice(); },
+      get selection() { return page.selection.slice(); },
+      set selection(/** @type {any[]} */ nodes) { if (alive()) { call('currentPage.selection', nodes.length); setSelection(nodes); } },
+      appendChild(/** @type {any} */ n) { if (!page.children.includes(n)) page.children.push(n); },
+      // Only 'nodechange' ever fires, for the stub's own creates and name writes.
+      on(/** @type {string} */ type, /** @type {Function} */ cb) { on(type, cb, false, 'pageEvents'); },
+      once(/** @type {string} */ type, /** @type {Function} */ cb) { on(type, cb, true, 'pageEvents'); },
+      off(/** @type {string} */ type, /** @type {Function} */ cb) { off(type, cb, 'pageEvents'); },
+    };
     const ui = {
       postMessage(/** @type {unknown} */ msg) {
         if (!alive()) return;
@@ -1405,14 +1817,7 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
       editorType: r.editor,
       apiVersion: '1.0.0',
       command: '',
-      currentPage: {
-        get type() { return page.type; },
-        get name() { return page.name; },
-        get children() { return page.children.slice(); },
-        get selection() { return page.selection.slice(); },
-        set selection(/** @type {any[]} */ nodes) { if (alive()) { call('currentPage.selection', nodes.length); setSelection(nodes); } },
-        appendChild(/** @type {any} */ n) { if (!page.children.includes(n)) page.children.push(n); },
-      },
+      currentPage,
       viewport: {
         center: { x: 0, y: 0 },
         zoom: 1,
@@ -1452,9 +1857,11 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
       },
       on(/** @type {string} */ type, /** @type {Function} */ cb) { on(type, cb); },
       once(/** @type {string} */ type, /** @type {Function} */ cb) { on(type, cb, true); },
-      off,
+      off(/** @type {string} */ type, /** @type {Function} */ cb) { off(type, cb); },
       createRectangle() { return node('RECTANGLE'); },
       createEllipse() { return node('ELLIPSE'); },
+      getNodeByIdAsync(/** @type {string} */ id) { call('getNodeByIdAsync', id); return later(() => find(id)); },
+      commitUndo() { call('commitUndo'); },
       notify(/** @type {string} */ message, /** @type {any} */ options = {}) {
         call('notify', message, options);
         if (alive()) toast(String(message), !!(options && options.error));
@@ -1477,6 +1884,7 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
       id: ++runCount, started: performance.now(), editor: settings.editor, mode: settings.mode,
       dead: false, figma: /** @type {any} */ (null), frame: /** @type {HTMLIFrameElement | null} */ (null), loaded: false, queue: /** @type {unknown[]} */ ([]),
       handlers: /** @type {{ cb: Function, once: boolean }[]} */ ([]), events: /** @type {Record<string, { cb: Function, once: boolean }[]>} */ ({}),
+      pageEvents: /** @type {Record<string, { cb: Function, once: boolean }[]>} */ ({}),
       timers: new Set(),
       setTimeout: (/** @type {Function} */ fn, /** @type {number} */ ms, /** @type {unknown[]} */ ...args) => {
         const id = window.setTimeout(() => { r.timers.delete(id); if (!r.dead) fn(...args); }, ms);
@@ -1565,7 +1973,11 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
     log('host', `selection set to ${n} layer${n === 1 ? '' : 's'}`);
     // The newest layers on the page, topped up with placeholder frames when there are fewer.
     const nodes = page.children.slice(Math.max(0, page.children.length - n));
-    while (nodes.length < n) nodes.push({ id: `0:${nodes.length + 1}`, type: 'FRAME', name: `Frame ${nodes.length + 1}` });
+    while (nodes.length < n) {
+      const id = `0:${nodes.length + 2}`; // 0:1 is the page
+      if (!placeholders.has(id)) placeholders.set(id, makeNode(id, 'FRAME', `Frame ${nodes.length + 1}`));
+      nodes.push(placeholders.get(id));
+    }
     setSelection(nodes);
   });
   const widthInput = /** @type {HTMLInputElement} */ ($('live-width'));

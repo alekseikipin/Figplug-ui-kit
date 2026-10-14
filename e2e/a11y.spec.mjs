@@ -1,12 +1,13 @@
-// Accessibility checks. axe-core runs every WCAG 2.0 and 2.1 A/AA rule on the gallery and on the
-// plugin window, in light, dark and FigJam, except 'color-contrast': the kit keeps Figma's own
-// token colours, some of which are below AA at 11px, so contrast is reported instead of failed
-// (decision and numbers: docs/accessibility.md). The report test computes the ratios for the token
-// pairs the kit actually paints, from tokens.figma-fallback.css.
+// Accessibility checks. axe-core runs every WCAG 2.0 and 2.1 A/AA rule on the gallery, on the kit
+// fixture's window (useKitFixture) and on your own ui.html's window, in light, dark and FigJam,
+// except 'color-contrast': the kit keeps Figma's own token colours, some of which are below AA at
+// 11px, so contrast is reported instead of failed (decision and numbers: docs/accessibility.md).
+// The report test computes the ratios for the token pairs the kit actually paints, from
+// tokens.figma-fallback.css. The demo's own error state is checked in e2e/demo.spec.mjs.
 
 import { readFileSync } from 'node:fs';
 import { AxeBuilder } from '@axe-core/playwright';
-import { test, expect, openPreview, pluginFrame } from './helpers.mjs';
+import { test, expect, openPreview, pluginFrame, useKitFixture } from './helpers.mjs';
 
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 const THEMES = ['light', 'dark', 'figjam'];
@@ -21,13 +22,20 @@ for (const theme of THEMES) {
     expect(summary(violations)).toEqual([]);
   });
 
-  test(`axe: the plugin window has no WCAG 2.1 A/AA violations (${theme})`, async ({ page }) => {
+  test(`axe: the kit fixture's window has no WCAG 2.1 A/AA violations, resting and in its error state (${theme})`, async ({ page }) => {
+    await useKitFixture(page);
     await openPreview(page, { theme });
     let { violations } = await axe(page).include('#live-frame').analyze();
     expect(summary(violations)).toEqual([]);
     // The error state: aria-invalid plus the help text it points at.
-    await pluginFrame(page).locator('#count').fill('0');
+    await pluginFrame(page).locator('#fixture-name').evaluate((input) => input.setAttribute('aria-invalid', 'true'));
     ({ violations } = await axe(page).include('#live-frame').analyze());
+    expect(summary(violations)).toEqual([]);
+  });
+
+  test(`axe: your ui.html's window has no WCAG 2.1 A/AA violations (${theme})`, async ({ page }) => {
+    await openPreview(page, { theme });
+    const { violations } = await axe(page).include('#live-frame').analyze();
     expect(summary(violations)).toEqual([]);
   });
 }

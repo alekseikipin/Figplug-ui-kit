@@ -3,7 +3,7 @@
 // The README and docs link to exactly these four paths.
 
 import { fileURLToPath } from 'node:url';
-import { test, expect, openPreview, pluginFrame, frameSize, contentHeight } from './helpers.mjs';
+import { test, expect, openPreview, pluginFrame, frameSize, contentHeight, HAS_DEMO, NO_DEMO } from './helpers.mjs';
 
 const out = (name) => fileURLToPath(new URL(`../docs/img/${name}`, import.meta.url));
 
@@ -13,6 +13,7 @@ test.describe('docs screenshots', { tag: '@screenshots' }, () => {
 
   for (const theme of ['light', 'dark']) {
     test(`starter-${theme}.png: the plugin window in the fake host`, async ({ page }) => {
+      test.skip(!HAS_DEMO, `${NO_DEMO}; starter-*.png shows the demo`);
       await openPreview(page, { theme });
       const frame = pluginFrame(page);
       await frame.evaluate(() => document.fonts.ready);

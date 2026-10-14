@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contrast check</title>
+<meta name="kit" content="kit v0.2.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+<meta name="description" content='Regression fixture from the Phase 1 one-shot run "a11y-contrast" (docs/prompts.md): the plugin part is verbatim, the three kit blocks are test/fixtures/clean stand-ins.'>
+<style data-kit="tokens">
+    /* Fixture tokens: a small subset of the real block. */
+    :root {
+      color-scheme: light;
+      --kit-control-height: 24px;
+      --kit-control-height-large: 32px;
+      --kit-field-bg: var(--figma-color-bg-secondary);
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
+      --kit-scrim: rgba(0, 0, 0, 0.5);
+    }
+    :root.figma-dark {
+      color-scheme: dark;
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+  <style data-kit="components">
+    /* == button == */
+    .kit-button {
+      height: var(--kit-control-height);
+      padding: 0 8px;
+      border: none;
+      border-radius: 5px;
+      color: var(--figma-color-text-onbrand);
+      background: var(--figma-color-bg-brand);
+    }
+    .kit-button:disabled { color: var(--figma-color-text-ondisabled); background: var(--figma-color-bg-disabled); }
+    .kit-button-large { height: var(--kit-control-height-large); }
+  </style>
+  <script data-kit="runtime">
+    (() => {
+      'use strict';
+      const KIT_PROTOCOL = 1;
+      /** @type {KitBounds} */
+      let bounds = { minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 };
+
+      /**
+       * @param {number} width
+       * @param {number} height
+       * @returns {KitSize}
+       */
+      function clampSize(width, height) {
+        return {
+          width: Math.round(Math.min(bounds.maxWidth, Math.max(bounds.minWidth, width))),
+          height: Math.round(Math.min(bounds.maxHeight, Math.max(bounds.minHeight, height))),
+        };
+      }
+
+      /** @param {KitUiToMainMessage} msg */
+      function post(msg) {
+        parent.postMessage({ pluginMessage: msg }, '*');
+      }
+
+      function fit() {
+        const root = document.querySelector('[data-kit-root]') ?? document.body;
+        const size = clampSize(window.innerWidth, Math.ceil(root.getBoundingClientRect().bottom + window.scrollY));
+        post({ type: 'kit:resize', width: size.width, height: size.height });
+      }
+
+      window.addEventListener('message', (event) => {
+        /** @type {KitMainToUiMessage | undefined} */
+        const msg = event.data && event.data.pluginMessage;
+        if (msg && msg.type === 'kit:init') {
+          bounds = msg.bounds;
+          fit();
+        }
+      });
+      document.addEventListener('DOMContentLoaded', () => post({ type: 'kit:ready', protocol: KIT_PROTOCOL }));
+      window.kit = Object.freeze({ version: '0.2.0', protocol: KIT_PROTOCOL, fit });
+    })();
+  </script>
+<style>
+/* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
+/* The summary is the result people read first, so it gets the body colour unless a tone applies. */
+.contrast-summary { margin: 0; color: var(--figma-color-text); }
+.contrast-summary[data-tone="danger"] { color: var(--figma-color-text-danger); }
+.contrast-summary[data-tone="warning"] { color: var(--figma-color-text-warning); }
+.contrast-summary[data-tone="success"] { color: var(--figma-color-text-success); }
+.contrast-summary[data-tone="muted"] { color: var(--figma-color-text-secondary); }
+/* A long list scrolls inside the window instead of growing it to its height cap. */
+.contrast-list { margin: 0; padding: 0; list-style: none; max-height: 320px; overflow-y: auto; }
+.contrast-item { display: flex; align-items: flex-start; gap: var(--kit-spacer-2); padding: var(--kit-spacer-2) 0; }
+.contrast-item:first-child { padding-top: 0; }
+.contrast-item:last-child { padding-bottom: 0; }
+.contrast-item + .contrast-item { border-top: var(--kit-border-width) solid var(--figma-color-border); }
+.contrast-body { display: flex; flex: 1 1 0; flex-direction: column; min-width: 0; }
+.contrast-line { margin: 0; }
+.contrast-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contrast-badge, .contrast-ratio { font-weight: var(--kit-font-weight-strong); }
+.contrast-ratio { font-variant-numeric: tabular-nums; }
+/* The word (Fail, Check, Pass) carries the result; the colour only repeats it. */
+.contrast-item[data-status="fail"] .contrast-badge { color: var(--figma-color-text-danger); }
+.contrast-item[data-status="check"] .contrast-badge { color: var(--figma-color-text-warning); }
+.contrast-item[data-status="pass"] .contrast-badge { color: var(--figma-color-text-success); }
+/* The hint takes the free space, so the button sits at the end of the row. */
+.contrast-hint { flex: 1 1 0; min-width: 0; }
+</style>
+</head>
+<body>
+<main class="kit-app" data-kit-root>
+  <section class="kit-section kit-stack">
+    <h1 class="kit-heading">Contrast check</h1>
+    <p class="kit-help">Each selected text layer, and the text inside selected frames, against the fills behind it. WCAG AA asks for 4.5:1, or 3:1 for large text (24px, or 18.66px bold).</p>
+    <div class="kit-field">
+      <label class="kit-label" for="filter">Show</label>
+      <div class="kit-select">
+        <select id="filter">
+          <option value="issues">Below AA and checks by eye</option>
+          <option value="all">All text layers</option>
+        </select>
+      </div>
+    </div>
+  </section>
+  <hr class="kit-divider">
+  <section class="kit-section kit-stack">
+    <p class="contrast-summary" id="summary" role="status" data-tone="muted">Select text layers, or frames that contain text.</p>
+    <ul class="contrast-list" id="results" aria-label="Text layers" hidden></ul>
+  </section>
+  <hr class="kit-divider">
+  <section class="kit-section kit-row">
+    <p class="kit-help contrast-hint" id="hint">Updates when the selection or a layer changes.</p>
+    <button class="kit-button kit-button-secondary" id="recheck" type="button">Check again</button>
+  </section>
+</main>
+<button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+<script>
+'use strict';
+// Contrast check UI. It only renders what code.ts measured: 'contrast-check' (Check again) and
+// 'contrast-select' (select a row's layer) go out; 'contrast-report', 'contrast-failed' and
+// 'contrast-selected' come back. kit:* messages belong to the runtime. No HTML comments in this
+// file: see docs/pitfalls.md (Figma's sandbox and comment markers).
+(() => {
+  const STATUS_LABEL = { fail: 'Fail', check: 'Check', pass: 'Pass' };
+  // One line per note code from code.ts.
+  const NOTES = {
+    canvas: 'Only the canvas is behind it, so it is measured against the page colour.',
+    partial: 'Other layers are partly behind it; the lowest ratio over any of them is shown.',
+    gradient: 'A gradient is behind it; the range runs across the whole gradient. Check by eye.',
+    image: 'An image or video is behind it, which cannot be measured. Check by eye.',
+    blend: 'A blend mode is involved, so the ratio is approximate. Check by eye.',
+    'mixed-styles': 'It has mixed styles; the weakest part is shown.',
+    'text-gradient': 'The text has a gradient fill; the range runs across the whole gradient. Check by eye.',
+    'text-image': 'The text has an image fill, which cannot be measured. Check by eye.',
+    'no-fill': 'The text has no visible fill.',
+  };
+  const HINT = 'Updates when the selection or a layer changes.';
+
+  const filter = /** @type {HTMLSelectElement} */ (document.getElementById('filter'));
+  const summary = /** @type {HTMLElement} */ (document.getElementById('summary'));
+  const list = /** @type {HTMLUListElement} */ (document.getElementById('results'));
+  const hint = /** @type {HTMLElement} */ (document.getElementById('hint'));
+  const recheck = /** @type {HTMLButtonElement} */ (document.getElementById('recheck'));
+
+  /** The last contrast-report from code.ts, or null before the first one. */
+  let report = null;
+
+  /** @param {{ type: string } & Record<string, unknown>} message */
+  function post(message) {
+    parent.postMessage({ pluginMessage: message }, '*');
+  }
+
+  /**
+   * @param {string} tag
+   * @param {string} className
+   * @param {string} [text]
+   */
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  // Rounded down, so 4.499:1 never reads as a passing 4.50:1.
+  /** @param {number} value */
+  function ratio(value) {
+    return (Math.floor(value * 100) / 100).toFixed(2);
+  }
+
+  /** @param {number} n */
+  function layers(n) {
+    return `${n} text layer${n === 1 ? '' : 's'}`;
+  }
+
+  function ratioText(item) {
+    if (item.ratio === null) return 'No ratio';
+    const low = ratio(item.ratio);
+    const high = item.maxRatio === null ? low : ratio(item.maxRatio);
+    return low === high ? `${low}:1` : `${low}–${high}:1`;
+  }
+
+  /**
+   * @param {string} text
+   * @param {string} [tone] danger, warning, success or muted; none is the body colour
+   */
+  function setSummary(text, tone) {
+    // Unchanged text is not rewritten, so screen readers don't hear every automatic re-check.
+    if (summary.textContent !== text) summary.textContent = text;
+    if (tone) summary.dataset.tone = tone;
+    else delete summary.dataset.tone;
+  }
+
+  function summarise() {
+    if (report.selected === 0) {
+      setSummary('Select text layers, or frames that contain text.', 'muted');
+      return;
+    }
+    const items = report.items;
+    const total = items.length;
+    const fails = items.filter((item) => item.status === 'fail').length;
+    const checks = items.filter((item) => item.status === 'check').length;
+    const extra = [];
+    if (report.truncated) extra.push(`Only the first ${report.limit} were checked.`);
+    if (report.skipped > 0) extra.push(`${report.skipped} hidden or empty skipped.`);
+    const tail = extra.length > 0 ? ' ' + extra.join(' ') : '';
+    if (total === 0) {
+      setSummary('No visible text in the selection.' + tail, 'muted');
+    } else if (fails > 0) {
+      const byEye = checks > 0 ? ` ${checks} more need${checks === 1 ? 's' : ''} a check by eye.` : '';
+      setSummary(`${fails} of ${layers(total)} below AA.${byEye}${tail}`, 'danger');
+    } else if (checks > 0) {
+      setSummary(`None below AA, but ${checks} of ${layers(total)} need${checks === 1 ? 's' : ''} a check by eye.${tail}`, 'warning');
+    } else {
+      setSummary((total === 1 ? 'The text layer meets AA.' : `All ${layers(total)} meet AA.`) + tail, 'success');
+    }
+  }
+
+  function renderItem(item) {
+    const row = el('li', 'contrast-item');
+    row.dataset.status = item.status;
+    const body = el('div', 'contrast-body');
+
+    const result = el('p', 'contrast-line');
+    result.append(
+      el('span', 'contrast-badge', STATUS_LABEL[item.status] || item.status), ' ',
+      el('span', 'contrast-ratio', ratioText(item)), ' ',
+      el('span', 'kit-text-secondary', `needs ${item.required}:1`),
+    );
+    const name = el('p', 'contrast-line contrast-name', item.name);
+    name.title = item.name;
+    const size = `${item.fontSize}px, weight ${item.fontWeight}${item.large ? ', large text' : ''}`;
+    const colours = item.textHex ? `${item.textHex} on ${item.backgroundHex} · ${size}` : size;
+    body.append(result, name, el('p', 'kit-help', colours));
+    for (const note of item.notes) body.append(el('p', 'kit-help', NOTES[note] || note));
+
+    // The visible word stays "Select"; the hidden layer name tells screen readers which one.
+    const select = /** @type {HTMLButtonElement} */ (el('button', 'kit-button kit-button-tertiary', 'Select'));
+    select.type = 'button';
+    select.dataset.layerId = item.id;
+    select.append(el('span', 'kit-visually-hidden', ` ${item.name}`));
+    row.append(body, select);
+    return row;
+  }
+
+  function render() {
+    if (!report) return;
+    summarise();
+    const all = filter.value === 'all';
+    const shown = report.items.filter((item) => all || item.status !== 'pass');
+    // Keep keyboard focus on the same row when an automatic re-check rebuilds the list.
+    const active = document.activeElement;
+    const focusedId = active instanceof HTMLElement && list.contains(active) ? active.dataset.layerId : undefined;
+    list.replaceChildren(...shown.map(renderItem));
+    list.hidden = shown.length === 0;
+    if (focusedId === undefined) return;
+    const again = Array.from(list.querySelectorAll('button')).find((button) => button.dataset.layerId === focusedId);
+    (again || recheck).focus();
+  }
+
+  recheck.addEventListener('click', () => {
+    // aria-busy blocks the mouse but not Enter or Space, so the handler checks it too.
+    if (recheck.getAttribute('aria-busy') === 'true') return;
+    recheck.setAttribute('aria-busy', 'true');
+    post({ type: 'contrast-check' });
+  });
+
+  filter.addEventListener('change', render);
+
+  list.addEventListener('click', (event) => {
+    const target = /** @type {HTMLElement} */ (event.target);
+    const button = /** @type {HTMLButtonElement | null} */ (target.closest('button[data-layer-id]'));
+    if (button) post({ type: 'contrast-select', id: button.dataset.layerId });
+  });
+
+  // Registered at the top level, before the page finishes loading: Figma delivers the first
+  // report, which code.ts posts at startup, as soon as the page has loaded.
+  window.addEventListener('message', (event) => {
+    const msg = event.data && event.data.pluginMessage;
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'contrast-report' && Array.isArray(msg.items)) {
+      // code.ts always answers a check, with a report or a failure, so the button never sticks.
+      recheck.removeAttribute('aria-busy');
+      hint.textContent = HINT;
+      report = msg;
+      render();
+    } else if (msg.type === 'contrast-failed') {
+      recheck.removeAttribute('aria-busy');
+      setSummary(`Could not check the selection: ${msg.message}`, 'danger');
+    } else if (msg.type === 'contrast-selected') {
+      hint.textContent = msg.ok ? HINT : String(msg.message);
+    }
+  });
+})();
+</script>
+</body>
+</html>

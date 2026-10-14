@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color variables</title>
+<meta name="kit" content="kit v0.2.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+<meta name="description" content='Regression fixture from the Phase 1 one-shot run "variables-sync" (docs/prompts.md): the plugin part is verbatim, the three kit blocks are test/fixtures/clean stand-ins.'>
+<style data-kit="tokens">
+    /* Fixture tokens: a small subset of the real block. */
+    :root {
+      color-scheme: light;
+      --kit-control-height: 24px;
+      --kit-control-height-large: 32px;
+      --kit-field-bg: var(--figma-color-bg-secondary);
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
+      --kit-scrim: rgba(0, 0, 0, 0.5);
+    }
+    :root.figma-dark {
+      color-scheme: dark;
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+  <style data-kit="components">
+    /* == button == */
+    .kit-button {
+      height: var(--kit-control-height);
+      padding: 0 8px;
+      border: none;
+      border-radius: 5px;
+      color: var(--figma-color-text-onbrand);
+      background: var(--figma-color-bg-brand);
+    }
+    .kit-button:disabled { color: var(--figma-color-text-ondisabled); background: var(--figma-color-bg-disabled); }
+    .kit-button-large { height: var(--kit-control-height-large); }
+  </style>
+  <script data-kit="runtime">
+    (() => {
+      'use strict';
+      const KIT_PROTOCOL = 1;
+      /** @type {KitBounds} */
+      let bounds = { minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 };
+
+      /**
+       * @param {number} width
+       * @param {number} height
+       * @returns {KitSize}
+       */
+      function clampSize(width, height) {
+        return {
+          width: Math.round(Math.min(bounds.maxWidth, Math.max(bounds.minWidth, width))),
+          height: Math.round(Math.min(bounds.maxHeight, Math.max(bounds.minHeight, height))),
+        };
+      }
+
+      /** @param {KitUiToMainMessage} msg */
+      function post(msg) {
+        parent.postMessage({ pluginMessage: msg }, '*');
+      }
+
+      function fit() {
+        const root = document.querySelector('[data-kit-root]') ?? document.body;
+        const size = clampSize(window.innerWidth, Math.ceil(root.getBoundingClientRect().bottom + window.scrollY));
+        post({ type: 'kit:resize', width: size.width, height: size.height });
+      }
+
+      window.addEventListener('message', (event) => {
+        /** @type {KitMainToUiMessage | undefined} */
+        const msg = event.data && event.data.pluginMessage;
+        if (msg && msg.type === 'kit:init') {
+          bounds = msg.bounds;
+          fit();
+        }
+      });
+      document.addEventListener('DOMContentLoaded', () => post({ type: 'kit:ready', protocol: KIT_PROTOCOL }));
+      window.kit = Object.freeze({ version: '0.2.0', protocol: KIT_PROTOCOL, fit });
+    })();
+  </script>
+<style>
+/* Your styles. This plugin needs none: every element uses kit classes and tokens only. */
+</style>
+</head>
+<body>
+<main class="kit-app" data-kit-root>
+  <div class="kit-section kit-stack">
+    <h1 class="kit-heading">Color variables</h1>
+    <p class="kit-help">Type a hex code and press Enter. Use #RRGGBBAA for transparency; Escape cancels the edit.</p>
+    <div class="kit-row" id="pickers" hidden>
+      <div class="kit-field">
+        <label class="kit-label" for="collection">Collection</label>
+        <div class="kit-select">
+          <select id="collection"></select>
+        </div>
+      </div>
+      <div class="kit-field" id="mode-field" hidden>
+        <label class="kit-label" for="mode">Mode</label>
+        <div class="kit-select">
+          <select id="mode"></select>
+        </div>
+      </div>
+    </div>
+    <div class="kit-input-icon" id="filter-field" hidden>
+      <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11.5" cy="11.5" r="4" fill="none" stroke="currentColor"/><path d="m14.5 14.5 3 3" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
+      <input class="kit-input" id="filter" type="search" placeholder="Filter by name or hex" aria-label="Filter variables by name or hex" autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+  <hr class="kit-divider">
+  <div class="kit-section kit-stack">
+    <p class="kit-help" id="empty">Loading color variables...</p>
+    <div class="kit-stack" id="rows" hidden></div>
+  </div>
+  <hr class="kit-divider">
+  <div class="kit-section kit-row">
+    <div class="kit-field">
+      <p class="kit-help" id="status" role="status"></p>
+    </div>
+    <button class="kit-button kit-button-secondary" id="refresh" type="button" aria-busy="true">Refresh</button>
+  </div>
+</main>
+<button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+<template id="row-template">
+  <div class="kit-field" data-row>
+    <div class="kit-row">
+      <div class="kit-field">
+        <label class="kit-label"></label>
+      </div>
+      <div class="kit-input-icon">
+        <svg class="kit-icon kit-icon-small" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2" fill="currentColor"/><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill="none" style="stroke: var(--figma-color-border)"/></svg>
+        <input class="kit-input" type="text" placeholder="#RRGGBB" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </div>
+    </div>
+    <p class="kit-help" hidden></p>
+  </div>
+</template>
+<script>
+'use strict';
+// Color variables: lists the file's local color variables and sets one from a typed hex code.
+// Messages with code.ts (kit:* messages belong to the runtime and are ignored here):
+//   UI -> main  { type: 'load-variables' }
+//               { type: 'set-color', variableId, collectionId, modeId, hex }
+//   main -> UI  { type: 'variables', collections }
+//               { type: 'variables-error', message }
+//               { type: 'color-set', variableId, modeId, ok, hex, message }
+// Markup is kit classes only; each variable row is a copy of <template id="row-template">.
+(() => {
+  /** @typedef {{ hex: string | null, kind: 'color' | 'alias' | 'composed', aliasName: string | null }} VsValue */
+  /** @typedef {{ id: string, name: string, values: Record<string, VsValue> }} VsVariable */
+  /** @typedef {{ id: string, name: string, defaultModeId: string, modes: { modeId: string, name: string }[], variables: VsVariable[] }} VsCollection */
+
+  const HEX_ERROR = 'Enter a hex code: #RGB, #RRGGBB or #RRGGBBAA.';
+
+  const byId = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
+  const pickers = byId('pickers');
+  const collectionSelect = /** @type {HTMLSelectElement} */ (byId('collection'));
+  const modeField = byId('mode-field');
+  const modeSelect = /** @type {HTMLSelectElement} */ (byId('mode'));
+  const filterField = byId('filter-field');
+  const filter = /** @type {HTMLInputElement} */ (byId('filter'));
+  const empty = byId('empty');
+  const rows = byId('rows');
+  const status = byId('status');
+  const refresh = /** @type {HTMLButtonElement} */ (byId('refresh'));
+  const template = /** @type {HTMLTemplateElement} */ (byId('row-template'));
+
+  /** @type {VsCollection[]} */
+  let collections = [];
+  let collectionId = '';
+  let modeId = '';
+  // code.ts posts the first list on its own as soon as it starts.
+  let loading = true;
+  let loadError = '';
+  let lastAction = '';
+  // True while the rows are being replaced: a field removed from the page must not commit.
+  let rebuilding = false;
+  /** The row inputs on screen, by variable id. @type {Map<string, HTMLInputElement>} */
+  let inputs = new Map();
+  /** Edits sent to code.ts and not answered yet: 'variableId modeId' -> hex. @type {Map<string, string>} */
+  const pending = new Map();
+
+  /** @param {{ type: string } & Record<string, unknown>} message */
+  function post(message) {
+    parent.postMessage({ pluginMessage: message }, '*');
+  }
+
+  /**
+   * '#RGB', '#RGBA', '#RRGGBB' or '#RRGGBBAA', with or without '#', in any case, as '#RRGGBB'
+   * (or '#RRGGBBAA' when it is not opaque); null for anything else. code.ts checks it again.
+   * @param {string} text
+   */
+  function parseHex(text) {
+    let digits = text.trim().replace(/^#/, '');
+    if (!/^(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(digits)) return null;
+    if (digits.length <= 4) digits = digits.split('').map((d) => d + d).join('');
+    digits = digits.toUpperCase();
+    if (digits.length === 8 && digits.slice(6) === 'FF') digits = digits.slice(0, 6);
+    return '#' + digits;
+  }
+
+  function currentCollection() {
+    return collections.find((c) => c.id === collectionId) || null;
+  }
+
+  /** @param {string} variableId */
+  function variableName(variableId) {
+    for (const collection of collections) {
+      const found = collection.variables.find((v) => v.id === variableId);
+      if (found) return found.name;
+    }
+    return 'The variable';
+  }
+
+  /** Replaces a select's options only when they changed, so an open popup is left alone. */
+  function fillSelect(/** @type {HTMLSelectElement} */ select, /** @type {{ value: string, label: string }[]} */ options, /** @type {string} */ value) {
+    const signature = JSON.stringify(options);
+    if (select.dataset.options !== signature) {
+      select.dataset.options = signature;
+      select.replaceChildren(...options.map((o) => {
+        const option = document.createElement('option');
+        option.value = o.value;
+        option.textContent = o.label;
+        return option;
+      }));
+    }
+    select.value = value;
+  }
+
+  function renderPickers() {
+    const any = collections.length > 0;
+    pickers.hidden = !any;
+    filterField.hidden = !any;
+    fillSelect(collectionSelect, collections.map((c) => ({ value: c.id, label: `${c.name} (${c.variables.length})` })), collectionId);
+    const collection = currentCollection();
+    const modes = collection ? collection.modes : [];
+    // A single-mode collection has nothing to choose.
+    modeField.hidden = modes.length < 2;
+    fillSelect(modeSelect, modes.map((m) => ({ value: m.modeId, label: m.name })), modeId);
+  }
+
+  function visibleVariables() {
+    const collection = currentCollection();
+    if (!collection) return [];
+    const query = filter.value.trim().toLowerCase();
+    if (!query) return collection.variables;
+    return collection.variables.filter((v) => {
+      const value = v.values[modeId];
+      return v.name.toLowerCase().includes(query) || (!!value && !!value.hex && value.hex.toLowerCase().includes(query));
+    });
+  }
+
+  /** The help line under a row: what its value is linked to, if anything. @param {VsValue | null} value */
+  function noteFor(value) {
+    if (!value) return 'No value in this mode.';
+    if (value.kind === 'alias') {
+      return value.aliasName
+        ? `Alias of ${value.aliasName}. A new hex replaces the alias.`
+        : 'Alias of a variable this file cannot read. A new hex replaces the alias.';
+    }
+    if (value.kind === 'composed') return 'Color or opacity comes from another variable. A new hex replaces both.';
+    return '';
+  }
+
+  // Looked up through the row, not by id: makeRow fills a row before it is in the page.
+  /** @param {HTMLInputElement} input */
+  function rowOf(input) {
+    return /** @type {HTMLElement} */ (input.closest('[data-row]'));
+  }
+
+  /** @param {HTMLInputElement} input */
+  function helpOf(input) {
+    return /** @type {HTMLElement} */ (rowOf(input).querySelector('p.kit-help'));
+  }
+
+  /** @param {HTMLInputElement} input */
+  function paintSwatch(input, /** @type {string} */ hex) {
+    const swatch = /** @type {SVGElement} */ (rowOf(input).querySelector('svg'));
+    // The swatch shows the variable's own value, which is document data, not a theme colour.
+    swatch.style.color = hex || 'transparent';
+  }
+
+  // The error state is aria-invalid on the input plus text in the help it points at; the kit's
+  // CSS turns the ring and that text to the danger colour. Clearing it restores the note.
+  function setError(/** @type {HTMLInputElement} */ input, /** @type {string} */ message) {
+    const help = helpOf(input);
+    if (message) input.setAttribute('aria-invalid', 'true');
+    else input.removeAttribute('aria-invalid');
+    const text = message || help.dataset.note || '';
+    help.textContent = text;
+    help.hidden = !text;
+  }
+
+  function makeRow(/** @type {VsVariable} */ variable, /** @type {number} */ index) {
+    const fragment = /** @type {DocumentFragment} */ (template.content.cloneNode(true));
+    const row = /** @type {HTMLElement} */ (fragment.firstElementChild);
+    const label = /** @type {HTMLLabelElement} */ (row.querySelector('label'));
+    const input = /** @type {HTMLInputElement} */ (row.querySelector('input'));
+    const help = /** @type {HTMLElement} */ (row.querySelector('p.kit-help'));
+    const value = variable.values[modeId] || null;
+    const hex = value && value.hex ? value.hex : '';
+    const id = `variable-${index}`;
+    input.id = id;
+    label.htmlFor = id;
+    label.textContent = variable.name;
+    help.id = `${id}-help`;
+    input.setAttribute('aria-describedby', help.id);
+    input.dataset.variableId = variable.id;
+    // The value in the document; the field is "dirty" while its text differs from it.
+    input.dataset.hex = hex;
+    const typed = pending.get(`${variable.id} ${modeId}`);
+    input.value = typed || hex;
+    help.dataset.note = noteFor(value);
+    setError(input, '');
+    paintSwatch(input, typed || hex);
+    input.addEventListener('keydown', (event) => onKeydown(input, event));
+    input.addEventListener('input', () => {
+      // A valid code previews in the swatch and clears a shown error; nothing is sent yet.
+      const typedHex = parseHex(input.value);
+      if (typedHex === null) return;
+      paintSwatch(input, typedHex);
+      if (input.getAttribute('aria-invalid') === 'true') setError(input, '');
+    });
+    // change fires when the field loses focus with edited text, as Figma's own fields commit.
+    input.addEventListener('change', () => commit(input));
+    return row;
+  }
+
+  function emptyText() {
+    if (loading && collections.length === 0) return 'Loading color variables...';
+    if (loadError && collections.length === 0) return `Could not read the variables: ${loadError}`;
+    if (collections.length === 0) return 'This file has no local color variables. Add one in Figma\'s Local variables panel, then press Refresh.';
+    return `No variables match "${filter.value.trim()}".`;
+  }
+
+  function renderStatus() {
+    const collection = currentCollection();
+    let summary = '';
+    if (collection) {
+      const total = collection.variables.length;
+      const shown = visibleVariables().length;
+      const noun = total === 1 ? 'variable' : 'variables';
+      summary = shown === total ? `${total} color ${noun}` : `${shown} of ${total} color ${noun}`;
+    }
+    // A failed refresh keeps the last list on screen and says so here.
+    const failed = loadError && collections.length > 0 ? `Refresh failed: ${loadError}` : '';
+    const lines = [summary, failed, lastAction].filter(Boolean);
+    const parts = [];
+    lines.forEach((line, i) => {
+      if (i > 0) parts.push(document.createElement('br'));
+      parts.push(line);
+    });
+    status.replaceChildren(...parts);
+  }
+
+  function renderRows() {
+    // A list that arrives mid-edit must not wipe what the person typed or move their caret.
+    const active = document.activeElement;
+    const editing = active instanceof HTMLInputElement && active.dataset.variableId
+      ? {
+          id: active.dataset.variableId,
+          value: active.value,
+          dirty: active.value !== active.dataset.hex,
+          invalid: active.getAttribute('aria-invalid') === 'true',
+          start: active.selectionStart,
+          end: active.selectionEnd,
+        }
+      : null;
+
+    const shown = visibleVariables();
+    rebuilding = true;
+    try {
+      inputs = new Map();
+      rows.replaceChildren(...shown.map((variable, index) => {
+        const row = makeRow(variable, index);
+        inputs.set(variable.id, /** @type {HTMLInputElement} */ (row.querySelector('input')));
+        return row;
+      }));
+    } finally {
+      rebuilding = false;
+    }
+    rows.hidden = shown.length === 0;
+    empty.hidden = shown.length > 0;
+    empty.textContent = shown.length > 0 ? '' : emptyText();
+
+    const input = editing ? inputs.get(editing.id) : undefined;
+    if (editing && input) {
+      if (editing.dirty) {
+        input.value = editing.value;
+        // The swatch follows the text in the field, as it does while typing a valid code.
+        const typedHex = parseHex(editing.value);
+        if (typedHex !== null) paintSwatch(input, typedHex);
+        if (editing.invalid) setError(input, HEX_ERROR);
+      }
+      input.focus();
+      if (editing.start !== null && editing.end !== null) input.setSelectionRange(editing.start, editing.end);
+    }
+    renderStatus();
+  }
+
+  function onKeydown(/** @type {HTMLInputElement} */ input, /** @type {KeyboardEvent} */ event) {
+    if (event.isComposing) return;
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      commit(input);
+    } else if (event.key === 'Escape') {
+      // Back to the value in the document; the field keeps focus.
+      event.preventDefault();
+      input.value = input.dataset.hex || '';
+      setError(input, '');
+      paintSwatch(input, input.dataset.hex || '');
+    }
+  }
+
+  /** Validates the field and, when the code is new, asks code.ts to set it. */
+  function commit(/** @type {HTMLInputElement} */ input) {
+    if (rebuilding || !input.isConnected) return;
+    const variableId = input.dataset.variableId || '';
+    const current = input.dataset.hex || '';
+    if (input.value.trim() === '') {
+      // An emptied field means "never mind": show the document's value again.
+      input.value = current;
+      setError(input, '');
+      return;
+    }
+    const hex = parseHex(input.value);
+    if (hex === null) {
+      setError(input, HEX_ERROR);
+      return;
+    }
+    input.value = hex;
+    setError(input, '');
+    paintSwatch(input, hex);
+    const key = `${variableId} ${modeId}`;
+    if (hex === current || pending.get(key) === hex) return;
+    pending.set(key, hex);
+    lastAction = `Saving ${variableName(variableId)}...`;
+    renderStatus();
+    post({ type: 'set-color', variableId, collectionId, modeId, hex });
+  }
+
+  function requestList() {
+    if (refresh.getAttribute('aria-busy') === 'true') return;
+    refresh.setAttribute('aria-busy', 'true');
+    post({ type: 'load-variables' });
+  }
+
+  /** Takes a new list from code.ts, keeping the chosen collection and mode when they still exist. */
+  function receiveList(/** @type {unknown} */ list) {
+    collections = Array.isArray(list) ? /** @type {VsCollection[]} */ (list) : [];
+    if (!currentCollection()) collectionId = collections.length > 0 ? collections[0].id : '';
+    const collection = currentCollection();
+    if (!collection) modeId = '';
+    else if (!collection.modes.some((m) => m.modeId === modeId)) modeId = collection.defaultModeId;
+    renderPickers();
+    renderRows();
+  }
+
+  collectionSelect.addEventListener('change', () => {
+    collectionId = collectionSelect.value;
+    const collection = currentCollection();
+    modeId = collection ? collection.defaultModeId : '';
+    lastAction = '';
+    renderPickers();
+    renderRows();
+  });
+
+  modeSelect.addEventListener('change', () => {
+    modeId = modeSelect.value;
+    lastAction = '';
+    renderRows();
+  });
+
+  filter.addEventListener('input', renderRows);
+  refresh.addEventListener('click', requestList);
+  // Coming back to the plugin after editing variables in Figma reloads the list, so it is never
+  // stale; edits in progress survive the reload (see renderRows).
+  window.addEventListener('focus', requestList);
+
+  // Registered at the top level, before the page finishes loading: Figma delivers what code.ts
+  // posted at startup (the first list) as soon as the page has loaded.
+  window.addEventListener('message', (event) => {
+    const msg = event.data && event.data.pluginMessage;
+    if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') return;
+    if (msg.type === 'variables') {
+      loading = false;
+      loadError = '';
+      refresh.removeAttribute('aria-busy');
+      receiveList(msg.collections);
+    } else if (msg.type === 'variables-error') {
+      // code.ts always answers, so the Refresh button never stays busy.
+      loading = false;
+      loadError = typeof msg.message === 'string' ? msg.message : 'unknown error';
+      refresh.removeAttribute('aria-busy');
+      renderRows();
+    } else if (msg.type === 'color-set' && typeof msg.variableId === 'string') {
+      pending.delete(`${msg.variableId} ${msg.modeId}`);
+      const name = variableName(msg.variableId);
+      const collection = currentCollection();
+      const mode = collection && collection.modes.length > 1 ? collection.modes.find((m) => m.modeId === msg.modeId) : undefined;
+      lastAction = msg.ok
+        ? `${name} is now ${msg.hex}${mode ? ` in ${mode.name}` : ''}.`
+        : `${name} was not changed: ${msg.message}`;
+      // The fresh list code.ts sends next repaints the rows; until then the status says what happened.
+      renderStatus();
+    }
+  });
+})();
+</script>
+</body>
+</html>

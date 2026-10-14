@@ -1,4 +1,4 @@
-// kit.d.ts · kit v0.2.0 · protocol 1
+// kit.d.ts · kit v0.3.0 · protocol 1
 // Shared types for the kit window protocol between code.ts (main thread) and ui.html (iframe).
 // Export-free on purpose: code.ts is a plain script (any import/export breaks the no-bundler
 // build), so everything here is global. ui.html's runtime mirrors these names in JSDoc and
@@ -74,7 +74,18 @@ interface KitInitMessage {
   restored: boolean;
 }
 
-type KitMainToUiMessage = KitInitMessage;
+/**
+ * Ask the UI to measure [data-kit-root] again and fit the window height to it, keeping the width
+ * (the same as kit.fit() in the UI). Sent by KitWindow.fit(). 'fit-content' and 'resizable' fit;
+ * 'fixed' ignores it. One that arrives before the UI's first size request is applied by that
+ * request. Added in kit 0.3.0 within protocol 1: an older UI ignores it, like any kit:* type it
+ * does not know. The fitted size is never saved.
+ */
+interface KitFitMessage {
+  type: 'kit:fit';
+}
+
+type KitMainToUiMessage = KitInitMessage | KitFitMessage;
 
 // ---- main-thread API (code.ts) ----
 
@@ -93,10 +104,19 @@ interface KitWindowOptions {
   persist?: boolean;
 }
 
+/** What installKitWindow() returns. */
 interface KitWindow {
   readonly mode: KitMode;
+  /** false where the resize handle is off: Dev Mode, Buzz, editors the kit does not know yet. */
   readonly chrome: boolean;
   readonly editorType: string;
+  /**
+   * Fit the window height to the UI's content now, keeping the width (posts kit:fit). Call it
+   * after a message that changes what the UI shows, in 'resizable' mode; 'fit-content' already
+   * follows its content. Does nothing in 'fixed' mode, or after a later installKitWindow() call
+   * has replaced this window. Safe to call before the UI has loaded.
+   */
+  fit(): void;
 }
 
 // ---- UI-side API (window.kit, created by the runtime in ui.html) ----

@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Export selection</title>
+<meta name="kit" content="kit v0.2.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+<meta name="description" content='Regression fixture from the Phase 1 one-shot run "export-selection" (docs/prompts.md): the plugin part is verbatim, the three kit blocks are test/fixtures/clean stand-ins.'>
+<style data-kit="tokens">
+    /* Fixture tokens: a small subset of the real block. */
+    :root {
+      color-scheme: light;
+      --kit-control-height: 24px;
+      --kit-control-height-large: 32px;
+      --kit-field-bg: var(--figma-color-bg-secondary);
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
+      --kit-scrim: rgba(0, 0, 0, 0.5);
+    }
+    :root.figma-dark {
+      color-scheme: dark;
+      --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+  <style data-kit="components">
+    /* == button == */
+    .kit-button {
+      height: var(--kit-control-height);
+      padding: 0 8px;
+      border: none;
+      border-radius: 5px;
+      color: var(--figma-color-text-onbrand);
+      background: var(--figma-color-bg-brand);
+    }
+    .kit-button:disabled { color: var(--figma-color-text-ondisabled); background: var(--figma-color-bg-disabled); }
+    .kit-button-large { height: var(--kit-control-height-large); }
+  </style>
+  <script data-kit="runtime">
+    (() => {
+      'use strict';
+      const KIT_PROTOCOL = 1;
+      /** @type {KitBounds} */
+      let bounds = { minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 };
+
+      /**
+       * @param {number} width
+       * @param {number} height
+       * @returns {KitSize}
+       */
+      function clampSize(width, height) {
+        return {
+          width: Math.round(Math.min(bounds.maxWidth, Math.max(bounds.minWidth, width))),
+          height: Math.round(Math.min(bounds.maxHeight, Math.max(bounds.minHeight, height))),
+        };
+      }
+
+      /** @param {KitUiToMainMessage} msg */
+      function post(msg) {
+        parent.postMessage({ pluginMessage: msg }, '*');
+      }
+
+      function fit() {
+        const root = document.querySelector('[data-kit-root]') ?? document.body;
+        const size = clampSize(window.innerWidth, Math.ceil(root.getBoundingClientRect().bottom + window.scrollY));
+        post({ type: 'kit:resize', width: size.width, height: size.height });
+      }
+
+      window.addEventListener('message', (event) => {
+        /** @type {KitMainToUiMessage | undefined} */
+        const msg = event.data && event.data.pluginMessage;
+        if (msg && msg.type === 'kit:init') {
+          bounds = msg.bounds;
+          fit();
+        }
+      });
+      document.addEventListener('DOMContentLoaded', () => post({ type: 'kit:ready', protocol: KIT_PROTOCOL }));
+      window.kit = Object.freeze({ version: '0.2.0', protocol: KIT_PROTOCOL, fit });
+    })();
+  </script>
+<style>
+/* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
+/* The status text takes the free space, so the buttons sit at the end of the row. */
+.export-status { flex: 1 1 0; min-width: 0; }
+/* Layer names can be one long word: let them wrap instead of widening the window. */
+.export-status,
+.export-filename { overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main class="kit-app" data-kit-root>
+  <div class="kit-section kit-stack">
+    <h1 class="kit-heading">Export as PNG</h1>
+    <div class="kit-field">
+      <label class="kit-label" for="scale">Scale</label>
+      <div class="kit-select">
+        <select id="scale" aria-describedby="scale-help">
+          <option value="1">1x</option>
+          <option value="2">2x</option>
+          <option value="3">3x</option>
+        </select>
+      </div>
+      <p class="kit-help export-filename" id="scale-help">Each selected layer downloads as its own PNG file.</p>
+    </div>
+  </div>
+  <hr class="kit-divider">
+  <div class="kit-section kit-row">
+    <p class="kit-help export-status" id="status" role="status">Nothing selected</p>
+    <button class="kit-button kit-button-secondary" id="close" type="button">Close</button>
+    <button class="kit-button kit-button-primary" id="export" type="button" disabled>Export</button>
+  </div>
+</main>
+<button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+<script>
+'use strict';
+// Export selection, UI side. It asks code.ts to export the selected layers at the chosen scale,
+// turns each PNG that comes back into a Blob and downloads it. code.ts has no Blob and cannot
+// download, which is why the files are made here. Messages out: 'export-png' { scale } and
+// 'close'. Messages in: 'selection', 'export-progress', 'export-file' and 'export-done'.
+// No HTML comments in this file: see docs/pitfalls.md (Figma's sandbox and comment markers).
+(() => {
+  // Downloads started in the same instant can be dropped by the browser, so they go one by one.
+  const DOWNLOAD_GAP_MS = 250;
+  // Long enough for the browser to read the file; then the Blob's memory is released.
+  const REVOKE_AFTER_MS = 60000;
+  // How many failed layer names the status line lists before it says "and N more".
+  const MAX_LISTED = 3;
+
+  const scale = /** @type {HTMLSelectElement} */ (document.getElementById('scale'));
+  const scaleHelp = /** @type {HTMLElement} */ (document.getElementById('scale-help'));
+  const exportButton = /** @type {HTMLButtonElement} */ (document.getElementById('export'));
+  const closeButton = /** @type {HTMLButtonElement} */ (document.getElementById('close'));
+  const status = /** @type {HTMLElement} */ (document.getElementById('status'));
+
+  let selected = 0;
+  let firstStem = '';
+  let busy = false;
+  let progress = '';
+  let result = '';
+
+  // Bytes that arrive in a message always sit on a plain ArrayBuffer, which is what Blob takes.
+  /** @typedef {{ name: string, bytes: Uint8Array<ArrayBuffer> }} PngFile */
+  /** @typedef {{ name: string, reason: string }} PngFailure */
+  /** @typedef {{ exported: number, failed: PngFailure[], scale: number, error: string }} PngDone */
+
+  /** Files received from code.ts and not downloaded yet. @type {PngFile[]} */
+  const queue = [];
+  let downloading = false;
+  let downloaded = 0;
+  /** Names of files the browser refused to start. @type {string[]} */
+  let notDownloaded = [];
+  /** code.ts's final answer, kept until the last queued file has been downloaded. @type {PngDone | null} */
+  let done = null;
+
+  /** @param {{ type: string } & Record<string, unknown>} message */
+  function post(message) {
+    parent.postMessage({ pluginMessage: message }, '*');
+  }
+
+  /** @param {number} n @param {string} word */
+  function plural(n, word) {
+    return `${n} ${word}${n === 1 ? '' : 's'}`;
+  }
+
+  // The file name suffix Figma uses: none at 1x, "@2x" or "@3x" above.
+  function suffix() {
+    return scale.value === '1' ? '' : `@${scale.value}x`;
+  }
+
+  function render() {
+    exportButton.disabled = selected === 0 && !busy;
+    const selection = selected === 0 ? 'Nothing selected' : `${plural(selected, 'layer')} selected`;
+    const line = busy ? progress : selection;
+    // The last result goes on its own line, so a narrow window never breaks it mid-phrase.
+    status.replaceChildren(line, ...(result && !busy ? [document.createElement('br'), result] : []));
+    const example = `${firstStem}${suffix()}.png`;
+    scaleHelp.textContent = selected === 0 ? 'Each selected layer downloads as its own PNG file.'
+      : selected === 1 ? `Downloads as ${example}`
+      : `Downloads ${plural(selected, 'file')}, such as ${example}`;
+  }
+
+  /** @param {string[]} names */
+  function listNames(names) {
+    const shown = names.slice(0, MAX_LISTED).map((name) => `“${name}”`).join(', ');
+    return names.length > MAX_LISTED ? `${shown} and ${names.length - MAX_LISTED} more` : shown;
+  }
+
+  /** @param {PngDone} answer */
+  function summary(answer) {
+    if (answer.error) return answer.error;
+    const parts = [];
+    if (downloaded > 0) parts.push(`Downloaded ${plural(downloaded, 'PNG')} at ${answer.scale}x`);
+    if (answer.failed.length === 1) {
+      parts.push(`Could not export “${answer.failed[0].name}”: ${answer.failed[0].reason}`);
+    } else if (answer.failed.length > 1) {
+      parts.push(`Could not export ${answer.failed.length} layers: ${listNames(answer.failed.map((f) => f.name))}`);
+    }
+    if (notDownloaded.length > 0) parts.push(`The browser did not download ${listNames(notDownloaded)}`);
+    return parts.length > 0 ? parts.join('. ') : 'Nothing exported';
+  }
+
+  /** @param {PngFile} file */
+  function download(file) {
+    const url = URL.createObjectURL(new Blob([file.bytes], { type: 'image/png' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name;
+    // Outside data-kit-root, so it never changes the window's fitted height; removed at once.
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
+  }
+
+  // Download the queued files one at a time; once code.ts has answered and the queue is empty,
+  // show the result and end the busy state.
+  function pump() {
+    if (downloading) return;
+    const file = queue.shift();
+    if (!file) {
+      if (done) finish(done);
+      return;
+    }
+    downloading = true;
+    try {
+      download(file);
+      downloaded++;
+    } catch (error) {
+      console.warn('Export selection: could not download', file.name, error);
+      notDownloaded.push(file.name);
+    }
+    setTimeout(() => {
+      downloading = false;
+      pump();
+    }, DOWNLOAD_GAP_MS);
+  }
+
+  /** @param {PngDone} answer */
+  function finish(answer) {
+    done = null;
+    busy = false;
+    result = summary(answer);
+    exportButton.removeAttribute('aria-busy');
+    render();
+  }
+
+  function startExport() {
+    // aria-busy blocks the mouse but not Enter or Space, so the handler checks it too.
+    if (busy || selected === 0) return;
+    busy = true;
+    progress = 'Exporting…';
+    result = '';
+    downloaded = 0;
+    notDownloaded = [];
+    done = null;
+    queue.length = 0;
+    exportButton.setAttribute('aria-busy', 'true');
+    render();
+    post({ type: 'export-png', scale: Number(scale.value) });
+  }
+
+  scale.addEventListener('change', render);
+  exportButton.addEventListener('click', startExport);
+  closeButton.addEventListener('click', () => post({ type: 'close' }));
+
+  // Registered at the top level, before the page finishes loading: Figma delivers the messages
+  // code.ts posted at startup (the first selection) as soon as the page has loaded.
+  window.addEventListener('message', (event) => {
+    const msg = event.data && event.data.pluginMessage;
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'selection' && typeof msg.count === 'number') {
+      selected = msg.count;
+      firstStem = typeof msg.stem === 'string' ? msg.stem : '';
+      render();
+    } else if (msg.type === 'export-progress' && busy) {
+      progress = `Exporting ${msg.current} of ${msg.total}…`;
+      render();
+    } else if (msg.type === 'export-file' && busy) {
+      // ArrayBuffer.isView also accepts bytes made in another window, where instanceof fails.
+      if (typeof msg.name !== 'string' || !ArrayBuffer.isView(msg.bytes)) return;
+      queue.push({ name: msg.name, bytes: msg.bytes });
+      pump();
+    } else if (msg.type === 'export-done' && busy) {
+      done = {
+        exported: typeof msg.exported === 'number' ? msg.exported : 0,
+        failed: Array.isArray(msg.failed) ? msg.failed : [],
+        scale: typeof msg.scale === 'number' ? msg.scale : Number(scale.value),
+        error: typeof msg.error === 'string' ? msg.error : '',
+      };
+      if (queue.length > 0 || downloading) {
+        progress = 'Downloading…';
+        render();
+      }
+      pump();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

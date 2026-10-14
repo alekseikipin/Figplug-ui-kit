@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/check-ui.mjs · kit v0.2.0 · zero dependencies (uses the repo's TypeScript), Node 24
+// scripts/check-ui.mjs · kit v0.3.0 · zero dependencies (uses the repo's TypeScript), Node 24
 // Type-checks the inline <script>s of each plugin's ui.html against kit.d.ts with tsc's JSDoc
 // checker, and reports errors at ui.html line numbers.
 //

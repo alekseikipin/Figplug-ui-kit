@@ -1,6 +1,6 @@
 # Window chrome
 
-Figma gives a plugin a fixed-size iframe and a `figma.ui.resize(width, height)` call. The kit adds the rest: the window fits its content, the person can drag or keyboard-resize it from a grip in the bottom-right corner, double-click snaps between preset widths, and the chosen size is remembered between runs.
+Figma gives a plugin a fixed-size iframe and a `figma.ui.resize(width, height)` call. The kit adds the rest: the window fits its content, the person can drag or keyboard-resize it from a grip in the bottom-right corner, double-click snaps between preset widths, a screen reader hears the new size after a keyboard resize, and the chosen size is remembered between runs.
 
 Three pieces work together, and each lives in its own pasted block:
 
@@ -8,7 +8,7 @@ Three pieces work together, and each lives in its own pasted block:
 - **The runtime** in `ui.html` (`<script data-kit="runtime">`). It measures the content, runs the gestures and asks for sizes. It never saves anything itself.
 - **The handle**: `<button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>`, placed once, right after the `[data-kit-root]` element (`</main>` in the starter) and before your own `<script>`, so it is the last stop in the Tab order. Its look is in [components.md](components.md#resize-handle).
 
-They talk through three messages, `kit:ready`, `kit:init` and `kit:resize`, described in [messages.md](messages.md).
+They talk through four messages, described in [messages.md](messages.md): `kit:ready`, `kit:init` and `kit:resize`, plus `kit:fit` (kit 0.3.0), which `code.ts` sends to ask for a fit.
 
 ## Pick a mode
 
@@ -24,7 +24,7 @@ installKitWindow({ mode: 'fixed', size: { width: 300, height: 200 } });
 | `resizable` | The person drags it; Home re-fits it to the content once | The person drags it | Width and height | Drags both ways (`nwse-resize` cursor) |
 | `fixed` | `options.size`, never changed by the kit | `options.size` | Nothing | Hidden |
 
-Use `fit-content` for forms and short panels: the window is never taller than it needs to be, and adding a row grows it. Use `resizable` when the content can use any amount of space, like a long list or a preview. In `resizable` mode content changes do not move the window; call `kit.fit()` after a change if you want them to. Use `fixed` for a small window that must never move.
+Use `fit-content` for forms and short panels: the window is never taller than it needs to be, and adding a row grows it. Use `resizable` when the content can use any amount of space, like a long list or a preview. In `resizable` mode content changes do not move the window; ask for a fit after a change if you want them to, with `kit.fit()` in the UI or the window's `fit()` in `code.ts` ([Fit on request](#fit-on-request-kitfit-and-kitwindowfit)). Use `fixed` for a small window that must never move.
 
 ## How the mode and bounds reach the UI
 
@@ -55,6 +55,7 @@ The handle is a real `<button>`, so it is in the tab order and keys work once it
 | Shift + Up / Down | Nothing | Height -32 / +32 px |
 | Enter or Space | Next snap width | Next snap width, height kept |
 | Home | Default width; the height follows the content | Default width, then the height is re-fitted to the content at that width |
+| End | Widest snap width (the widest that fits the bounds) | Same, height kept |
 
 Details that matter when you test it:
 
@@ -64,10 +65,50 @@ Details that matter when you test it:
 - **A drag that the browser interrupts keeps its size.** If the pointer is cancelled or capture is lost, the drag ends as if the button were released.
 - **The height at the end of a `fit-content` drag is measured when the drag ends**, so text that rewrapped at the new width is counted, even if the pointer held still before the release.
 - **Snaps** are `CONFIG.snapWidths` (320, 480, 640): the next one strictly wider than the current width, wrapping to the narrowest after the widest. Snap widths outside the bounds are skipped. With a single usable snap, Enter, Space and double-click only return to it, so at that width they change nothing (they still send a final size). If no snap fits inside the bounds, the next snap is clamped into them.
+- **End** goes straight to the widest usable snap (640 by default; with `snapWidths: [300, 1200, 500]` and the default 960 px maximum it is 500, because 1200 is outside the bounds). If no snap fits inside the bounds, the widest snap is clamped into them.
 - **Fast keys add up.** Each key starts from the size the runtime last asked for, not from the size the window has reached, so ten quick presses (or a held key) move ten steps even when the window lags behind, and a key pressed right after Home starts from Home's size.
-- Arrow keys with Ctrl, Alt or Cmd are ignored, and holding Enter, Space or Home does not repeat.
+- Arrow keys with Ctrl, Alt or Cmd are ignored, and holding Enter, Space, Home or End does not repeat.
 - Every key, every snap and the end of every drag sends `final: true`; mid-drag sizes are sent at most once per animation frame, and never twice in a row with the same size.
-- **Zero listeners outlive a gesture.** Each drag gets its own `AbortController`; however the drag ends, aborting it removes every listener the drag added. Between gestures only the five listeners installed at startup exist (three on the handle, two on `window`).
+- **Zero listeners outlive a gesture.** Each drag gets its own `AbortController`; however the drag ends, aborting it removes every listener the drag added. Between gestures only the listeners installed at startup exist: three on the handle (`pointerdown`, `dblclick`, `keydown`), two on `window` (`message`, `resize`), and, since kit 0.3.0, five capture listeners on `document` for menus (`beforetoggle`, `toggle`, `keydown`, `click`, `scroll`; see [components.md](components.md#menu)). Opening and closing a menu adds none. The announcement below is a timer, not a listener. `e2e/chrome.spec.mjs`, `e2e/chrome-v2.spec.mjs` and `e2e/menu.spec.mjs` count them.
+
+## Screen readers: the hint and the announcement
+
+Kit 0.3.0. At startup, if the page has a `[data-kit-resize]` handle, the runtime adds two visually hidden elements at the end of `<body>`, once:
+
+```html
+<p id="kit-resize-hint" class="kit-visually-hidden">Drag, or use the arrow keys. Shift for bigger steps, Enter to snap, Home to fit, End for the widest size.</p>
+<div class="kit-visually-hidden" data-kit-announce aria-live="polite"></div>
+```
+
+- **The hint** is the handle's description: the runtime adds `kit-resize-hint` to the handle's `aria-describedby` (after any ids already there), so a screen reader reads "Resize window, button" and then how to use it. The text is `CONFIG.strings.resizeHint`.
+- **The live region** speaks the new size after a keyboard resize: `CONFIG.strings.announce`, `Window {width} by {height}` by default, with the size the window ends at. It waits until no key has been pressed for 150 ms, so ten quick arrow presses (or a held key) give one announcement, not ten. A burst that ends at the size spoken last time is spoken again.
+- **Pointer resizes are silent.** Drags and double-clicks are not announced (the pointer is the feedback), and a drag that starts within 150 ms of a key drops that key's pending announcement.
+- Keys the handle doesn't use are not announced: Up and Down in `fit-content` mode, letters, a held Enter. A key that is used but hits the bounds is: the person hears that the size stayed where it was.
+- Both elements are `position: absolute` and 1 x 1 px (`.kit-visually-hidden`), so they never change the fitted height. The id `kit-resize-hint` and the attribute `data-kit-announce` belong to the kit: don't use them for anything else. Without a handle, neither element is made.
+
+Translate both strings with `data-kit-config` ([Customising `CONFIG`](#customising-config)); the hint should name the keys in the person's language.
+
+## Fit on request: `kit.fit()` and `KitWindow.fit()`
+
+Both ask for the same thing: measure `[data-kit-root]` now and fit the window height to it, keeping the width. The fitted size is sent with `user: false`, so it is never saved.
+
+- **From the UI**, call `kit.fit()` after your script changes the content.
+- **From `code.ts`** (kit 0.3.0), keep what `installKitWindow()` returns and call its `fit()`. It posts `{ type: 'kit:fit' }` to the UI ([messages.md](messages.md)). Use it when main has just sent the UI new content, right after that message: the UI handles messages in order, so the fit measures the content your handler has rendered (if your handler renders later, after an `await`, call `kit.fit()` in the UI once it has).
+
+```ts
+const win = installKitWindow({ mode: 'resizable', size: { width: 360, height: 480 } });
+
+figma.ui.postMessage({ type: 'layers', names }); // the UI renders the list
+win.fit();                                       // then the window takes the list's height
+```
+
+| Mode | What a fit does |
+|---|---|
+| `fit-content` | Refits at once. The `ResizeObserver` already follows content changes, so this is only needed for changes it cannot see. |
+| `resizable` | Fits the height to the content, keeping the width the person chose. Later content changes don't move the window until the next fit. |
+| `fixed` | Nothing. `KitWindow.fit()` posts no message, and the runtime ignores a `kit:fit` that arrives anyway. |
+
+A `KitWindow.fit()` called before the UI is ready (straight after `installKitWindow()`, say) is not lost: Figma queues the message until the page has loaded, and the runtime applies it to its first size request. In `resizable` mode that first size then has the content's height instead of the saved or default one; in `fit-content` mode the first size is a fit anyway. After a later `installKitWindow()` call has replaced the window, the old handle's `fit()` does nothing. `kit.fit()` in the UI does nothing before the first fit (there is nothing to redo yet).
 
 ## What is saved, and when
 
@@ -130,9 +171,9 @@ While the person drags, the handle matches `:active`, so styles for the grip can
 
 It also defines a frozen `window.kit` (typed as `KitUiApi` in [`kit.d.ts`](../kit.d.ts)):
 
-- `kit.version`: the kit release, `'0.2.0'`.
+- `kit.version`: the kit release, `'0.3.0'`.
 - `kit.protocol`: `1`.
-- `kit.fit()`: measure the root now and fit the window height to it, keeping the width. Use it in `resizable` mode after your content changes; in `fit-content` mode the observer already does this. It does nothing in `fixed` mode or before the first fit, and the size it asks for is not saved.
+- `kit.fit()`: measure the root now and fit the window height to it, keeping the width. Use it in `resizable` mode after your content changes; in `fit-content` mode the observer already does this. It does nothing in `fixed` mode or before the first fit, and the size it asks for is not saved. `code.ts` has the same call as `fit()` on the window `installKitWindow()` returns ([Fit on request](#fit-on-request-kitfit-and-kitwindowfit)).
 
 Do not call `figma.ui.resize` yourself while the kit window is installed. The runtime keeps track of the sizes it asked for, and in `fit-content` mode the next content change would undo yours anyway. Change `size` and `bounds` in `installKitWindow()` instead, or use `fixed` mode.
 
@@ -141,19 +182,21 @@ Do not call `figma.ui.resize` yourself while the kit window is installed. The ru
 `CONFIG` at the top of the runtime block holds the runtime's defaults. Like the rest of the block, it is **never edited in place**: the three `data-kit` blocks stay byte-identical to the release, so the audit can spot drift and an upgrade is a re-paste. To change a value, add a JSON script anywhere in `ui.html`, for example right after the handle:
 
 ```html
-<script type="application/json" data-kit-config>{"snapWidths": [300, 400], "strings": {"resizeLabel": "Fenstergröße ändern"}}</script>
+<script type="application/json" data-kit-config>{"snapWidths": [300, 400], "strings": {"resizeLabel": "Fenstergröße ändern", "resizeHint": "Ziehen, oder die Pfeiltasten verwenden. Umschalt für größere Schritte, Eingabe zum Einrasten, Pos1 zum Einpassen, Ende für die größte Breite.", "announce": "Fenster {width} mal {height}"}}</script>
 ```
 
 The runtime reads it once, at `DOMContentLoaded`, before it labels the handle or posts `kit:ready`, and merges it over the defaults key by key. Leave out every key you don't change. Only the first `data-kit-config` script in the page is read.
 
 | Key | Default | Accepted | What it does |
 |---|---|---|---|
-| `snapWidths` | `[320, 480, 640]` | A non-empty array of positive numbers, in any order | The widths double-click, Enter and Space cycle through. Widths outside the current bounds are skipped. |
+| `snapWidths` | `[320, 480, 640]` | A non-empty array of positive numbers, in any order | The widths double-click, Enter and Space cycle through; End takes the widest. Widths outside the current bounds are skipped. |
 | `step` | `8` | A whole number, 1 or more | Pixels per arrow key. |
 | `bigStep` | `32` | A whole number, 1 or more | Pixels per Shift + arrow key. |
 | `initTimeoutMs` | `500` | Milliseconds, 0 or more (at most 2147483647, `setTimeout`'s limit) | How long the runtime waits for `kit:init`, and for web fonts, before it carries on alone. It does not change when `code.ts` shows the window; that cap is its own 500 ms. |
 | `fallbackMode` | `"fit-content"` | `"fit-content"`, `"resizable"` or `"fixed"` | The mode used only when `kit:init` never arrives, such as when previewing `ui.html` in a browser. In Figma the mode always comes from `installKitWindow({ mode })`. |
 | `strings.resizeLabel` | `"Resize window"` | A string that is not blank | The handle's accessible name. The runtime writes it to the handle's `aria-label` at startup, so translate it here rather than in the markup. |
+| `strings.resizeHint` | `"Drag, or use the arrow keys. Shift for bigger steps, Enter to snap, Home to fit, End for the widest size."` | A string that is not blank | The handle's description, the text of `#kit-resize-hint` (kit 0.3.0, [Screen readers](#screen-readers-the-hint-and-the-announcement)). |
+| `strings.announce` | `"Window {width} by {height}"` | A string that is not blank | What the live region says after a keyboard resize. Every `{width}` and `{height}` is replaced with the window's size in pixels; any other text is kept as written (kit 0.3.0). |
 
 A typo cannot break the window; whatever the runtime cannot use is ignored and its default stays:
 
@@ -164,14 +207,20 @@ A typo cannot break the window; whatever the runtime cannot use is ignored and i
 
 ```js
 const CONFIG = {
-  snapWidths: [320, 480, 640], // double-click, Enter and Space cycle through these widths
-  step: 8,                     // px per arrow key...
-  bigStep: 32,                 // ...and per Shift+arrow
-  initTimeoutMs: 500,          // stop waiting for code.ts after this (e.g. ui.html opened in a browser)
-  fallbackMode: 'fit-content', // used only when kit:init never arrives; the real mode comes from code.ts
-  strings: { resizeLabel: 'Resize window' },
+  snapWidths: [320, 480, 640],
+  step: 8,
+  bigStep: 32,
+  initTimeoutMs: 500,
+  fallbackMode: /** @type {KitMode} */ ('fit-content'),
+  strings: {
+    resizeLabel: 'Resize window',
+    resizeHint: 'Drag, or use the arrow keys. Shift for bigger steps, Enter to snap, Home to fit, End for the widest size.',
+    announce: 'Window {width} by {height}',
+  },
 };
 ```
+
+The table above says what each key does. The `@type` cast only tells `npm run check:ui` that `fallbackMode` is a `KitMode`, not any string.
 
 ## Troubleshooting
 
@@ -180,5 +229,70 @@ const CONFIG = {
 - **The window appears after half a second, at the wrong size.** The UI never sent its first `kit:resize`: the runtime block is missing or threw (check the plugin console), or `kit:init` never arrived (a protocol warning, or `installKitWindow()` was not called). In `fixed` mode the window is visible at once by design.
 - **There is no handle.** The chrome is off (Dev Mode, Buzz, `fixed` mode, or no `kit:init`), or the button lacks `data-kit-resize`.
 - **The size is not remembered.** `persist: false`, `fixed` mode, a different editor, a storage error (the main thread warns once), or a storage read slower than 300 ms (skipped for that run). In `fit-content` mode only the width is remembered, by design.
+- **A `resizable` window keeps its height after new content arrives.** By design: only the person, Home, `kit.fit()` and `KitWindow.fit()` change it ([Fit on request](#fit-on-request-kitfit-and-kitwindowfit)).
+- **`KitWindow.fit()` measured the old content.** Your UI renders after an `await` (or a frame) in its message handler, so the fit arrived first. Call `kit.fit()` in the UI once the content is in place instead.
+- **A screen reader says nothing after a resize.** Only keyboard resizes are announced, 150 ms after the last key; check that the handle is the `[data-kit-resize]` button and that nothing else in the page uses `data-kit-announce`.
 
-The pure helpers behind all this (`clampSize`, `nextSnap`, `sameSize`, between the `/* kit:pure:start */` and `/* kit:pure:end */` lines of the runtime) are tested in `test/pure.test.mjs`; `npm test` runs them.
+The pure helpers behind all this (`clampSize`, `nextSnap`, `widestSnap`, `sameSize`, `announceText`, and `placeMenu` for menus, between the `/* kit:pure:start */` and `/* kit:pure:end */` lines of the runtime) are tested in `test/pure.test.mjs`; `npm test` runs them.
+
+## Implementation notes
+
+The runtime block keeps its comments short, so the kit stays cheap to paste and to read. These notes explain the code itself: read them before you change the runtime (in a fork, or in a pull request), and run `npm run test:e2e` afterwards. The e2e specs pin most of these points.
+
+**Requests and the window's size**
+
+- Every size change goes through `requestSize()`. The queued frame, `lastSent` and the dedupe can then never drift apart, which they did in the pre-kit script that sent some sizes directly.
+- Mid-gesture sizes are merged into one `kit:resize` per animation frame. An `immediate` or `final` request cancels the queued frame first, so a stale frame can never land after an Escape revert or a final size.
+- A non-final size equal to the last one sent is dropped. Finals always go out: `code.ts` saves on them, and an Escape revert must win.
+- A content fit merged into a queued drag frame keeps the drag's `user: true`, because the width is still the person's.
+- The viewport lags one host round trip behind each request. Until the size last asked for has landed, fits and gestures start from it, axis by axis (`headingWidth` and `headingHeight`, cleared by the `resize` event once the viewport gets there). Without that, a fit measured at an older in-flight size would drag the window back, and fast keys would each add their step to the same stale size. The runtime only tracks them while the chrome is on: a docked panel (Dev Mode, Buzz) is sized by Figma and may never reach the size asked for, so there the viewport is the truth.
+- A window shown with `visible: false` may not be laid out yet (0 x 0). Until it is, `kit:init`'s size stands in for the viewport, and the content is not measured.
+- Home in `resizable` mode changes the width first. The content only reflows once that width lands, so the height is measured again then (`refitAtWidth`) and sent as a final size.
+
+**Startup**
+
+- The first `kit:resize` doubles as "ready to show": `code.ts` keeps the window hidden until then (or until its own 500 ms cap), so the runtime waits for the fonts and for the real mode before it sends it.
+- With the chrome on, the first request uses `kit:init`'s `size`, not the viewport's: the restore's `figma.ui.resize` may not have reached the iframe yet, and asking for the old viewport size would undo it ([How the mode and bounds reach the UI](#how-the-mode-and-bounds-reach-the-ui)).
+- `kit:init` is checked field by field, so a malformed one falls back to defaults instead of throwing. The protocol warning quotes a string protocol, so `"1"` and `1` read differently.
+- A `kit:fit` that arrives before the first request is kept and applied to it. A `kit:init` that arrives after the fallback has started is covered in [Timing](#timing-and-the-two-500-ms-fallbacks).
+- `CONFIG.fallbackMode` is always a valid mode: the default is one, and `data-kit-config` only replaces it with another (`fallbackMode` in the table above).
+
+**Watching the root (`fit-content`)**
+
+- One `ResizeObserver` watches the root. The root is looked up again on every fit, never cached, so replacing the markup or adding `[data-kit-root]` later keeps fitting.
+- A replaced root reports one last 0 x 0 size as it leaves the page, and the fit it triggers already measures the new root. Moving the observer to the new root waits for the next task: calling `observe()` on a shallower element from inside an observer callback makes the browser fire a "ResizeObserver loop completed with undelivered notifications" error event.
+
+**Pointer and keys**
+
+- `setPointerCapture` throws for a pointer that is no longer live (a synthetic event). Without capture a drag could never end, so none starts.
+- `preventDefault()` on `pointerdown` stops text selection, but it also cancels the focus a mouse press would give. The runtime focuses the handle itself, with `focusVisible: false` so no keyboard ring appears after a mouse drag (browsers without the option ignore it). That focus is what lets Escape reach the plugin window.
+- `clientX` and `clientY` stay put while the window resizes, because it grows from its top-left corner, so the drag's offset is simply the pointer's movement.
+- `pressMoved` remembers whether the last press turned into a drag, so the `dblclick` that a double-click's second press produces does not snap on top of it.
+- Each drag gets one `AbortController`; aborting it removes every listener the drag added, however the drag ends. The old `{ once: true }` listeners outlived an Escape.
+- Escape during a drag is stopped in a capture listener on `window`. `stopPropagation()` there cannot stop other listeners on `window` itself ([Gestures and keys](#gestures-and-keys)).
+- At the end of a `fit-content` drag the height is measured again. The drag's own height was measured before its last width landed and the content reflowed; sent as the final, it would overwrite the observer's newer fit, and with the root's size unchanged nothing would correct it.
+- Snap widths outside the bounds are skipped, because they would clamp to the current size and look like a dead key. If none fits, all are used and the result is clamped.
+- Holding Enter, Space, Home or End does not repeat (it would spin through the snaps). In `fit-content` mode Up and Down are left to the page, so it scrolls. A drag drops a key's pending announcement, which would be stale.
+
+**Menus**
+
+- `menuOpen` is set in `beforetoggle`, before the state changes, so it is never stale; `aria-expanded` is synced in `toggle`, after it.
+- The menu's invoker is the toggle event's `source`; failing that, the last invoker if it opens this menu; failing that, the first `[popovertarget]` that does.
+- A popover is not laid out until it is open, so the runtime places it in the next animation frame, before the first paint, and again on `toggle`. It measures the menu at 0, 0, where nothing squeezes it.
+- A click on an item closes the menu in a `setTimeout(0)`, after every click listener has run, so a host handler's `preventDefault()` keeps it open.
+- Scrolling the page (not the menu) places the open menu under its invoker again. Without the popover API (`showPopover`) the runtime adds no menu listeners: the menus could not open anyway.
+
+**`data-kit-config` values**
+
+- `step` and `bigStep` must be whole pixels, 1 or more: a fractional step rounds back to the same width, a dead key.
+- `initTimeoutMs` stops at 2,147,483,647 ms because `setTimeout` treats anything larger as 0.
+- Strings must not be blank: a blank `resizeLabel` would leave the handle without an accessible name.
+
+**The pure block**
+
+- Figma documents a 70 x 0 floor for `showUI` and `figma.ui.resize`, and no ceiling. The 4096 px ceiling of the generous bounds is the kit's own, so a runaway number can't ask for an absurd window before `kit:init` arrives.
+- `sanitizeBounds` repairs any bounds-like value: finite whole numbers, never under 70 x 0, and when a minimum is larger than its maximum the minimum wins, as in CSS and in `code.ts`. Missing or junk fields take the generous default, so the result is always safe to clamp against.
+- `clampSize` rounds to whole pixels and never returns NaN or Infinity: NaN, a non-number and -Infinity land on the minimum, +Infinity on the maximum.
+- `nextSnap` and `widestSnap` ignore the order of the snaps and skip non-finite and non-positive ones. With no usable snap the width comes back unchanged (0 if it isn't finite), so the result can always go to `clampSize`.
+- `sameSize` is false when either size is missing, so the first request after startup is always sent.
+- `placeMenu` puts the menu 4 px under its invoker with the left edges aligned, or above the invoker when it does not fit below and there is more room above, then keeps it 8 px inside every edge; a menu too big for the window is pinned 8 px from the top-left corner.

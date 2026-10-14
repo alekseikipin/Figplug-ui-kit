@@ -1,5 +1,5 @@
 "use strict";
-// ==== kit:window:start · kit v0.2.0 · protocol 1 · paste this block unchanged · https://github.com/alekseikipin/Figplug-ui-kit ====
+// ==== kit:window:start · kit v0.3.0 · protocol 1 · paste this block unchanged · https://github.com/alekseikipin/Figplug-ui-kit ====
 // Main-thread half of the kit window: opens the UI, keeps the window inside per-editor bounds,
 // remembers the size the person chose, and answers the runtime in ui.html (docs/messages.md,
 // docs/window-chrome.md). Paste the whole block above your own code and call installKitWindow()
@@ -186,6 +186,9 @@ async function kitWriteSize(record) {
  *                         'kit:window'. One size is kept, tagged with the editor it was chosen
  *                         in, and only restored there. Default: true. Ignored in 'fixed' mode.
  * @returns The resolved { mode, chrome, editorType }; chrome is false where the handle is off.
+ *          Its fit() asks the UI to fit the window height to its content now (kit:fit), keeping
+ *          the width: call it in 'resizable' mode after a message that changes the UI's content.
+ *          It does nothing in 'fixed' mode or once a later call has replaced this window.
  */
 function installKitWindow(options = {}) {
     if (kitUninstallPrevious)
@@ -396,7 +399,20 @@ function installKitWindow(options = {}) {
         kitClearTimer(saveTimer);
         kitClearTimer(readTimer);
     };
-    return Object.freeze({ mode, chrome: surface.chrome, editorType });
+    // The UI measures and asks for the size with kit:resize, as for any fit; nothing is saved.
+    // Before the UI has loaded Figma queues the message, and the runtime applies it on its first fit.
+    const fit = () => {
+        if (!active || mode === 'fixed')
+            return;
+        const message = { type: 'kit:fit' };
+        try {
+            figma.ui.postMessage(message);
+        }
+        catch {
+            // The plugin is closing: there is no UI left to fit.
+        }
+    };
+    return Object.freeze({ mode, chrome: surface.chrome, editorType, fit });
 }
 // ==== kit:window:end ====
 // ---- Your plugin starts here ----
