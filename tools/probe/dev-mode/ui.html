@@ -32,6 +32,24 @@ const ui = {
   messagesBeforeLoad: 0,
   htmlClassAtStart: document.documentElement.className,
   figmaStylePresentAtStart: !!document.getElementById('figma-style'),
+  // 'BackCompat' is quirks mode: something reached the parser before <!DOCTYPE html>.
+  compatMode: document.compatMode,
+  doctype: document.doctype ? document.doctype.name : null,
+  headStart: Array.from(document.head ? document.head.children : []).slice(0, 4).map((el) => el.tagName + (el.id ? '#' + el.id : '')),
+  // What the host put before this page's own <meta charset>, minus the palette (captured below).
+  injected: (() => {
+    const out = [];
+    for (const el of Array.from(document.head ? document.head.children : [])) {
+      if (el.tagName === 'META') break;
+      if (el.id === 'figma-style') continue;
+      const text = el.textContent || '';
+      // One line per @font-face: family, style, weight, first source.
+      const fontFaces = (text.match(/@font-face\s*{[^}]*}/g) || []).map((rule) => ['font-family', 'font-style', 'font-weight']
+        .map((p) => ((rule.match(new RegExp(p + '\\s*:\\s*([^;]+)')) || [])[1] || '?').trim()).join(' / ') + ' / ' + ((rule.match(/url\(([^)]+)\)/) || [])[1] || '?'));
+      out.push({ tag: el.tagName, attrs: Array.from(el.attributes).map((a) => a.name).join(' '), length: text.length, fontFaces, text: fontFaces.length ? '' : text.slice(0, 6000) });
+    }
+    return out;
+  })(),
   palettes: {},
   themeChanges: [],
 };
@@ -112,7 +130,26 @@ window.addEventListener('load', () => {
   if (styleEl) new MutationObserver(capturePalette).observe(styleEl, { childList: true, characterData: true, subtree: true });
   capturePalette();
   post({ type: 'probe:ready' });
+  measureInter().then((result) => { ui.inter = result; render(); });
 });
+
+// Does Inter load, and which face draws each weight the kit uses? Canvas widths of one string:
+// two weights drawn by the same face have the same width; a width equal to the fallback's means
+// Inter did not load at all (a blocked or missing font).
+async function measureInter() {
+  const out = { widths: {}, faces: [] };
+  const sample = 'Hamburgefonstiv 0123456789 Rename layers';
+  try {
+    await Promise.all([400, 450, 500, 550, 600].map((w) => document.fonts.load(w + ' 11px Inter')));
+    const ctx = document.createElement('canvas').getContext('2d');
+    for (const font of ['400 11px Inter', '450 11px Inter', '500 11px Inter', '550 11px Inter', '600 11px Inter', '400 11px sans-serif']) {
+      ctx.font = font;
+      out.widths[font] = Math.round(ctx.measureText(sample).width * 100) / 100;
+    }
+    document.fonts.forEach((f) => { if (/inter/i.test(f.family)) out.faces.push(f.family + ' ' + f.style + ' ' + f.weight + ': ' + f.status); });
+  } catch (e) { out.error = e && e.message ? e.message : String(e); }
+  return out;
+}
 
 async function copyReport() {
   const text = document.getElementById('out').value;

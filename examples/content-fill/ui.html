@@ -77,7 +77,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin: 0; font-family: var(--kit-font-family); font-size: var(--kit-font-size); line-height: var(--kit-line-height); letter-spacing: var(--kit-letter-spacing); font-weight: var(--kit-font-weight); color: var(--figma-color-text); background-color: var(--figma-color-bg); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-button, input, select, textarea { margin: 0; font: inherit; letter-spacing: inherit; color: inherit; }
+button, input, select, textarea, table { margin: 0; font: inherit; letter-spacing: inherit; color: inherit; }
 a { color: var(--figma-color-text-brand); text-decoration: none; }
 a:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: var(--kit-focus-width); border-radius: var(--kit-radius-small); }
 
@@ -694,7 +694,7 @@ function menuItems(menu) { return elements(menu, '.kit-menu-item', (el) => !el.m
 function placeOpenMenu() {
   if (!menuOpen || !menuInvoker || !menuOpen.matches(':popover-open')) return;
   Object.assign(menuOpen.style, { left: '0px', top: '0px' });
-  const { clientWidth: width, clientHeight: height } = document.documentElement;
+  const { clientWidth: width, clientHeight: height } = document.scrollingElement || document.documentElement; // the viewport, in quirks mode too
   const at = placeMenu(menuInvoker.getBoundingClientRect(), menuOpen.getBoundingClientRect(), { width, height });
   Object.assign(menuOpen.style, { left: at.left + 'px', top: at.top + 'px' });
 }

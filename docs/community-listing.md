@@ -71,16 +71,18 @@ Sources: [Publish classic plugins to the Figma Community](https://help.figma.com
 
 ### Carousel media
 
-Captured in the Figma desktop app from the publish folder's plugin (step 3 below), never in the browser preview: the guidelines ask that screenshots show the plugin as it is, and the preview's colours and fonts are a stand-in. Up to nine images or videos; 1920 × 1080 px. Planned:
+Captured in the Figma desktop app from the publish folder's plugin (step 3 below), never in the browser preview: the guidelines ask that screenshots show the plugin as it is, and the preview's colours and fonts are a stand-in. Up to nine images or videos; 1920 × 1080 px.
 
-1. **A short video (about 15 s), Figma Design, light:** the tour opens on Components; switch to Create, then Window, and back, so the window visibly refits to each tab; on Create, press Create and the shapes appear on the canvas behind it.
-2. **Components, Figma Design, light:** the top of the tab (buttons and overlays), with the Actions menu open.
-3. **The same in dark**, with the Rename frame dialog open over the dimmed window.
-4. **A toast with Undo**, Figma Design (either theme), at the bottom of the window.
-5. **FigJam:** the Components tab, light with the purple brand colour.
-6. **Window tab, Figma Design:** the modes and the live size, mid-drag of the corner grip if the capture tool can drag (the 2026-10-14 run's tool could not; see [release-checklist.md](release-checklist.md#manual-surface-matrix), note 2).
+Made on 2026-10-14 in Figma desktop 126.9.13 (macOS, Figma in its dark theme), in scratch files, and kept in [`docs/listing/kit-tour/`](listing/kit-tour/). Upload them after the illustrated cover, in this order:
 
-Crop each capture to the plugin window with some canvas around it, and edit nothing inside the window. Keep the files outside the repo, or in `docs/listing/kit-tour/` if they are to be versioned. None of them has been captured yet: this waits for the tour's first run in Figma.
+1. **[`figplug-v3-tour.mp4`](listing/kit-tour/figplug-v3-tour.mp4), 17 s, no sound.** Real window captures, about 9 a second, played back in real time with still stretches cut to 1.6 s. The tour opens on Components. It switches to Create, where Create adds five rectangles on the canvas behind the window. It moves to Window, adds a line, which grows the window, and removes it. It ends back on Components with a toast. There is no pointer: the clicks came from an automation tool.
+2. **[`figplug-v3-1-components.jpg`](listing/kit-tour/figplug-v3-1-components.jpg):** the Components tab (buttons and overlays), Figma Design.
+3. **[`figplug-v3-2-overlays.jpg`](listing/kit-tour/figplug-v3-2-overlays.jpg):** the Actions menu open, the Rename frame dialog over the dimmed window, and a toast with Undo.
+4. **[`figplug-v3-3-create.jpg`](listing/kit-tour/figplug-v3-3-create.jpg):** five rectangles made and selected, with Figma's own Design panel beside the window.
+5. **[`figplug-v3-4-window.jpg`](listing/kit-tour/figplug-v3-4-window.jpg):** the Window tab, with the modes, the live size and the keys of the resize handle.
+6. **[`figplug-v3-5-editors.jpg`](listing/kit-tour/figplug-v3-5-editors.jpg):** the top of the window in Figma Design (dark), FigJam (light, purple) and Slides (dark, orange).
+
+The images frame crops of the captures on the cover's cream paper, with a title in the cover's lettering. Nothing inside a plugin window was edited. Every crop stays below Figma's tab bar and file-name row, so no other file names and no avatar show. The light theme in Figma Design was not captured, so as not to switch the owner's Figma theme. The raw captures and the script that frames them stay outside the repo, because the captures show the owner's other files.
 
 ### Republish steps (owner action)
 

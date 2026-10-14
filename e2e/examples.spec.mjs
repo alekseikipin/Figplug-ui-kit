@@ -298,6 +298,12 @@ test.describe('examples/kit-tour: the tour', () => {
     await expect(frame.locator('#size')).toHaveText(`360 × ${heights.Window}`);
     await expect(frame.locator('[data-tour-mode][aria-current="true"]')).toHaveAttribute('data-tour-mode', 'fit-content');
     await expect(frame.locator('#handle-part')).toBeVisible();
+    // Figma runs plugin UIs in quirks mode, and so does the preview. There a table resets its text
+    // to 16px unless the page says otherwise: the keys table must be the body's size.
+    expect(await frame.evaluate(() => document.compatMode)).toBe('BackCompat');
+    const [bodySize, keysSize] = await frame.evaluate(() => [document.body, document.querySelector('.tour-keys td')]
+      .map((el) => getComputedStyle(/** @type {Element} */ (el)).fontSize));
+    expect(keysSize, 'the keys table inherits the body font size').toBe(bodySize);
     // Back to Create: the same height as before.
     await tab(frame, 'Create').click();
     await expect.poll(async () => (await frameSize(page)).height).toBe(heights.Create);

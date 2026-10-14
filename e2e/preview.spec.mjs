@@ -202,6 +202,10 @@ test('the live frame boots, fits its content and shows the handle', async ({ pag
   const frame = pluginFrame(page);
   expect(await frameSize(page)).toEqual({ width: 320, height: await contentHeight(frame), state: 'shown' });
   await expect(frame.locator('[data-kit-resize]')).toBeVisible();
+  // As in Figma: the host's <script> and <style id="figma-style"> come before the plugin's
+  // <!doctype html>, so the page runs in quirks mode (docs/surfaces.md#in-every-editor).
+  expect(await frame.evaluate(() => [document.compatMode, document.head.children[0].tagName, document.head.children[1].id]))
+    .toEqual(['BackCompat', 'SCRIPT', 'figma-style']);
   await expect(page.locator('#live-title')).toHaveText(JSON.parse(read('../manifest.json')).name);
   await expect(page.locator('#live-size')).toHaveText(`320 × ${await contentHeight(frame)}`);
   await expect(page.locator('#live-log li')).not.toHaveCount(0);
