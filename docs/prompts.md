@@ -4,13 +4,13 @@ The kit is meant to be the context a designer and an agent share. This page pins
 
 ## The entry prompt
 
-Type this into Claude Code or Cursor, with `<task>` replaced by one sentence about what the plugin should do:
+Type this into your AI agent, with `<task>` replaced by one sentence about what the plugin should do:
 
 ```text
 Clone https://github.com/alekseikipin/Figplug-ui-kit, read AGENTS.md, build a plugin that <task> with kit classes only, then tell me how to import it.
 ```
 
-Nothing else is needed: [AGENTS.md](../AGENTS.md) (and, in Claude Code, `CLAUDE.md` plus the `kit-ui` skill) tells the agent the rules, the checks to run and how to explain the import.
+Nothing else is needed: [AGENTS.md](../AGENTS.md) tells the agent the rules, the checks to run and how to explain the import.
 
 ## The pinned harness
 
@@ -18,7 +18,7 @@ A one-shot result only means something next to the setup that produced it. Recor
 
 | Field | Value |
 |---|---|
-| Tool | Claude Code or Cursor (agent mode), with the version it reports |
+| Tool | The AI agent, with the version it reports |
 | Model id | The exact id the tool reports for the session (not a marketing name). Record it per run; it changes more often than the kit. |
 | Kit version | `0.4.0` (the `kit vX.Y.Z` in `ui.html`'s `<meta name="kit">` and the tokens block header) |
 | Date | The day of the run, `YYYY-MM-DD` |

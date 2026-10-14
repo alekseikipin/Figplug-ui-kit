@@ -174,7 +174,7 @@ Replacing the guessed names needs a Figma account, the Community file duplicated
 5. **Update this page.** Write the exact names into the left columns and the property names into the state columns; move any component the tables lack into [Components](#components) or [UI3 parts with no kit equivalent](#ui3-parts-with-no-kit-equivalent). In rows that are already there, change only the left and state columns: the kit markup column follows the kit's own files and changes only with a kit release. A metric that disagrees with a kit value goes in capture (b)'s table and an issue, not here.
 6. **Record it.** Replace the status line at the top with the date, the file version Figma shows, and what was checked; drop "name to verify" from the column headers and keep UNVERIFIED on anything still unchecked. Then run `node --test test/docs-links.test.mjs`.
 
-A prompt that runs steps 2 to 5 in Claude Code, with the duplicate's link filled in:
+A prompt that runs steps 2 to 5 in your AI agent, with the duplicate's link filled in:
 
 ```text
 Read docs/ui3-mapping.md. With the Figma MCP server, call get_metadata on <duplicate link> with no node id, then on every page that holds components. List every component set with its node id and variant properties, call get_design_context on each one, and update only the UI3 name and state-mapping columns of docs/ui3-mapping.md. Report every component the tables don't list and every name you could not match.

@@ -1,6 +1,6 @@
 # Pitfalls
 
-What goes wrong when a plugin is built by an agent (or by hand) and how to put it right. Most of these come from first-hand accounts of designers building Figma plugins with Claude Code, Cursor and similar tools: they rarely fail on components. They fail on context: a wrong manifest, a missing `await`, a sync getter under `dynamic-page`, invented hex colours.
+What goes wrong when a plugin is built by an agent (or by hand) and how to put it right. Most of these come from first-hand accounts of designers building Figma plugins with AI agents: they rarely fail on components. They fail on context: a wrong manifest, a missing `await`, a sync getter under `dynamic-page`, invented hex colours.
 
 Each pitfall below lists the **symptom** you see, the **cause**, the **fix**, and **what catches it**: an audit rule (by its id), the TypeScript build, a test, or "not yet checked". Not-yet-checked items are the ones to read twice.
 

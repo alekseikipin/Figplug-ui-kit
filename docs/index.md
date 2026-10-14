@@ -9,7 +9,7 @@ These pages are the kit's canonical documentation. [README.md](../README.md), [A
 | [install.md](install.md) | You want the starter running in Figma: the 60-second start with no terminal, the optional terminal setup, and the import gotchas. |
 | [loop.md](loop.md) | You are changing the plugin: rerun with Cmd+Opt+P, rebuild `code.ts`, the console, the browser preview. |
 | [first-plugin.md](first-plugin.md) | You make the starter your own plugin: name it, replace the demo markup, one typed message each way, the checks, the import; and the entry-prompt path for agents. |
-| [prompts.md](prompts.md) | You build a plugin with Claude Code or Cursor: the one entry prompt, five archetype tasks, and the one-shot log, with the import into the Figma app (check 4) for the 0.4.0 runs. |
+| [prompts.md](prompts.md) | You build a plugin with an AI agent: the one entry prompt, five archetype tasks, and the one-shot log, with the import into the Figma app (check 4) for the 0.4.0 runs. |
 
 ## Build
 

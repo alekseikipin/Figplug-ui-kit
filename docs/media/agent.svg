@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="880" height="476" viewBox="0 0 880 476" role="img" aria-labelledby="t d" xml:space="preserve">
-<title id="t">The one prompt, run by a coding agent</title>
-<desc id="d">Animated illustration, not a recording: the README's one prompt, with the rename-layers task from docs/prompts.md (&quot;renames the selected layers with a prefix, find and replace, and optional numbering, and shows a preview of the new names before I apply them&quot;), is typed into a coding agent (Claude Code, Cursor or similar). The agent clones the repo, reads AGENTS.md and docs/components.md, edits manifest.json, ui.html and code.ts, runs npm install, npm run build, npm run audit (&quot;audit: no problems in 7 plugin folders&quot;) and npm run check:ui (&quot;check-ui: no type errors in 7 plugin folders&quot;), then says how to import the plugin: Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json. The command output lines are real output from kit 0.4.0.</desc>
+<title id="t">The one prompt, run by an AI agent</title>
+<desc id="d">Animated illustration, not a recording: the README's one prompt, with the rename-layers task from docs/prompts.md (&quot;renames the selected layers with a prefix, find and replace, and optional numbering, and shows a preview of the new names before I apply them&quot;), is typed into an AI agent. The agent clones the repo, reads AGENTS.md and docs/components.md, edits manifest.json, ui.html and code.ts, runs npm install, npm run build, npm run audit (&quot;audit: no problems in 7 plugin folders&quot;) and npm run check:ui (&quot;check-ui: no type errors in 7 plugin folders&quot;), then says how to import the plugin: Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json. The command output lines are real output from kit 0.4.0.</desc>
 <style>
 svg{--win:#ffffff;--bar:#f6f8fa;--line:#d1d9e0;--fg:#1f2328;--mute:#59636e;--faint:#818b98;--pbg:#f6f8fa;--acc:#0969da;--ok:#1a7f37;--read:#0969da;--edit:#8250df;--run:#bc4c00;--dot:#d1d9e0}
 @media (prefers-color-scheme:dark){svg{--win:#0d1117;--bar:#151b23;--line:#3d444d;--fg:#f0f6fc;--mute:#9198a1;--faint:#656c76;--pbg:#151b23;--acc:#4493f8;--ok:#3fb950;--read:#4493f8;--edit:#ab7df8;--run:#db6d28;--dot:#3d444d}}
@@ -92,7 +92,7 @@ text{white-space:pre}
 <path class="bar" d="M0.5 36V10.5a10 10 0 0 1 10-10h859a10 10 0 0 1 10 10V36z"/>
 <path class="sep" d="M0.5 36.5H879.5"/>
 <circle class="dot" cx="20" cy="18" r="5.5"/><circle class="dot" cx="38" cy="18" r="5.5"/><circle class="dot" cx="56" cy="18" r="5.5"/>
-<text class="s title" x="440" y="22" text-anchor="middle">your coding agent</text>
+<text class="s title" x="440" y="22" text-anchor="middle">your AI agent</text>
 <g class="an km">
 <g class="an kn hide"><circle class="an ko runf hide" cx="798" cy="18" r="3.5"/><text class="s status" x="864" y="22" text-anchor="end">working…</text></g>
 <g class="an kp"><text class="s status okt" x="864" y="22" text-anchor="end">✓ done</text></g>
@@ -118,7 +118,7 @@ text{white-space:pre}
 <g class="an kh"><path class="elbow" d="M40 362V371H49"/><text class="m ok" x="56" y="376" textLength="285" lengthAdjust="spacing">audit: no problems in 7 plugin folders</text></g>
 <g class="an ki"><circle class="run" cx="23" cy="391.5" r="3.5"/><text class="m b run" x="36" y="396" textLength="22.5" lengthAdjust="spacing">Run</text><text class="m fg" x="81" y="396" textLength="120" lengthAdjust="spacing">npm run check:ui</text></g>
 <g class="an kj"><path class="elbow" d="M40 402V411H49"/><text class="m ok" x="56" y="416" textLength="330" lengthAdjust="spacing">check-ui: no type errors in 7 plugin folders</text></g>
-<g class="an kk"><circle class="okf" cx="23" cy="431.5" r="3.5"/><text class="m fg" x="36" y="436" textLength="720" lengthAdjust="spacing">Done: build, audit and check:ui pass (your plugin and the 5 examples). In the Figma desktop app:</text></g>
+<g class="an kk"><circle class="okf" cx="23" cy="431.5" r="3.5"/><text class="m fg" x="36" y="436" textLength="720" lengthAdjust="spacing">Done: build, audit and check:ui pass (your plugin and the 6 examples). In the Figma desktop app:</text></g>
 <g class="an kl"><text class="m acc b" x="36" y="456" textLength="607.5" lengthAdjust="spacing">Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json</text></g>
 </g>
 </g></g>

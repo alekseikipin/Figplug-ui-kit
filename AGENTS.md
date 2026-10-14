@@ -1,6 +1,6 @@
 # AGENTS.md
 
-For coding agents (Claude Code, Cursor, Codex, Copilot, ...) building a Figma plugin from this repo. People start with [README.md](README.md). The canonical docs are in [docs/](docs/index.md); this file is the short version and links into them.
+For AI coding agents building a Figma plugin from this repo. People start with [README.md](README.md). The canonical docs are in [docs/](docs/index.md); this file is the short version and links into them.
 
 ## What this repo is
 

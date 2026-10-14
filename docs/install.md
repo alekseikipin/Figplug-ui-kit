@@ -18,7 +18,7 @@ The same plugin also appears under Plugins > Development in FigJam, Slides and B
 
 Measured on 2026-10-14 in Figma desktop 126.9.13 on macOS: the root `manifest.json`, imported straight from a cloned repo folder, ran with no terminal and no build step, in Figma Design, FigJam, Slides and Buzz ([surfaces.md](surfaces.md#results-the-starter)). Windows and a ZIP download have not been tried yet.
 
-Next: [loop.md](loop.md) for how to change it, or [prompts.md](prompts.md) to have Claude Code or Cursor build your plugin from it.
+Next: [loop.md](loop.md) for how to change it, or [prompts.md](prompts.md) to have an AI agent build your plugin from it.
 
 Already have a plugin, for example one made with Figma's **Plugins > Development > New plugin...** template? Add the kit to it instead: [messages.md](messages.md#adding-the-kit-to-an-existing-plugin).
 

@@ -18,41 +18,39 @@ Figma's trademark guidelines ask not to put "Fig" (part of Figma's name) in a pr
 
 ### Tagline
 
-> Try a plugin UI kit that looks like Figma's own panels, then build yours with Claude Code or Cursor.
+> Try 20 plugin UI parts that look like Figma's own, then build your plugin with an AI agent.
 
 ### Description
 
-Paste as is. Every claim is from [the tour's README](../examples/kit-tour/README.md), its tests, and the kit's docs; what has not been seen in Figma yet is in the [checks before publishing](#republish-steps-owner-action), not here.
+Paste as is, then make the lead-in of each paragraph bold, link the GitHub address and turn the "Good to know" lines into a bulleted list (Figma's description editor keeps only plain text when you paste). Every claim is from [the tour's README](../examples/kit-tour/README.md), its tests, and the kit's docs.
 
-> **Figplug is a live tour of Figplug UI Kit**, free starter files for Figma plugins whose UI looks and behaves like Figma's own panels. Open it, try every part, then build your own plugin on the same files.
+> **Try every part of Figplug UI Kit here.** The kit is free starter code for Figma plugins that look like Figma's panels. Explore it in the plugin's three tabs, then build your own plugin with an AI agent.
 >
-> **Components.** The kit's components, working: buttons (busy, toggles, icon buttons with tooltips), a menu, a modal dialog, toasts (one with Undo), text, number, colour and search fields, a select, checkboxes and radios, notices, an empty state and a scrolling list. With the tabs, the Create tab's sticky footer and the corner resize grip, that is all 20.
+> **Components.** All 20 parts: buttons, text and number fields, a colour field, a dropdown, checkboxes, tabs, a menu, a dialog, notifications, a list and more.
 >
-> **Create.** The starter's demo: pick a count (1 to 50) and a shape, press Create, and the plugin places the shapes in a row at the centre of your view, selects them and zooms to them. It is the only part of the tour that changes your file.
+> **Create.** Pick a number and a shape, press Create, and the plugin adds the shapes to your page and selects them. This is the only tab that changes your file.
 >
-> **Window.** The window fits each tab as you switch: watch the height change. This tab explains the three window modes, shows the window's size live, and adds a line of content so you can watch it grow. Drag the bottom-right grip to change the width (the plugin remembers it), or Tab to the grip and use the arrow keys.
+> **Window.** Switch tabs and watch the window fit its content. Drag the bottom-right corner to change the width. The plugin remembers it.
 >
-> **Get the files and docs:** https://github.com/alekseikipin/Figplug-ui-kit. Plain files (manifest.json, code.ts with its compiled code.js, and ui.html) that import into the Figma desktop app with no terminal and no build. AGENTS.md tells Claude Code or Cursor how to build on them, and an audit script checks what they write. Not rsms/figplug, the build tool.
+> **Get the files:** https://github.com/alekseikipin/Figplug-ui-kit. The page has a prompt to paste into an AI agent: describe your plugin in one sentence, and the agent builds it.
 >
-> **Limits, plainly.**
-> - Dropdowns use the native `<select>` popup of your operating system, not Figma's dark menu.
-> - FigJam is light only (FigJam has no dark mode); its brand colour is purple.
-> - Menus and tooltips can't be UI3's always-dark style with plugin tokens; they follow your theme instead.
-> - Text uses the Inter that Figma supplies to every plugin window, or your system font if it is missing. Figma's Inter has fixed weights, so text can look a touch bolder than Figma's own panels. The plugin itself loads no web fonts.
-> - It runs in Figma Design, FigJam, Slides and Buzz. In Slides and Buzz, Create adds the shapes to the page, not to a slide or the asset grid. Buzz shows plugins in a docked panel that sets its own size, so there is no resize grip there.
-> - Dev Mode needs a separate plugin with its own manifest; this one is not offered there.
+> **Good to know**
+> - Dropdown lists open in your computer's style, not Figma's.
+> - FigJam has no dark mode, so the plugin is always light there.
+> - Figma gives plugins the Inter font in fixed weights only, so text can look a little bolder than Figma's panels.
+> - Works in Figma Design, FigJam, Slides and Buzz, but not in Dev Mode.
 >
-> **Network access: none.** The plugin makes no network requests, collects nothing and has no telemetry. The only thing it stores is the window width you chose, on your machine, in Figma's plugin storage.
+> **No internet access.** The plugin sends nothing anywhere and collects no data. It only remembers the window width you chose, on your computer.
 >
-> MIT licensed. Not made by, affiliated with or endorsed by Figma.
+> MIT licence. Not made by or affiliated with Figma.
 
 The description keeps the kit's name ("Figplug UI Kit") because the files on GitHub carry it. If the name has to change ([Name](#name)), change it here too.
 
 ### What's new in version 3
 
-For the version notes field of **Publish new version** (the listing's third version, replacing the 2025 one). Paste as is:
+For the release notes field of **Publish new version** (the listing's third version, replacing the 2025 one). Paste as is:
 
-> Rebuilt as a live tour of Figplug UI Kit 0.4.0: all 20 components working (menu, dialog and toasts with Undo among them), window chrome v2 (the window fits each tab, resizes from a corner grip or the keyboard, and remembers its width), and it runs in Figma Design, FigJam, Slides and Buzz. Files and docs: https://github.com/alekseikipin/Figplug-ui-kit
+> Version 3 lets you try all 20 parts of Figplug UI Kit, create shapes, and watch the window fit each tab. It now works in Figma Design, FigJam, Slides and Buzz. Get the files: https://github.com/alekseikipin/Figplug-ui-kit
 
 ### Listing fields
 

@@ -1,4 +1,4 @@
-# Figplug UI Kit roadmap: the classic-plugin starting point for designers using Claude Code or Cursor
+# Figplug UI Kit roadmap: the classic-plugin starting point for designers using AI agents
 
 _Prepared 2026-10-13. Sources and verification notes are in section 11. Line numbers refer to the files as they are today._
 
@@ -111,7 +111,7 @@ Twenty components at the cap, three stateful.
 ## 9. Success metrics and risks
 
 **Metrics**
-- Designer gate per release: two designers with Figma desktop and Claude Code reach a running plugin; stop points logged.
+- Designer gate per release: two designers with Figma desktop and an AI agent reach a running plugin; stop points logged.
 - One-shot rate over the pinned prompts (4/5 by end of Phase 2); audit findings 0; context under 15k tokens; budgets logged as author notes.
 - Adoption: "Built with" Community plugins, release downloads, repo views and clones, non-author issues; a release every 4-6 weeks.
 

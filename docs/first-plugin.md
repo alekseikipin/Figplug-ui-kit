@@ -6,7 +6,7 @@ The code on this page was checked in a copy of the 0.3.0 repo: `npm run build`, 
 
 ## With an agent
 
-With Claude Code or Cursor you don't type any of this. Give the agent the [entry prompt](prompts.md#the-entry-prompt) with your task in one sentence. It reads [AGENTS.md](../AGENTS.md) (in Claude Code also the `kit-ui` skill), does the steps below, runs the checks itself and ends with the import steps. Use this page to check what it did and to steer it in plain words ("use a resizable window", "put the list in a kit-scroll"). The five [examples](../examples/) are curated agent runs, each with the agent's diff and what a review still found.
+With an AI agent you don't type any of this. Give the agent the [entry prompt](prompts.md#the-entry-prompt) with your task in one sentence. It reads [AGENTS.md](../AGENTS.md), does the steps below, runs the checks itself and ends with the import steps. Use this page to check what it did and to steer it in plain words ("use a resizable window", "put the list in a kit-scroll"). The five [examples](../examples/) are curated agent runs, each with the agent's diff and what a review still found.
 
 ## Before you start
 

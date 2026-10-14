@@ -41,7 +41,7 @@ function smartWrap(text, max) {
 }
 
 /**
- * The one prompt, run by a coding agent. W = 880 for wide screens; a narrow W (400) wraps every
+ * The one prompt, run by an AI agent. W = 880 for wide screens; a narrow W (400) wraps every
  * line for phones. The same task as the README's example: rename-layers, from docs/prompts.md.
  */
 export function agentSvg({ W = 880 } = {}) {
@@ -96,7 +96,7 @@ export function agentSvg({ W = 880 } = {}) {
     { out: 'audit: no problems in 7 plugin folders', ok: true },
     { tool: 'Run', c: 'run', arg: 'npm run check:ui' },
     { out: 'check-ui: no type errors in 7 plugin folders', ok: true },
-    { done: 'Done: build, audit and check:ui pass (your plugin and the 5 examples). In the Figma desktop app:' },
+    { done: 'Done: build, audit and check:ui pass (your plugin and the 6 examples). In the Figma desktop app:' },
     { path: 'Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json' },
   ];
   const S0 = 1.7, STEP = 0.32;
@@ -173,7 +173,7 @@ export function agentSvg({ W = 880 } = {}) {
 <path class="bar" d="M0.5 ${BAR}V10.5a10 10 0 0 1 10-10h${W - 21}a10 10 0 0 1 10 10V${BAR}z"/>
 <path class="sep" d="M0.5 ${BAR}.5H${W - 0.5}"/>
 <circle class="dot" cx="20" cy="18" r="5.5"/><circle class="dot" cx="38" cy="18" r="5.5"/><circle class="dot" cx="56" cy="18" r="5.5"/>
-<text class="s title" x="${narrow ? 72 : W / 2}" y="22" text-anchor="${narrow ? 'start' : 'middle'}">your coding agent</text>
+<text class="s title" x="${narrow ? 72 : W / 2}" y="22" text-anchor="${narrow ? 'start' : 'middle'}">your AI agent</text>
 <g class="an ${scene}">
 <g class="an ${tl.window(S0 - 0.2, tDone - 0.05, { dur: 0.15 })} hide"><circle class="an ${tl.pulses(pulses, { dur: 0.15 })} runf hide" cx="${W - 82}" cy="18" r="3.5"/><text class="s status" x="${W - 16}" y="22" text-anchor="end">working…</text></g>
 <g class="an ${tl.appear(tDone, { dur: 0.2, dy: 0 })}"><text class="s status okt" x="${W - 16}" y="22" text-anchor="end">✓ done</text></g>
@@ -184,8 +184,8 @@ ${stepEls.join('\n')}
     w: W, h: H,
     svg: tl.render(svgDoc({
       w: W, h: H, css, body,
-      title: 'The one prompt, run by a coding agent',
-      desc: `Animated illustration, not a recording: the README's one prompt, with the rename-layers task from docs/prompts.md ("${TASK}"), is typed into a coding agent (Claude Code, Cursor or similar). The agent clones the repo, reads AGENTS.md and docs/components.md, edits manifest.json, ui.html and code.ts, runs npm install, npm run build, npm run audit ("audit: no problems in 7 plugin folders") and npm run check:ui ("check-ui: no type errors in 7 plugin folders"), then says how to import the plugin: Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json. The command output lines are real output from kit 0.4.0.`,
+      title: 'The one prompt, run by an AI agent',
+      desc: `Animated illustration, not a recording: the README's one prompt, with the rename-layers task from docs/prompts.md ("${TASK}"), is typed into an AI agent. The agent clones the repo, reads AGENTS.md and docs/components.md, edits manifest.json, ui.html and code.ts, runs npm install, npm run build, npm run audit ("audit: no problems in 7 plugin folders") and npm run check:ui ("check-ui: no type errors in 7 plugin folders"), then says how to import the plugin: Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json. The command output lines are real output from kit 0.4.0.`,
     })),
   };
 }
