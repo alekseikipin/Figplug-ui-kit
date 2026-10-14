@@ -1,0 +1,1134 @@
+The one-shot agent's change to the kit 0.3.0 starter (variables-sync archetype, 2026-10-13), as left in
+its clone: git diff HEAD -- . ":(exclude)package-lock.json"
+Untracked files: none (git status --untracked-files=all lists only the four modified files below;
+node_modules/ is ignored). Nothing was committed. Curated result: README.md in this folder.
+ code.js       | 305 +++++++++++++++++++++++++++++++++++++++-------
+ code.ts       | 384 +++++++++++++++++++++++++++++++++++++++++++++++++++-------
+ manifest.json |   6 +-
+ ui.html       | 325 +++++++++++++++++++++++++++++++++++++------------
+ 4 files changed, 849 insertions(+), 171 deletions(-)
+
+diff --git a/code.js b/code.js
+index f1d934e..f0e2f9f 100644
+--- a/code.js
++++ b/code.js
+@@ -416,59 +416,278 @@ function installKitWindow(options = {}) {
+ }
+ // ==== kit:window:end ====
+ // ---- Your plugin starts here ----
+-// Everything below is a demo: replace it with your plugin. Keep installKitWindow() first so the
+-// window exists before anything posts to it, and name your message types without the kit: prefix.
++// Color variables: lists the file's local color variables, per collection and mode, and sets one
++// variable's value in one mode from a hex code typed in the UI. Every name is prefixed Vars/vars
++// because code.ts shares one global namespace with Figma's typings.
+ installKitWindow({ mode: 'fit-content' });
+-// The demo UI's count field accepts the same range; this clamp is the backstop, so a typo like
+-// 1000 can never freeze the file.
+-const MAX_SHAPES = 50;
+-// Messages arrive untyped from another window: check the shape before trusting it.
+-function messageType(msg) {
+-    return typeof msg === 'object' && msg !== null ? msg.type : undefined;
+-}
+-function isCreateShapesMessage(msg) {
+-    if (messageType(msg) !== 'create-shapes')
++// Alias chains longer than this count as unresolved, which also stops a cycle.
++const VARS_MAX_ALIAS_DEPTH = 16;
++function varsPost(message) {
++    try {
++        figma.ui.postMessage(message);
++    }
++    catch {
++        // The plugin was closed while a read or a write was running: no UI is left to answer.
++    }
++}
++// Reads .message rather than testing instanceof Error: an error made in another realm (the host's)
++// is not an instance of this sandbox's Error.
++function varsErrorText(error) {
++    const message = typeof error === 'object' && error !== null ? error.message : undefined;
++    return typeof message === 'string' && message !== '' ? message : String(error);
++}
++// ---- Messages arrive untyped from another window: check every field before trusting them ----
++function varsField(msg, key) {
++    return typeof msg === 'object' && msg !== null ? msg[key] : undefined;
++}
++function varsIsUiMessage(msg) {
++    const type = varsField(msg, 'type');
++    if (type === 'vars-refresh')
++        return true;
++    if (type !== 'vars-set-color')
+         return false;
+-    const { count } = msg;
+-    return typeof count === 'number' && Number.isFinite(count);
++    return ['variableId', 'collectionId', 'modeId', 'hex'].every((key) => typeof varsField(msg, key) === 'string');
+ }
+-function postSelectionCount() {
+-    // Under "documentAccess": "dynamic-page" the current page is always loaded, so reading its
+-    // selection synchronously is allowed (other pages need loadAsync first).
+-    figma.ui.postMessage({ type: 'selection', count: figma.currentPage.selection.length });
++// ---- Colour values ----
++function varsIsAlias(value) {
++    return varsField(value, 'type') === 'VARIABLE_ALIAS' && typeof varsField(value, 'id') === 'string';
++}
++function varsIsRgb(value) {
++    return typeof varsField(value, 'r') === 'number' && typeof varsField(value, 'g') === 'number' &&
++        typeof varsField(value, 'b') === 'number';
++}
++function varsIsComposed(value) {
++    return varsField(value, 'color') !== undefined && varsField(value, 'opacity') !== undefined;
++}
++function varsAlphaOf(color) {
++    const a = varsField(color, 'a');
++    return typeof a === 'number' && Number.isFinite(a) ? Math.min(1, Math.max(0, a)) : 1;
++}
++/** One 0-1 channel as two uppercase hex digits. */
++function varsByte(channel) {
++    const n = Math.round(Math.min(1, Math.max(0, channel)) * 255);
++    return n.toString(16).padStart(2, '0').toUpperCase();
++}
++function varsHexOf(color) {
++    return varsByte(color.r) + varsByte(color.g) + varsByte(color.b);
++}
++/**
++ * '#0D9', '0d99ff' or '0D99FF80' as a colour; null for anything else. 3 and 6 digits keep
++ * keepAlpha (the opacity the variable has now), 8 digits set the opacity too.
++ */
++function varsParseHex(text, keepAlpha) {
++    const raw = text.trim().replace(/^#/, '');
++    if (!/^(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(raw))
++        return null;
++    const full = raw.length === 3 ? raw.replace(/./g, (c) => c + c) : raw;
++    const channel = (at) => parseInt(full.slice(at, at + 2), 16) / 255;
++    return { r: channel(0), g: channel(2), b: channel(4), a: full.length === 8 ? channel(6) : keepAlpha };
+ }
+-function createShapes(count, shape) {
+-    const nodes = [];
+-    const { x, y } = figma.viewport.center;
++function varsNewLookup() {
++    return { variables: new Map(), collections: new Map(), members: new Map() };
++}
++async function varsVariable(lookup, id) {
++    const known = lookup.variables.get(id);
++    if (known !== undefined)
++        return known;
++    let found = null;
++    try {
++        found = await figma.variables.getVariableByIdAsync(id);
++    }
++    catch {
++        found = null;
++    }
++    lookup.variables.set(id, found);
++    return found;
++}
++async function varsCollection(lookup, id) {
++    const known = lookup.collections.get(id);
++    if (known !== undefined)
++        return known;
++    let found = null;
+     try {
+-        for (let i = 0; i < count; i++) {
+-            const node = shape === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
+-            node.x = Math.round(x) + i * 150;
+-            node.y = Math.round(y);
+-            node.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
+-            nodes.push(node);
++        found = await figma.variables.getVariableCollectionByIdAsync(id);
++    }
++    catch {
++        found = null;
++    }
++    lookup.collections.set(id, found);
++    return found;
++}
++function varsMembers(lookup, collection) {
++    let members = lookup.members.get(collection.id);
++    if (!members) {
++        members = new Set(collection.variableIds);
++        lookup.members.set(collection.id, members);
++    }
++    return members;
++}
++/** A variable's values in a collection; an extended collection has its own modes and overrides. */
++async function varsValuesIn(variable, collection) {
++    if (collection.isExtension)
++        return await variable.valuesByModeForCollectionAsync(collection);
++    return variable.valuesByMode;
++}
++/**
++ * The colour a value shows in one mode of a collection, following aliases. A target in the same
++ * collection resolves in the same mode; a target in another collection resolves in that
++ * collection's default mode, which is what Figma shows where nothing picks a mode for it.
++ */
++async function varsResolve(lookup, value, collection, modeId, depth) {
++    if (value === undefined || depth > VARS_MAX_ALIAS_DEPTH)
++        return null;
++    if (varsIsRgb(value))
++        return { r: value.r, g: value.g, b: value.b, a: varsAlphaOf(value) };
++    if (varsIsComposed(value))
++        return await varsResolve(lookup, value.color, collection, modeId, depth + 1);
++    if (!varsIsAlias(value))
++        return null;
++    const target = await varsVariable(lookup, value.id);
++    if (!target || target.resolvedType !== 'COLOR')
++        return null;
++    if (varsMembers(lookup, collection).has(target.id)) {
++        const values = await varsValuesIn(target, collection);
++        return await varsResolve(lookup, values[modeId], collection, modeId, depth + 1);
++    }
++    const home = await varsCollection(lookup, target.variableCollectionId);
++    if (!home)
++        return null;
++    const values = await varsValuesIn(target, home);
++    return await varsResolve(lookup, values[home.defaultModeId], home, home.defaultModeId, depth + 1);
++}
++async function varsDescribe(lookup, value, collection, modeId) {
++    const info = { kind: 'unknown', hex: null, alpha: 1, target: null };
++    if (varsIsRgb(value)) {
++        info.kind = 'color';
++    }
++    else if (varsIsAlias(value)) {
++        info.kind = 'alias';
++        const target = await varsVariable(lookup, value.id);
++        info.target = target ? target.name : null;
++    }
++    else if (varsIsComposed(value)) {
++        info.kind = 'linked';
++    }
++    else {
++        return info;
++    }
++    try {
++        const color = await varsResolve(lookup, value, collection, modeId, 0);
++        if (color) {
++            info.hex = varsHexOf(color);
++            info.alpha = color.a;
++        }
++    }
++    catch {
++        // Unresolved: the UI shows an empty swatch.
++    }
++    return info;
++}
++async function varsCollect() {
++    const [collections, locals] = await Promise.all([
++        figma.variables.getLocalVariableCollectionsAsync(),
++        figma.variables.getLocalVariablesAsync('COLOR'),
++    ]);
++    const lookup = varsNewLookup();
++    for (const variable of locals)
++        lookup.variables.set(variable.id, variable);
++    for (const collection of collections)
++        lookup.collections.set(collection.id, collection);
++    const result = [];
++    for (const collection of collections) {
++        const info = {
++            id: collection.id,
++            name: collection.name,
++            defaultModeId: collection.defaultModeId,
++            modes: collection.modes.map((mode) => ({ modeId: mode.modeId, name: mode.name })),
++            variables: [],
++        };
++        // variableIds keeps the order of Figma's Variables panel (groups aside).
++        for (const id of collection.variableIds) {
++            const variable = await varsVariable(lookup, id);
++            if (!variable || variable.resolvedType !== 'COLOR')
++                continue;
++            let values = {};
++            try {
++                values = await varsValuesIn(variable, collection);
++            }
++            catch {
++                values = {};
++            }
++            const row = { id: variable.id, name: variable.name, values: {} };
++            for (const mode of info.modes) {
++                row.values[mode.modeId] = await varsDescribe(lookup, values[mode.modeId], collection, mode.modeId);
++            }
++            info.variables.push(row);
+         }
+-        figma.currentPage.selection = nodes;
+-        figma.viewport.scrollAndZoomIntoView(nodes);
++        if (info.variables.length > 0)
++            result.push(info);
++    }
++    return result;
++}
++/** Never rejects: a failed read is sent as the message's error, so the UI always hears back. */
++async function varsPostList(reason) {
++    const message = { type: 'vars-list', reason, collections: [], error: null };
++    try {
++        message.collections = await varsCollect();
+     }
+     catch (error) {
+-        // Dev Mode is read-only and not every editor can create every node: say so instead of
+-        // failing silently in the console.
+-        figma.notify('Could not create shapes: ' + (error instanceof Error ? error.message : String(error)), { error: true });
++        message.error = varsErrorText(error);
+     }
+-    // Always answer, so a UI waiting on this reply (a busy button) never gets stuck.
+-    figma.ui.postMessage({ type: 'created', count: nodes.length });
++    varsPost(message);
+ }
+-figma.ui.on('message', (msg) => {
+-    // Sent by the demo UI's Close button. closePlugin does not stop this function: return at once.
+-    if (messageType(msg) === 'close') {
+-        figma.closePlugin();
+-        return;
++// ---- Writing a value ----
++async function varsSetColor(msg) {
++    const reply = {
++        type: 'vars-set-result', ok: false, changed: false, variableId: msg.variableId, modeId: msg.modeId,
++        name: 'the variable', modeName: '', hex: '', error: null,
++    };
++    try {
++        const lookup = varsNewLookup();
++        const variable = await varsVariable(lookup, msg.variableId);
++        if (!variable || variable.resolvedType !== 'COLOR')
++            throw new Error('it is no longer in this file');
++        reply.name = variable.name;
++        const collection = await varsCollection(lookup, msg.collectionId);
++        if (!collection || collection.remote || !varsMembers(lookup, collection).has(variable.id)) {
++            throw new Error('its collection is no longer in this file');
++        }
++        const mode = collection.modes.find((m) => m.modeId === msg.modeId);
++        if (!mode)
++            throw new Error('that mode is no longer in its collection');
++        reply.modeName = mode.name;
++        const values = await varsValuesIn(variable, collection);
++        const current = values[mode.modeId];
++        const shown = await varsResolve(lookup, current, collection, mode.modeId, 0);
++        const color = varsParseHex(msg.hex, shown ? shown.a : 1);
++        if (!color)
++            throw new Error('"' + msg.hex + '" is not a hex code');
++        reply.hex = varsHexOf(color) + (varsByte(color.a) === 'FF' ? '' : varsByte(color.a));
++        // Compared as the hex the UI shows, so retyping the same code writes nothing.
++        reply.changed = !(varsIsRgb(current) && varsHexOf(current) === varsHexOf(color) &&
++            varsByte(varsAlphaOf(current)) === varsByte(color.a));
++        if (reply.changed) {
++            variable.setValueForMode(mode.modeId, color);
++            // One undo step per change, so Cmd+Z in Figma takes back exactly this value.
++            figma.commitUndo();
++        }
++        reply.ok = true;
+     }
+-    if (!isCreateShapesMessage(msg))
++    catch (error) {
++        // Dev Mode, a view-only file or a deleted variable: say why instead of failing silently.
++        reply.error = varsErrorText(error);
++    }
++    // Always answer, and send the fresh list first so the result is already on screen when announced.
++    await varsPostList('update');
++    varsPost(reply);
++}
++figma.ui.on('message', (msg) => {
++    if (!varsIsUiMessage(msg))
+         return; // kit:* and anything else falls through
+-    const count = Math.min(MAX_SHAPES, Math.max(1, Math.round(msg.count)));
+-    createShapes(count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle');
++    if (msg.type === 'vars-refresh')
++        void varsPostList('refresh');
++    else
++        void varsSetColor(msg);
+ });
+-figma.on('selectionchange', postSelectionCount);
+-postSelectionCount();
++// Figma queues this until the UI has loaded.
++void varsPostList('load');
+diff --git a/code.ts b/code.ts
+index 0d0a932..38f3f7b 100644
+--- a/code.ts
++++ b/code.ts
+@@ -422,71 +422,361 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
+ // ==== kit:window:end ====
+ 
+ // ---- Your plugin starts here ----
+-// Everything below is a demo: replace it with your plugin. Keep installKitWindow() first so the
+-// window exists before anything posts to it, and name your message types without the kit: prefix.
++// Color variables: lists the file's local color variables, per collection and mode, and sets one
++// variable's value in one mode from a hex code typed in the UI. Every name is prefixed Vars/vars
++// because code.ts shares one global namespace with Figma's typings.
+ 
+ installKitWindow({ mode: 'fit-content' });
+ 
+-// The demo UI's count field accepts the same range; this clamp is the backstop, so a typo like
+-// 1000 can never freeze the file.
+-const MAX_SHAPES = 50;
++// Alias chains longer than this count as unresolved, which also stops a cycle.
++const VARS_MAX_ALIAS_DEPTH = 16;
+ 
+-/** Sent by the demo UI when the person presses Create. */
+-interface CreateShapesMessage {
+-  type: 'create-shapes';
+-  count: number;
+-  shape: 'rectangle' | 'ellipse';
++/** One mode of a collection. */
++interface VarsModeInfo {
++  modeId: string;
++  name: string;
+ }
+ 
+-// Messages arrive untyped from another window: check the shape before trusting it.
+-function messageType(msg: unknown): unknown {
+-  return typeof msg === 'object' && msg !== null ? (msg as { type?: unknown }).type : undefined;
++/**
++ * A variable's value in one mode, as the UI shows it. 'color' is a fixed colour, 'alias' points at
++ * another variable (target is its name, null when it is missing), 'linked' is a colour whose colour
++ * or opacity is bound to other variables. hex (RRGGBB, uppercase) and alpha (0 to 1) are the colour
++ * the value shows, following aliases; hex is null when the chain can't be resolved.
++ */
++interface VarsValueInfo {
++  kind: 'color' | 'alias' | 'linked' | 'unknown';
++  hex: string | null;
++  alpha: number;
++  target: string | null;
++}
++
++interface VarsVariableInfo {
++  id: string;
++  name: string;
++  values: { [modeId: string]: VarsValueInfo };
++}
++
++interface VarsCollectionInfo {
++  id: string;
++  name: string;
++  defaultModeId: string;
++  modes: VarsModeInfo[];
++  variables: VarsVariableInfo[];
++}
++
++/** UI -> main: read the variables again (the Reload buttons). */
++interface VarsRefreshMessage {
++  type: 'vars-refresh';
++}
++
++/** UI -> main: set a variable's value in one mode. hex is 3, 6 or 8 hex digits, '#' optional. */
++interface VarsSetColorMessage {
++  type: 'vars-set-color';
++  variableId: string;
++  collectionId: string;
++  modeId: string;
++  hex: string;
++}
++
++type VarsUiToMain = VarsRefreshMessage | VarsSetColorMessage;
++
++/** main -> UI: every collection that has local color variables, in the file's order. */
++interface VarsListMessage {
++  type: 'vars-list';
++  reason: 'load' | 'refresh' | 'update';
++  collections: VarsCollectionInfo[];
++  error: string | null;
++}
++
++/** main -> UI: the answer to every vars-set-color, sent after the vars-list that shows the result. */
++interface VarsSetResultMessage {
++  type: 'vars-set-result';
++  ok: boolean;
++  changed: boolean;
++  variableId: string;
++  modeId: string;
++  name: string;
++  modeName: string;
++  hex: string;
++  error: string | null;
++}
++
++type VarsMainToUi = VarsListMessage | VarsSetResultMessage;
++
++function varsPost(message: VarsMainToUi): void {
++  try {
++    figma.ui.postMessage(message);
++  } catch {
++    // The plugin was closed while a read or a write was running: no UI is left to answer.
++  }
++}
++
++// Reads .message rather than testing instanceof Error: an error made in another realm (the host's)
++// is not an instance of this sandbox's Error.
++function varsErrorText(error: unknown): string {
++  const message = typeof error === 'object' && error !== null ? (error as { message?: unknown }).message : undefined;
++  return typeof message === 'string' && message !== '' ? message : String(error);
+ }
+ 
+-function isCreateShapesMessage(msg: unknown): msg is CreateShapesMessage {
+-  if (messageType(msg) !== 'create-shapes') return false;
+-  const { count } = msg as Record<string, unknown>;
+-  return typeof count === 'number' && Number.isFinite(count);
++// ---- Messages arrive untyped from another window: check every field before trusting them ----
++
++function varsField(msg: unknown, key: string): unknown {
++  return typeof msg === 'object' && msg !== null ? (msg as Record<string, unknown>)[key] : undefined;
++}
++
++function varsIsUiMessage(msg: unknown): msg is VarsUiToMain {
++  const type = varsField(msg, 'type');
++  if (type === 'vars-refresh') return true;
++  if (type !== 'vars-set-color') return false;
++  return ['variableId', 'collectionId', 'modeId', 'hex'].every((key) => typeof varsField(msg, key) === 'string');
++}
++
++// ---- Colour values ----
++
++function varsIsAlias(value: unknown): value is VariableAlias {
++  return varsField(value, 'type') === 'VARIABLE_ALIAS' && typeof varsField(value, 'id') === 'string';
++}
++
++function varsIsRgb(value: unknown): value is RGB | RGBA {
++  return typeof varsField(value, 'r') === 'number' && typeof varsField(value, 'g') === 'number' &&
++    typeof varsField(value, 'b') === 'number';
++}
++
++function varsIsComposed(value: unknown): value is VariableComposedColor {
++  return varsField(value, 'color') !== undefined && varsField(value, 'opacity') !== undefined;
++}
++
++function varsAlphaOf(color: RGB | RGBA): number {
++  const a = varsField(color, 'a');
++  return typeof a === 'number' && Number.isFinite(a) ? Math.min(1, Math.max(0, a)) : 1;
++}
++
++/** One 0-1 channel as two uppercase hex digits. */
++function varsByte(channel: number): string {
++  const n = Math.round(Math.min(1, Math.max(0, channel)) * 255);
++  return n.toString(16).padStart(2, '0').toUpperCase();
++}
++
++function varsHexOf(color: RGB | RGBA): string {
++  return varsByte(color.r) + varsByte(color.g) + varsByte(color.b);
++}
++
++/**
++ * '#0D9', '0d99ff' or '0D99FF80' as a colour; null for anything else. 3 and 6 digits keep
++ * keepAlpha (the opacity the variable has now), 8 digits set the opacity too.
++ */
++function varsParseHex(text: string, keepAlpha: number): RGBA | null {
++  const raw = text.trim().replace(/^#/, '');
++  if (!/^(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(raw)) return null;
++  const full = raw.length === 3 ? raw.replace(/./g, (c) => c + c) : raw;
++  const channel = (at: number): number => parseInt(full.slice(at, at + 2), 16) / 255;
++  return { r: channel(0), g: channel(2), b: channel(4), a: full.length === 8 ? channel(6) : keepAlpha };
++}
++
++// ---- Reading variables (dynamic-page: only the *Async getters) ----
++
++/** Lookups for one pass over the file, so each alias target is fetched once. */
++interface VarsLookup {
++  variables: Map<string, Variable | null>;
++  collections: Map<string, VariableCollection | null>;
++  members: Map<string, Set<string>>;
+ }
+ 
+-function postSelectionCount(): void {
+-  // Under "documentAccess": "dynamic-page" the current page is always loaded, so reading its
+-  // selection synchronously is allowed (other pages need loadAsync first).
+-  figma.ui.postMessage({ type: 'selection', count: figma.currentPage.selection.length });
++function varsNewLookup(): VarsLookup {
++  return { variables: new Map(), collections: new Map(), members: new Map() };
+ }
+ 
+-function createShapes(count: number, shape: 'rectangle' | 'ellipse'): void {
+-  const nodes: SceneNode[] = [];
+-  const { x, y } = figma.viewport.center;
++async function varsVariable(lookup: VarsLookup, id: string): Promise<Variable | null> {
++  const known = lookup.variables.get(id);
++  if (known !== undefined) return known;
++  let found: Variable | null = null;
+   try {
+-    for (let i = 0; i < count; i++) {
+-      const node = shape === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
+-      node.x = Math.round(x) + i * 150;
+-      node.y = Math.round(y);
+-      node.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
+-      nodes.push(node);
++    found = await figma.variables.getVariableByIdAsync(id);
++  } catch {
++    found = null;
++  }
++  lookup.variables.set(id, found);
++  return found;
++}
++
++async function varsCollection(lookup: VarsLookup, id: string): Promise<VariableCollection | null> {
++  const known = lookup.collections.get(id);
++  if (known !== undefined) return known;
++  let found: VariableCollection | null = null;
++  try {
++    found = await figma.variables.getVariableCollectionByIdAsync(id);
++  } catch {
++    found = null;
++  }
++  lookup.collections.set(id, found);
++  return found;
++}
++
++function varsMembers(lookup: VarsLookup, collection: VariableCollection): Set<string> {
++  let members = lookup.members.get(collection.id);
++  if (!members) {
++    members = new Set(collection.variableIds);
++    lookup.members.set(collection.id, members);
++  }
++  return members;
++}
++
++/** A variable's values in a collection; an extended collection has its own modes and overrides. */
++async function varsValuesIn(variable: Variable, collection: VariableCollection): Promise<{ [modeId: string]: VariableValue }> {
++  if (collection.isExtension) return await variable.valuesByModeForCollectionAsync(collection);
++  return variable.valuesByMode;
++}
++
++/**
++ * The colour a value shows in one mode of a collection, following aliases. A target in the same
++ * collection resolves in the same mode; a target in another collection resolves in that
++ * collection's default mode, which is what Figma shows where nothing picks a mode for it.
++ */
++async function varsResolve(
++  lookup: VarsLookup, value: VariableValue | undefined, collection: VariableCollection, modeId: string, depth: number,
++): Promise<RGBA | null> {
++  if (value === undefined || depth > VARS_MAX_ALIAS_DEPTH) return null;
++  if (varsIsRgb(value)) return { r: value.r, g: value.g, b: value.b, a: varsAlphaOf(value) };
++  if (varsIsComposed(value)) return await varsResolve(lookup, value.color, collection, modeId, depth + 1);
++  if (!varsIsAlias(value)) return null;
++  const target = await varsVariable(lookup, value.id);
++  if (!target || target.resolvedType !== 'COLOR') return null;
++  if (varsMembers(lookup, collection).has(target.id)) {
++    const values = await varsValuesIn(target, collection);
++    return await varsResolve(lookup, values[modeId], collection, modeId, depth + 1);
++  }
++  const home = await varsCollection(lookup, target.variableCollectionId);
++  if (!home) return null;
++  const values = await varsValuesIn(target, home);
++  return await varsResolve(lookup, values[home.defaultModeId], home, home.defaultModeId, depth + 1);
++}
++
++async function varsDescribe(
++  lookup: VarsLookup, value: VariableValue | undefined, collection: VariableCollection, modeId: string,
++): Promise<VarsValueInfo> {
++  const info: VarsValueInfo = { kind: 'unknown', hex: null, alpha: 1, target: null };
++  if (varsIsRgb(value)) {
++    info.kind = 'color';
++  } else if (varsIsAlias(value)) {
++    info.kind = 'alias';
++    const target = await varsVariable(lookup, value.id);
++    info.target = target ? target.name : null;
++  } else if (varsIsComposed(value)) {
++    info.kind = 'linked';
++  } else {
++    return info;
++  }
++  try {
++    const color = await varsResolve(lookup, value, collection, modeId, 0);
++    if (color) {
++      info.hex = varsHexOf(color);
++      info.alpha = color.a;
+     }
+-    figma.currentPage.selection = nodes;
+-    figma.viewport.scrollAndZoomIntoView(nodes);
++  } catch {
++    // Unresolved: the UI shows an empty swatch.
++  }
++  return info;
++}
++
++async function varsCollect(): Promise<VarsCollectionInfo[]> {
++  const [collections, locals] = await Promise.all([
++    figma.variables.getLocalVariableCollectionsAsync(),
++    figma.variables.getLocalVariablesAsync('COLOR'),
++  ]);
++  const lookup = varsNewLookup();
++  for (const variable of locals) lookup.variables.set(variable.id, variable);
++  for (const collection of collections) lookup.collections.set(collection.id, collection);
++
++  const result: VarsCollectionInfo[] = [];
++  for (const collection of collections) {
++    const info: VarsCollectionInfo = {
++      id: collection.id,
++      name: collection.name,
++      defaultModeId: collection.defaultModeId,
++      modes: collection.modes.map((mode) => ({ modeId: mode.modeId, name: mode.name })),
++      variables: [],
++    };
++    // variableIds keeps the order of Figma's Variables panel (groups aside).
++    for (const id of collection.variableIds) {
++      const variable = await varsVariable(lookup, id);
++      if (!variable || variable.resolvedType !== 'COLOR') continue;
++      let values: { [modeId: string]: VariableValue } = {};
++      try {
++        values = await varsValuesIn(variable, collection);
++      } catch {
++        values = {};
++      }
++      const row: VarsVariableInfo = { id: variable.id, name: variable.name, values: {} };
++      for (const mode of info.modes) {
++        row.values[mode.modeId] = await varsDescribe(lookup, values[mode.modeId], collection, mode.modeId);
++      }
++      info.variables.push(row);
++    }
++    if (info.variables.length > 0) result.push(info);
++  }
++  return result;
++}
++
++/** Never rejects: a failed read is sent as the message's error, so the UI always hears back. */
++async function varsPostList(reason: VarsListMessage['reason']): Promise<void> {
++  const message: VarsListMessage = { type: 'vars-list', reason, collections: [], error: null };
++  try {
++    message.collections = await varsCollect();
+   } catch (error) {
+-    // Dev Mode is read-only and not every editor can create every node: say so instead of
+-    // failing silently in the console.
+-    figma.notify('Could not create shapes: ' + (error instanceof Error ? error.message : String(error)), { error: true });
++    message.error = varsErrorText(error);
+   }
+-  // Always answer, so a UI waiting on this reply (a busy button) never gets stuck.
+-  figma.ui.postMessage({ type: 'created', count: nodes.length });
++  varsPost(message);
+ }
+ 
+-figma.ui.on('message', (msg: unknown) => {
+-  // Sent by the demo UI's Close button. closePlugin does not stop this function: return at once.
+-  if (messageType(msg) === 'close') {
+-    figma.closePlugin();
+-    return;
++// ---- Writing a value ----
++
++async function varsSetColor(msg: VarsSetColorMessage): Promise<void> {
++  const reply: VarsSetResultMessage = {
++    type: 'vars-set-result', ok: false, changed: false, variableId: msg.variableId, modeId: msg.modeId,
++    name: 'the variable', modeName: '', hex: '', error: null,
++  };
++  try {
++    const lookup = varsNewLookup();
++    const variable = await varsVariable(lookup, msg.variableId);
++    if (!variable || variable.resolvedType !== 'COLOR') throw new Error('it is no longer in this file');
++    reply.name = variable.name;
++    const collection = await varsCollection(lookup, msg.collectionId);
++    if (!collection || collection.remote || !varsMembers(lookup, collection).has(variable.id)) {
++      throw new Error('its collection is no longer in this file');
++    }
++    const mode = collection.modes.find((m) => m.modeId === msg.modeId);
++    if (!mode) throw new Error('that mode is no longer in its collection');
++    reply.modeName = mode.name;
++
++    const values = await varsValuesIn(variable, collection);
++    const current = values[mode.modeId];
++    const shown = await varsResolve(lookup, current, collection, mode.modeId, 0);
++    const color = varsParseHex(msg.hex, shown ? shown.a : 1);
++    if (!color) throw new Error('"' + msg.hex + '" is not a hex code');
++    reply.hex = varsHexOf(color) + (varsByte(color.a) === 'FF' ? '' : varsByte(color.a));
++    // Compared as the hex the UI shows, so retyping the same code writes nothing.
++    reply.changed = !(varsIsRgb(current) && varsHexOf(current) === varsHexOf(color) &&
++      varsByte(varsAlphaOf(current)) === varsByte(color.a));
++    if (reply.changed) {
++      variable.setValueForMode(mode.modeId, color);
++      // One undo step per change, so Cmd+Z in Figma takes back exactly this value.
++      figma.commitUndo();
++    }
++    reply.ok = true;
++  } catch (error) {
++    // Dev Mode, a view-only file or a deleted variable: say why instead of failing silently.
++    reply.error = varsErrorText(error);
+   }
+-  if (!isCreateShapesMessage(msg)) return; // kit:* and anything else falls through
+-  const count = Math.min(MAX_SHAPES, Math.max(1, Math.round(msg.count)));
+-  createShapes(count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle');
++  // Always answer, and send the fresh list first so the result is already on screen when announced.
++  await varsPostList('update');
++  varsPost(reply);
++}
++
++figma.ui.on('message', (msg: unknown) => {
++  if (!varsIsUiMessage(msg)) return; // kit:* and anything else falls through
++  if (msg.type === 'vars-refresh') void varsPostList('refresh');
++  else void varsSetColor(msg);
+ });
+ 
+-figma.on('selectionchange', postSelectionCount);
+-postSelectionCount();
++// Figma queues this until the UI has loaded.
++void varsPostList('load');
+diff --git a/manifest.json b/manifest.json
+index bceae08..eaf41ca 100644
+--- a/manifest.json
++++ b/manifest.json
+@@ -1,10 +1,10 @@
+ {
+-  "name": "Kit starter",
+-  "id": "kit-starter-change-this-id",
++  "name": "Color variables",
++  "id": "color-variables-hex-edc8e65e",
+   "api": "1.0.0",
+   "main": "code.js",
+   "ui": "ui.html",
+-  "editorType": ["figma", "figjam", "slides", "buzz"],
++  "editorType": ["figma"],
+   "documentAccess": "dynamic-page",
+   "networkAccess": { "allowedDomains": ["none"] }
+ }
+diff --git a/ui.html b/ui.html
+index 6470d31..9956585 100644
+--- a/ui.html
++++ b/ui.html
+@@ -3,7 +3,7 @@
+ <head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+-<title>Kit starter</title>
++<title>Color variables</title>
+ <meta name="kit" content="kit v0.3.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+ <style data-kit="tokens">
+ /* kit tokens v0.3.0 · protocol 1 · MIT · https://github.com/alekseikipin/Figplug-ui-kit · issues: https://github.com/alekseikipin/Figplug-ui-kit/issues · re-paste all three data-kit blocks to upgrade */
+@@ -912,107 +912,276 @@ else boot();
+ </script>
+ <style>
+ /* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
+-.demo-status { flex: 1 1 0; min-width: 0; }
++.vars-name { overflow-wrap: anywhere; }
++.vars-meta { max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++/* --swatch is a document colour (data, not theme), set by the script. */
++.vars-swatch { display: grid; place-items: center; }
++.vars-swatch::before {
++  content: ""; width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); border-radius: var(--kit-radius-small);
++  outline: var(--kit-border-width) solid var(--figma-color-border); outline-offset: -1px;
++  background: linear-gradient(var(--swatch, transparent), var(--swatch, transparent)),
++    repeating-conic-gradient(var(--figma-color-bg-tertiary) 0% 25%, var(--figma-color-bg) 0% 50%) 50% / 8px 8px;
++}
++.vars-swatch[data-unresolved]::before { background: none; outline-style: dashed; }
+ </style>
+ </head>
+ <body>
+ <main class="kit-app" data-kit-root>
+-  <div class="kit-section kit-stack">
+-    <h1 class="kit-heading">Create shapes</h1>
+-    <div class="kit-field">
+-      <label class="kit-label" for="count">Count</label>
+-      <input class="kit-input" id="count" type="text" inputmode="numeric" autocomplete="off" value="5" aria-describedby="count-help">
+-      <p class="kit-help" id="count-help">From 1 to 50, placed in a row.</p>
++  <header class="kit-section-header">
++    <h1>Color variables</h1>
++    <span class="kit-tooltip-host">
++      <button class="kit-icon-button" id="reload" type="button" aria-label="Reload variables" aria-describedby="reload-tip">
++        <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 12a5 5 0 1 1-1.46-3.54M15.75 5.75v3h-3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
++      </button>
++      <span class="kit-tooltip kit-tooltip-end" role="tooltip" id="reload-tip">Read the file's variables again</span>
++    </span>
++  </header>
++  <div class="kit-section kit-stack" id="browse" hidden>
++    <div class="kit-row">
++      <div class="kit-field"><label class="kit-label" for="collection">Collection</label><div class="kit-select"><select id="collection"></select></div></div>
++      <div class="kit-field"><label class="kit-label" for="mode">Mode</label><div class="kit-select"><select id="mode"></select></div></div>
++    </div>
++    <div class="kit-input-icon">
++      <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11.5" cy="11.5" r="4" fill="none" stroke="currentColor"/><path d="m14.5 14.5 3 3" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
++      <input class="kit-input" id="search" type="search" placeholder="Search variables" aria-label="Search variables" autocomplete="off">
++    </div>
++    <div class="kit-scroll">
++      <ul class="kit-list" id="list" aria-label="Color variables"></ul>
++    </div>
++    <p class="kit-text-secondary" id="no-match" hidden>No matches in this collection</p>
++  </div>
++  <hr class="kit-divider" id="divider" hidden>
++  <div class="kit-section kit-stack" id="editor" hidden>
++    <div>
++      <h2 class="kit-heading vars-name" id="edit-name"></h2>
++      <p class="kit-text-secondary" id="edit-where"></p>
+     </div>
+     <div class="kit-field">
+-      <label class="kit-label" for="shape">Shape</label>
+-      <div class="kit-select">
+-        <select id="shape">
+-          <option value="rectangle">Rectangle</option>
+-          <option value="ellipse">Ellipse</option>
+-        </select>
++      <label class="kit-label" for="hex">Hex</label>
++      <div class="kit-color">
++        <input class="kit-color-swatch" id="picker" type="color" aria-label="Pick a color" disabled>
++        <input class="kit-input" id="hex" type="text" maxlength="9" autocomplete="off" spellcheck="false" aria-describedby="hex-help" disabled>
+       </div>
++      <p class="kit-help" id="hex-help"></p>
+     </div>
+   </div>
+-  <hr class="kit-divider">
+-  <div class="kit-section kit-row">
+-    <p class="kit-text-secondary demo-status" id="status" role="status">Nothing selected</p>
+-    <button class="kit-button kit-button-secondary" id="close" type="button">Close</button>
+-    <button class="kit-button kit-button-primary" id="create" type="button">Create</button>
++  <div class="kit-empty" id="empty" hidden>
++    <h2 class="kit-empty-title" id="empty-title"></h2>
++    <p class="kit-empty-text" id="empty-text"></p>
+   </div>
++  <footer class="kit-footer">
++    <p class="kit-text-secondary" id="status" role="status">Reading variables…</p>
++    <div class="kit-row">
++      <button class="kit-button kit-button-primary" id="apply" type="button" disabled>Apply</button>
++    </div>
++  </footer>
+ </main>
+ <button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+ <script>
+ 'use strict';
+-// The demo: replace this script and <main>'s markup with your plugin (keep data-kit-root and the handle;
+-// no HTML comments). It sends 'create-shapes' and 'close'; code.ts answers 'selection' and 'created'.
++// The messages are typed in code.ts (VarsUiToMain, VarsMainToUi).
+ (() => {
+-const MIN = 1;
+-const MAX = 50; // code.ts clamps to the same range
+-const count = /** @type {HTMLInputElement} */ (document.getElementById('count'));
+-const shape = /** @type {HTMLSelectElement} */ (document.getElementById('shape'));
+-const help = document.getElementById('count-help');
+-const create = document.getElementById('create');
+-const status = document.getElementById('status');
+-let selected = 0;
+-let result = '';
+-let made = 'rectangle';
+-
+-/** @param {{ type: string } & Record<string, unknown>} message */
+-const post = (message) => parent.postMessage({ pluginMessage: message }, '*');
+-
+-function readCount() {
+-  const text = count.value.trim();
+-  const n = Number(text);
+-  return /^\d+$/.test(text) && n >= MIN && n <= MAX ? n : null;
+-}
++const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
++const FORMAT = 'Use 3, 6 or 8 hex digits, like 0D99FF.';
++const NONE = { hex: null, alpha: 1 };
++const $ = (id) => document.getElementById(id);
++const [collectionSel, modeSel] = /** @type {HTMLSelectElement[]} */ ([$('collection'), $('mode')]);
++const [search, picker, hex] = /** @type {HTMLInputElement[]} */ ([$('search'), $('picker'), $('hex')]);
++const [apply, reload] = /** @type {HTMLButtonElement[]} */ ([$('apply'), $('reload')]);
++const list = $('list');
++let collections = [];
++let collectionId = '';
++let modeId = '';
++let selectedId = '';
+ 
+-// The error state is aria-invalid: the kit recolours the ring and the help text it points at.
+-function validate() {
+-  const ok = readCount() !== null;
+-  if (ok) count.removeAttribute('aria-invalid');
+-  else count.setAttribute('aria-invalid', 'true');
+-  help.textContent = ok ? `From ${MIN} to ${MAX}, placed in a row.` : `Enter a whole number from ${MIN} to ${MAX}.`;
+-}
+-
+-function render() {
+-  const selection = selected === 0 ? 'Nothing selected' : `${selected} layer${selected === 1 ? '' : 's'} selected`;
+-  status.replaceChildren(selection, ...(result ? [document.createElement('br'), result] : []));
+-}
++const post = (message) => parent.postMessage({ pluginMessage: message }, '*');
++const opaque = (a) => Math.round(a * 255) >= 255;
++const digits = (a) => Math.round(a * 255).toString(16).padStart(2, '0').toUpperCase();
++const percent = (a) => Math.round(a * 100) + '%';
++const collection = () => collections.find((c) => c.id === collectionId);
++const selected = () => collection() && collection().variables.find((v) => v.id === selectedId);
++const valueOf = (v) => (v && v.values[modeId]) || NONE;
++// RRGGBB, plus two opacity digits when the colour isn't opaque.
++const hexText = (value) => (!value.hex ? '' : opaque(value.alpha) ? value.hex : value.hex + digits(value.alpha));
++const readHex = () => (HEX.test(hex.value.trim()) ? hex.value.trim().replace('#', '').toUpperCase() : null);
++const make = (tag, className, text = '') => {
++  const node = document.createElement(tag);
++  node.className = className;
++  node.textContent = text;
++  return node;
++};
+ 
+-function createShapes() {
+-  if (create.getAttribute('aria-busy') === 'true') return; // aria-busy stops the mouse, not Enter or Space
+-  const n = readCount();
+-  if (n === null) {
+-    validate();
+-    count.focus();
++function row(v) {
++  const value = valueOf(v);
++  const button = make('button', 'kit-list-row');
++  button.type = 'button';
++  button.dataset.id = v.id;
++  if (v.id === selectedId) button.setAttribute('aria-current', 'true');
++  const chip = make('span', 'kit-icon kit-list-row-icon vars-swatch');
++  chip.setAttribute('aria-hidden', 'true');
++  if (value.hex) chip.style.setProperty('--swatch', '#' + value.hex + digits(value.alpha));
++  else chip.dataset.unresolved = '';
++  const label = make('span', 'kit-list-row-label', v.name);
++  label.title = v.name;
++  const meta = make('span', 'kit-list-row-meta vars-meta');
++  if (value.kind === 'alias') {
++    const arrow = make('span', '', '→ ');
++    arrow.setAttribute('aria-hidden', 'true');
++    meta.append(make('span', 'kit-visually-hidden', 'alias of '), arrow, value.target || 'missing variable');
++  } else {
++    meta.textContent = value.kind === 'linked' ? 'Linked' : !value.hex ? '–'
++      : opaque(value.alpha) ? value.hex : value.hex + ' ' + percent(value.alpha);
++  }
++  button.append(chip, label, meta);
++  const li = document.createElement('li');
++  li.append(button);
++  return li;
++}
++
++function renderList() {
++  const query = search.value.trim().toLowerCase();
++  const shown = collection().variables.filter((v) => v.name.toLowerCase().includes(query));
++  list.replaceChildren(...shown.map(row));
++  $('no-match').hidden = shown.length > 0;
++}
++
++// aria-invalid recolours the ring and the help text.
++function setError(message) {
++  if (message) hex.setAttribute('aria-invalid', 'true');
++  else hex.removeAttribute('aria-invalid');
++  const value = valueOf(selected());
++  const link = value.kind === 'alias' ? `An alias of ${value.target || 'a missing variable'} here`
++    : value.kind === 'linked' ? 'Linked to other variables here' : '';
++  $('hex-help').textContent = message || (link ? link + '; a hex code replaces that with a fixed color.'
++    : value.hex && !opaque(value.alpha) ? `6 digits keep the ${percent(value.alpha)} opacity; 8, like 0D99FF80, set it too.`
++    : '6 digits, like 0D99FF, or 8 to set the opacity too.');
++}
++
++function syncPicker() {
++  const text = readHex();
++  if (text) picker.value = '#' + (text.length === 3 ? text.replace(/./g, '$&$&') : text).slice(0, 6).toLowerCase();
++}
++
++function renderEditor() {
++  const c = collection();
++  const v = selected();
++  const value = valueOf(v);
++  $('edit-name').textContent = v ? v.name : 'No variable selected';
++  $('edit-where').textContent = v ? c.name + ' · ' + c.modes.find((m) => m.modeId === modeId).name
++    : 'Pick one in the list to change its value.';
++  hex.disabled = picker.disabled = picker.hidden = apply.disabled = !v;
++  hex.value = hexText(value);
++  setError('');
++  syncPicker();
++}
++
++function renderAll() {
++  collectionSel.replaceChildren(...collections.map((c) => new Option(c.name, c.id)));
++  collectionSel.value = collectionId;
++  modeSel.replaceChildren(...collection().modes.map((m) => new Option(m.name, m.modeId)));
++  modeSel.value = modeId;
++  renderList();
++  renderEditor();
++}
++
++function applyHex() {
++  const v = selected();
++  if (!v || apply.getAttribute('aria-busy') === 'true') return; // aria-busy stops the mouse, not Enter
++  const text = readHex();
++  if (!text) {
++    setError(hex.value.trim() ? FORMAT : 'Enter a hex code, like 0D99FF.');
++    hex.focus();
+     return;
+   }
+-  made = shape.value;
+-  create.setAttribute('aria-busy', 'true');
+-  post({ type: 'create-shapes', count: n, shape: made });
+-}
+-
+-count.addEventListener('input', validate);
+-create.addEventListener('click', createShapes);
+-// Enter creates too. No <form>: a sandboxed iframe may block its submit (docs/pitfalls.md#17-smaller-traps).
+-count.addEventListener('keydown', (event) => {
+-  if (event.key !== 'Enter' || event.isComposing) return;
++  apply.setAttribute('aria-busy', 'true');
++  post({ type: 'vars-set-color', variableId: v.id, collectionId, modeId, hex: text });
++}
++
++function requestReload() {
++  if (reload.getAttribute('aria-busy') === 'true') return;
++  reload.setAttribute('aria-busy', 'true');
++  post({ type: 'vars-refresh' });
++}
++
++function onList(msg) {
++  collections = Array.isArray(msg.collections) ? msg.collections : [];
++  reload.removeAttribute('aria-busy');
++  if (!collection()) collectionId = collections.length > 0 ? collections[0].id : '';
++  const c = collection();
++  if (c && !c.modes.some((m) => m.modeId === modeId)) modeId = c.defaultModeId;
++  if (!selected()) selectedId = '';
++  const total = collections.reduce((n, item) => n + item.variables.length, 0);
++  for (const id of ['browse', 'divider', 'editor']) $(id).hidden = total === 0;
++  $('empty').hidden = total > 0;
++  apply.hidden = total === 0;
++  $('empty-title').textContent = msg.error ? 'Could not read the variables' : 'No color variables';
++  $('empty-text').textContent = msg.error || 'Add local color variables in the Variables panel, then press Reload above.';
++  if (c) renderAll();
++  if (msg.reason === 'update') return; // vars-set-result follows and says what happened
++  const found = msg.error ? 'Could not read the variables'
++    : total === 0 ? 'No color variables in this file' : `${total} color variable${total === 1 ? '' : 's'}`;
++  $('status').textContent = (msg.reason === 'refresh' ? 'Reloaded: ' : '') + found;
++}
++
++function onResult(msg) {
++  apply.removeAttribute('aria-busy');
++  $('status').textContent = !msg.ok ? `Could not update ${msg.name}: ${msg.error}`
++    : msg.changed ? `Set ${msg.name} to ${msg.hex} in ${msg.modeName}` : `${msg.name} is already ${msg.hex} in ${msg.modeName}`;
++}
++
++collectionSel.addEventListener('change', () => {
++  collectionId = collectionSel.value;
++  modeId = collection().defaultModeId;
++  selectedId = '';
++  renderAll();
++});
++modeSel.addEventListener('change', () => {
++  modeId = modeSel.value;
++  renderList();
++  renderEditor();
++});
++search.addEventListener('input', renderList);
++list.addEventListener('click', (event) => {
++  const button = event.target instanceof Element && event.target.closest('button');
++  if (!button) return;
++  selectedId = button.getAttribute('data-id');
++  list.querySelectorAll('button').forEach((b) => {
++    if (b === button) b.setAttribute('aria-current', 'true');
++    else b.removeAttribute('aria-current');
++  });
++  renderEditor();
++});
++// Errors show on leaving the field or applying, and clear once the code is valid.
++hex.addEventListener('input', () => {
++  if (!readHex()) return;
++  if (hex.hasAttribute('aria-invalid')) setError('');
++  syncPicker();
++});
++hex.addEventListener('change', () => {
++  if (hex.value.trim() && !readHex()) setError(FORMAT);
++});
++// Enter applies (no <form>: a sandboxed iframe may block its submit), Escape restores the value.
++hex.addEventListener('keydown', (event) => {
++  if (event.isComposing) return;
++  if (event.key === 'Enter') applyHex();
++  else if (event.key === 'Escape') renderEditor();
++  else return;
+   event.preventDefault();
+-  createShapes();
+ });
+-document.getElementById('close').addEventListener('click', () => post({ type: 'close' }));
++picker.addEventListener('input', () => {
++  const typed = readHex();
++  hex.value = picker.value.slice(1).toUpperCase() + (typed && typed.length === 8 ? typed.slice(6) : '');
++  setError('');
++});
++apply.addEventListener('click', applyHex);
++reload.addEventListener('click', requestReload);
+ 
+-// Added at once: Figma delivers what code.ts posted at startup as soon as the page has loaded.
++// Added at once: Figma delivers what code.ts posted at startup when the page has loaded.
+ window.addEventListener('message', (event) => {
+   const msg = event.data && event.data.pluginMessage;
+-  if (!msg || typeof msg !== 'object' || typeof msg.count !== 'number') return;
+-  if (msg.type === 'selection') selected = msg.count;
+-  else if (msg.type === 'created') {
+-    create.removeAttribute('aria-busy'); // code.ts always answers, with 0 when it failed
+-    result = msg.count > 0 ? `Created ${msg.count} ${made}${msg.count === 1 ? '' : 's'}` : 'Nothing created';
+-  } else return;
+-  render();
++  if (!msg || typeof msg !== 'object') return;
++  if (msg.type === 'vars-list') onList(msg);
++  else if (msg.type === 'vars-set-result') onResult(msg);
+ });
+ })();
+ </script>

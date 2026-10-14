@@ -1,8 +1,8 @@
 name: Pages
 
-# Publishes the browser preview (preview.html with ui.html, code.js and the fallback palette) to
-# GitHub Pages. Pages must be enabled once by the owner: Settings > Pages > Build and deployment >
-# Source: GitHub Actions.
+# Publishes the browser preview (preview.html with ui.html, code.js, the fallback palette and the
+# examples its Plugin picker runs) to GitHub Pages. Pages must be enabled once by the owner:
+# Settings > Pages > Build and deployment > Source: GitHub Actions.
 #
 # It runs only after CI has passed on a push to main in this repository (never for a pull request,
 # even one from a fork's own "main"), and deploys exactly the commit CI tested. A manual run
@@ -44,17 +44,20 @@ jobs:
 
       - uses: actions/configure-pages@v6
 
-      # Only what the preview needs goes into _site: the files preview.html fetches (listed), plus
+      # Only what the preview needs goes into _site: the files preview.html fetches (listed, with each
+      # examples/<name>/ folder's ui.html, code.js and manifest.json for the Plugin picker), plus
       # any other repo file it names (src/href attributes, or a quoted file name such as 'x.css').
       # Dotfiles and node_modules are never staged. The site root redirects to preview.html.
       - name: Stage the preview in _site
         run: |
           node --input-type=module <<'EOF'
-          import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+          import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
           import { dirname, join, posix } from 'node:path';
 
           const out = '_site';
-          const required = ['preview.html', 'ui.html', 'code.js', 'tokens.figma-fallback.css', 'manifest.json', 'LICENSE'];
+          const examples = existsSync('examples') ? readdirSync('examples').filter((name) => existsSync(join('examples', name, 'manifest.json'))) : [];
+          const required = ['preview.html', 'ui.html', 'code.js', 'tokens.figma-fallback.css', 'manifest.json', 'LICENSE',
+            ...examples.flatMap((name) => ['ui.html', 'code.js', 'manifest.json'].map((file) => posix.join('examples', name, file)))];
           const html = readFileSync('preview.html', 'utf8');
           const patterns = [
             /\b(?:src|href)\s*=\s*["']([^"']+)["']/gi,

@@ -29,12 +29,13 @@ jobs:
 
       # code.js is committed so the folder imports into Figma with no terminal. It must be exactly
       # what tsc makes from code.ts, or the plugin people import is not the code under review.
-      - name: Build, and check that the committed code.js matches code.ts
+      - name: Build, and check that every committed code.js matches its code.ts
         run: |
           npm run build
+          npm run build:examples
           if ! git diff --exit-code || [ -n "$(git status --porcelain)" ]; then
             git status --short
-            echo "::error::npm run build changed or added files. Run npm run build locally and commit the result (code.js)."
+            echo "::error::the build changed or added files. Run npm run build and npm run build:examples locally and commit the result (code.js)."
             exit 1
           fi
 

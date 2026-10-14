@@ -66,7 +66,7 @@ export async function useKitFixture(page) {
   for (const [file, body] of Object.entries(files)) await serve(page, file, body);
 }
 
-/** Opens preview.html with query settings ({ theme, mode, editor, inter, config }) and waits for the plugin. */
+/** Opens preview.html with query settings ({ theme, plugin, mode, editor, inter, config }) and waits for the plugin. */
 export async function openPreview(page, query = {}) {
   const q = new URLSearchParams(query).toString();
   await page.goto(`/preview.html${q ? `?${q}` : ''}`);

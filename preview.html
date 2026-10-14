@@ -1004,19 +1004,23 @@ html[data-preview-no-inter] { --kit-font-family: system-ui, -apple-system, "Sego
 <main class="preview-main">
   <section class="kit-section kit-stack" id="live" aria-labelledby="live-heading">
     <h2 class="kit-heading preview-section-title" id="live-heading">Live plugin</h2>
-    <p class="kit-help">The repo's own code.js runs here against a small figma stub, and ui.html runs in a sandboxed iframe (null origin, as in Figma) with the fallback palette injected the way showUI({ themeColors: true }) does. Saved sizes go to this browser's localStorage. Add <code>?config={"snapWidths":[300,400]}</code> to the address to try a data-kit-config override.</p>
+    <p class="kit-help">The repo's own code.js runs here against a small figma stub, and ui.html runs in a sandboxed iframe (null origin, as in Figma) with the fallback palette injected the way showUI({ themeColors: true }) does. <em>Plugin</em> runs one of the examples/ folders instead (<code>?plugin=examples/rename-layers</code> in the address does the same). The stub is a stand-in, not Figma: a few fake layers, one font per text layer, the same 1×1 PNG from every export and three colour variables, so a plugin that runs here can still fail in Figma. Saved sizes go to this browser's localStorage, per plugin. Add <code>?config={"snapWidths":[300,400]}</code> to the address to try a data-kit-config override.</p>
     <div class="kit-row preview-controls">
+      <div class="kit-field">
+        <label class="kit-label" for="live-plugin">Plugin</label>
+        <div class="kit-select"><select id="live-plugin"><option value="">Starter</option><option value="examples/a11y-contrast">a11y-contrast</option><option value="examples/content-fill">content-fill</option><option value="examples/export-selection">export-selection</option><option value="examples/rename-layers">rename-layers</option><option value="examples/variables-sync">variables-sync</option></select></div>
+      </div>
       <div class="kit-field">
         <label class="kit-label" for="live-editor">figma.editorType</label>
         <div class="kit-select"><select id="live-editor"><option>figma</option><option>figjam</option><option>slides</option><option>dev</option><option>buzz</option></select></div>
       </div>
       <div class="kit-field">
         <label class="kit-label" for="live-mode">Window mode</label>
-        <div class="kit-select"><select id="live-mode"><option>fit-content</option><option>resizable</option><option>fixed</option></select></div>
+        <div class="kit-select"><select id="live-mode"><option value="own">Plugin's own</option><option>fit-content</option><option>resizable</option><option>fixed</option></select></div>
       </div>
       <div class="kit-field">
         <label class="kit-label" for="live-selection">Set the selection</label>
-        <div class="kit-select"><select id="live-selection"><option value="0">Nothing</option><option value="1">1 layer</option><option value="3">3 layers</option></select></div>
+        <div class="kit-select"><select id="live-selection"><option value="0">Nothing</option><option value="1">1 layer</option><option value="3">3 layers</option><option value="sample">Sample: a card and a label</option></select></div>
       </div>
       <div class="kit-field">
         <label class="kit-label" for="live-width">Width <output id="live-width-value" for="live-width"></output></label>
@@ -1495,11 +1499,16 @@ Card 2</textarea></div>
   };
   const NO_INTER_STACK = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
   const pick = (value, list, fallback) => (list.includes(value) ? value : fallback);
+  // The plugins the picker offers: '' is the repo root (the starter), the rest are examples/ folders.
+  // ?plugin= only ever picks one of these, so the address can't make the page fetch anything else.
+  const PLUGINS = [.../** @type {HTMLSelectElement} */ ($('live-plugin')).options].map((o) => o.value);
   const settings = {
     theme: pick(params.get('theme'), Object.keys(THEMES), 'light'),
     noInter: params.get('inter') === '0',
+    plugin: pick(params.get('plugin'), PLUGINS, ''),
     editor: pick(params.get('editor'), ['figma', 'figjam', 'slides', 'dev', 'buzz'], 'figma'),
-    mode: pick(params.get('mode'), ['fit-content', 'resizable', 'fixed'], 'fit-content'),
+    // 'own' runs the plugin in the mode its installKitWindow call asks for; the others force one.
+    mode: pick(params.get('mode'), ['own', 'fit-content', 'resizable', 'fixed'], 'own'),
     config: params.get('config'),
   };
 
@@ -1508,8 +1517,9 @@ Card 2</textarea></div>
     const q = new URLSearchParams();
     if (settings.theme !== 'light') q.set('theme', settings.theme);
     if (settings.noInter) q.set('inter', '0');
+    if (settings.plugin) q.set('plugin', settings.plugin);
     if (settings.editor !== 'figma') q.set('editor', settings.editor);
-    if (settings.mode !== 'fit-content') q.set('mode', settings.mode);
+    if (settings.mode !== 'own') q.set('mode', settings.mode);
     if (settings.config) q.set('config', settings.config);
     const query = q.toString();
     history.replaceState(null, '', location.pathname + (query ? '?' + query : '') + location.hash);
@@ -1566,26 +1576,34 @@ Card 2</textarea></div>
   }
 
   // ---- Fake Figma host ------------------------------------------------------------------------
-  const STORAGE_PREFIX = 'kit-preview:';
-  const memoryStore = new Map(); // used when localStorage is blocked
+  // clientStorage is per plugin in Figma, so each plugin gets its own prefix: the starter keeps
+  // 'kit-preview:', an example 'kit-preview@examples/<name>:' (which the starter's prefix never matches).
+  const storagePrefix = () => (settings.plugin ? `kit-preview@${settings.plugin}:` : 'kit-preview:');
+  const memoryStore = new Map(); // used when localStorage is blocked, keyed by prefix + key
   const storage = {
     get(/** @type {string} */ key) {
-      try { const raw = localStorage.getItem(STORAGE_PREFIX + key); return raw === null ? undefined : JSON.parse(raw); } catch { return memoryStore.get(key); }
+      const k = storagePrefix() + key;
+      try { const raw = localStorage.getItem(k); return raw === null ? undefined : JSON.parse(raw); } catch { return memoryStore.get(k); }
     },
     set(/** @type {string} */ key, /** @type {unknown} */ value) {
-      try { localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value)); } catch { memoryStore.set(key, value); }
+      const k = storagePrefix() + key;
+      try { localStorage.setItem(k, JSON.stringify(value)); } catch { memoryStore.set(k, value); }
     },
     remove(/** @type {string} */ key) {
-      try { localStorage.removeItem(STORAGE_PREFIX + key); } catch { /* blocked */ }
-      memoryStore.delete(key);
+      const k = storagePrefix() + key;
+      try { localStorage.removeItem(k); } catch { /* blocked */ }
+      memoryStore.delete(k);
     },
     keys() {
-      try { return Object.keys(localStorage).filter((k) => k.startsWith(STORAGE_PREFIX)).map((k) => k.slice(STORAGE_PREFIX.length)); } catch { return [...memoryStore.keys()]; }
+      const prefix = storagePrefix();
+      let all;
+      try { all = Object.keys(localStorage); } catch { all = [...memoryStore.keys()]; }
+      return all.filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length));
     },
   };
 
   const record = { messages: /** @type {any[]} */ ([]), calls: /** @type {any[]} */ ([]) };
-  const sources = { ui: '', code: '', fallback: '', name: 'Plugin', id: 'kit-preview' };
+  const sources = { ui: '', code: '', fallback: '', name: 'Plugin', id: 'kit-preview', editorTypes: /** @type {string[] | null} */ (null) };
   /** The document outlives plugin runs, as in Figma: nodes and the selection survive a reload. */
   const page = { id: '0:1', type: 'PAGE', name: 'Page 1', children: /** @type {any[]} */ ([]), selection: /** @type {any[]} */ ([]) };
   const placeholders = new Map(); // the frames "Set the selection" makes up when the page has too few layers
@@ -1648,8 +1666,10 @@ Card 2</textarea></div>
    * plugin passes: installKitWindow(), ({ mode, bounds, size }), an options variable. Function
    * declarations are hoisted, so a line placed before code.js's first statement swaps the binding
    * before the plugin's own call runs. The directive prologue stays first, so strict code stays strict.
+   * Mode 'own' (the default) runs code.js as it is, in the mode the plugin asks for.
    */
   function codeForMode(/** @type {string} */ code, /** @type {string} */ mode) {
+    if (mode === 'own') return code;
     if (!/\bfunction\s+installKitWindow\s*\(/.test(code)) {
       if (mode !== 'fit-content') log('error', 'mode switch: code.js declares no installKitWindow; running it as is');
       return code;
@@ -1660,12 +1680,15 @@ Card 2</textarea></div>
     return head + wrap + code.slice(head.length);
   }
 
+  /** The run's window mode for people: a forced one, or the plugin's own once its kit:init says which. */
+  const modeLabel = (/** @type {any} */ r) => (r.mode !== 'own' ? r.mode : r.initMode ? `${r.initMode} (the plugin's own)` : "the plugin's own");
+
   function setWindowState(/** @type {'hidden' | 'shown' | 'closed'} */ state) {
     $('live-window').dataset.state = state;
     const r = run;
     $('live-status').textContent = state === 'closed' ? 'The plugin is closed. Press Reload plugin to run it again.'
       : state === 'hidden' ? 'Window hidden (showUI visible: false) until the first kit:resize, or 500 ms.'
-      : r ? `editorType ${r.editor} · mode ${r.mode}` : '';
+      : r ? `editorType ${r.editor} · mode ${modeLabel(r)}` : '';
   }
 
   function showSize() {
@@ -1723,20 +1746,144 @@ Card 2</textarea></div>
     if (nodeChanges.length === 1) window.setTimeout(() => { const batch = nodeChanges; nodeChanges = []; fire('nodechange', { nodeChanges: batch }, 'pageEvents'); }, 0);
   }
 
-  /** A stub scene node: plain fields, and a name whose writes are recorded and reported as a nodechange. */
-  function makeNode(/** @type {string} */ id, /** @type {string} */ type, /** @type {string} */ name) {
+  // ---- The stub's document: a stand-in, not Figma ----------------------------------------------
+  // Just enough scene graph for the starter and the examples/ plugins to boot and react: nodes with
+  // a name, geometry (x and y relative to the parent, absolute boxes derived from them), fills,
+  // visible, locked, opacity and a parent; frames with children and the find helpers; text layers
+  // with characters and one font each, which must be loaded (figma.loadFontAsync) before an edit,
+  // as in Figma. Every exportAsync returns the same 1x1 transparent PNG, whatever its settings.
+  // There are no rotations, effects, strokes, masks, components, styles or mixed text styles, and
+  // every font loads. A plugin that works here can still fail in Figma: always confirm there.
+
+  /** The PNG every exportAsync resolves to (68 bytes), a fresh copy each time. */
+  const PNG_1X1 = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='), (c) => c.charCodeAt(0));
+  /** figma.mixed: a unique symbol, as in Figma, so `value === figma.mixed` checks behave. */
+  const MIXED = Symbol('figma.mixed');
+  /** A solid paint as Figma returns it. */
+  const solid = (/** @type {number} */ r, /** @type {number} */ g, /** @type {number} */ b) => ({ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r, g, b } });
+  const parents = new WeakMap(); // node -> the frame holding it; top-level nodes have the page instead
+  let fontsLoaded = new Set(); // "family style" keys loaded in this run (Figma forgets them between runs)
+  const fontKey = (/** @type {{ family: string, style: string }} */ f) => `${f.family} ${f.style}`;
+  /** A promise settled a few ms later on the page's own timers (it outlives the run, as a Figma call would). */
+  const soon = (/** @type {Function} */ fn) => new Promise((resolve, reject) => {
+    window.setTimeout(() => { try { resolve(fn()); } catch (error) { reject(error); } }, 5);
+  });
+
+  /** Where a node's top-left corner is on the page: its x and y plus every parent frame's. */
+  function absolute(/** @type {any} */ n) {
+    let x = 0;
+    let y = 0;
+    for (let at = n; at; at = parents.get(at)) { x += at.x; y += at.y; }
+    return { x, y };
+  }
+
+  /** Every layer under `root` (not root itself), in Layers-panel order from the back. */
+  function descendants(/** @type {any} */ root) {
+    const out = /** @type {any[]} */ ([]);
+    const walk = (/** @type {any[]} */ list) => { for (const n of list) { out.push(n); if (Array.isArray(n.children)) walk(n.children); } };
+    walk(root.children || []);
+    return out;
+  }
+
+  /**
+   * A stub scene node: plain fields, a name whose writes are recorded and reported as a nodechange,
+   * and the absolute boxes and exportAsync that every Figma scene node has.
+   */
+  function makeNode(/** @type {string} */ id, /** @type {string} */ type, /** @type {string} */ name, /** @type {Record<string, unknown>} */ props = {}) {
     let current = name;
     const n = {
-      id, type, x: 0, y: 0, width: 100, height: 100, fills: /** @type {unknown[]} */ ([]),
+      id, type, x: 0, y: 0, width: 100, height: 100, visible: true, locked: false, opacity: 1, removed: false,
+      fills: /** @type {unknown[]} */ ([]), strokes: /** @type {unknown[]} */ ([]), effects: /** @type {unknown[]} */ ([]),
       get name() { return current; },
       set name(/** @type {unknown} */ value) {
         current = String(value);
         call('node.name', id, current);
         nodeChanged({ id, type: 'PROPERTY_CHANGE', origin: 'LOCAL', properties: ['name'], node: n });
       },
+      /** The frame holding it, the current page for a top-level layer, else null (a placeholder). */
+      get parent() { return parents.get(n) || (run && page.children.includes(n) ? run.figma.currentPage : null); },
+      get absoluteTransform() { const at = absolute(n); return [[1, 0, at.x], [0, 1, at.y]]; },
+      get absoluteBoundingBox() { const at = absolute(n); return { x: at.x, y: at.y, width: n.width, height: n.height }; },
+      get absoluteRenderBounds() { return n.visible ? n.absoluteBoundingBox : null; },
+      exportAsync(/** @type {unknown} */ settings) { call('node.exportAsync', id, settings); return soon(() => PNG_1X1.slice()); },
+    };
+    return Object.assign(n, props);
+  }
+
+  /** A frame: children (a fresh array per read, as in Figma), appendChild and the find helpers. */
+  function makeFrame(/** @type {string} */ id, /** @type {string} */ name, /** @type {Record<string, unknown>} */ props, /** @type {any[]} */ children) {
+    const n = /** @type {any} */ (makeNode(id, 'FRAME', name, { clipsContent: true, ...props }));
+    const kids = /** @type {any[]} */ ([]);
+    Object.defineProperty(n, 'children', { enumerable: true, get: () => kids.slice() });
+    n.appendChild = (/** @type {any} */ child) => { const old = parents.get(child); if (old) old.removeChild(child); kids.push(child); parents.set(child, n); };
+    n.removeChild = (/** @type {any} */ child) => { const i = kids.indexOf(child); if (i >= 0) kids.splice(i, 1); parents.delete(child); };
+    n.findAll = (/** @type {Function | undefined} */ test) => descendants(n).filter((d) => !test || test(d));
+    n.findOne = (/** @type {Function} */ test) => descendants(n).find((d) => test(d)) || null;
+    n.findAllWithCriteria = (/** @type {{ types?: string[] }} */ criteria) => descendants(n).filter((d) => !criteria || !criteria.types || criteria.types.includes(d.type));
+    for (const child of children) n.appendChild(child);
+    return n;
+  }
+
+  /** A text layer in one font. Changing its characters needs that font loaded first, as in Figma. */
+  function makeText(/** @type {string} */ id, /** @type {string} */ name, /** @type {string} */ characters, /** @type {{ style?: string } & Record<string, unknown>} */ props) {
+    const { style = 'Regular', ...rest } = props;
+    const font = { family: 'Inter', style };
+    let text = characters;
+    const n = /** @type {any} */ (makeNode(id, 'TEXT', name, { fontSize: 12, fontWeight: 400, hasMissingFont: false, textAutoResize: 'WIDTH_AND_HEIGHT', ...rest }));
+    const edit = (/** @type {string} */ what, /** @type {() => void} */ change) => {
+      if (!fontsLoaded.has(fontKey(font))) {
+        throw new Error(`figma stub: ${what} needs the font ${fontKey(font)} loaded first: await figma.loadFontAsync(${JSON.stringify(font)}) (Figma throws here too)`);
+      }
+      change();
+      call('text.characters', id, text);
+      nodeChanged({ id, type: 'PROPERTY_CHANGE', origin: 'LOCAL', properties: ['characters'], node: n });
+    };
+    Object.defineProperty(n, 'characters', {
+      enumerable: true,
+      get: () => text,
+      set: (/** @type {unknown} */ value) => edit('setting characters', () => { text = String(value); }),
+    });
+    Object.defineProperty(n, 'fontName', { enumerable: true, get: () => ({ ...font }) });
+    n.getRangeAllFontNames = () => [{ ...font }];
+    n.insertCharacters = (/** @type {number} */ start, /** @type {string} */ chars) => edit('insertCharacters', () => { text = text.slice(0, start) + String(chars) + text.slice(start); });
+    n.deleteCharacters = (/** @type {number} */ start, /** @type {number} */ end) => edit('deleteCharacters', () => { text = text.slice(0, start) + text.slice(end); });
+    /** One segment for the whole text (the stub has no mixed styles), with the fields asked for. */
+    n.getStyledTextSegments = (/** @type {string[]} */ fields) => {
+      if (text === '') return [];
+      const all = /** @type {Record<string, unknown>} */ ({ fills: clone(n.fills), fontSize: n.fontSize, fontWeight: n.fontWeight, fontName: { ...font } });
+      return [Object.assign({ characters: text, start: 0, end: text.length }, ...fields.filter((f) => f in all).map((f) => ({ [f]: all[f] })))];
     };
     return n;
   }
+
+  /**
+   * "Sample: a card and a label" in Set the selection: a white card frame holding a title and a
+   * light grey caption (about 2.7:1 on white, below WCAG AA on purpose), and a black label beside
+   * it. Made on the page the first time it is picked, then kept like any other layer.
+   */
+  let sample = /** @type {any[] | null} */ (null);
+  function sampleScene() {
+    if (!sample) {
+      const card = makeFrame('2:1', 'Card', { x: 0, y: 0, width: 240, height: 96, fills: [solid(1, 1, 1)] }, [
+        makeText('2:2', 'Title', 'Quarterly report', { x: 16, y: 16, width: 130, height: 19, fontSize: 16, fontWeight: 700, style: 'Bold', fills: [solid(0.12, 0.12, 0.12)] }),
+        makeText('2:3', 'Caption', 'Updated today', { x: 16, y: 48, width: 80, height: 15, fills: [solid(0.62, 0.62, 0.62)] }),
+      ]);
+      const label = makeText('2:4', 'Label', 'Sign up', { x: 264, y: 0, width: 42, height: 15, fills: [solid(0, 0, 0)] });
+      page.children.push(card, label);
+      sample = [card, label];
+    }
+    return sample.slice();
+  }
+
+  // figma.variables: one local collection with two modes and three colour variables, one of them
+  // an alias of another. Values persist for the page's life, like the layers.
+  const VARIABLE_MODES = [{ modeId: '3:0', name: 'Light' }, { modeId: '3:1', name: 'Dark' }];
+  const variableData = [
+    { id: 'VariableID:3:2', name: 'color/text', values: { '3:0': { r: 0.12, g: 0.12, b: 0.12, a: 1 }, '3:1': { r: 1, g: 1, b: 1, a: 1 } } },
+    { id: 'VariableID:3:3', name: 'color/brand', values: { '3:0': { r: 0.05, g: 0.6, b: 1, a: 1 }, '3:1': { r: 0.05, g: 0.55, b: 0.91, a: 1 } } },
+    { id: 'VariableID:3:4', name: 'color/link', values: { '3:0': { type: 'VARIABLE_ALIAS', id: 'VariableID:3:3' }, '3:1': { type: 'VARIABLE_ALIAS', id: 'VariableID:3:3' } } },
+  ];
+  const COLLECTION_ID = 'VariableCollectionId:3:1';
 
   function setSelection(/** @type {any[]} */ nodes) {
     page.selection = nodes.slice();
@@ -1755,7 +1902,7 @@ Card 2</textarea></div>
       return n;
     };
     const find = (/** @type {unknown} */ id) => (id === page.id ? currentPage
-      : page.children.find((n) => n.id === id) || page.selection.find((n) => n.id === id) || placeholders.get(id) || null);
+      : descendants(page).find((n) => n.id === id) || page.selection.find((n) => n.id === id) || placeholders.get(id) || null);
     const on = (/** @type {string} */ type, /** @type {Function} */ cb, once = false, table = 'events') => { (r[table][type] = r[table][type] || []).push({ cb, once }); };
     const off = (/** @type {string} */ type, /** @type {Function} */ cb, table = 'events') => {
       const list = r[table][type] || [];
@@ -1781,8 +1928,12 @@ Card 2</textarea></div>
     const ui = {
       postMessage(/** @type {unknown} */ msg) {
         if (!alive()) return;
-        const copy = structuredClone(msg);
+        const copy = /** @type {any} */ (structuredClone(msg));
         log('main', copy);
+        if (copy && copy.type === 'kit:init' && typeof copy.mode === 'string') {
+          r.initMode = copy.mode;
+          if ($('live-window').dataset.state === 'shown') setWindowState('shown');
+        }
         // Figma queues main -> UI messages until the iframe has loaded.
         if (r.loaded && r.frame && r.frame.contentWindow) r.frame.contentWindow.postMessage({ pluginMessage: copy, pluginId: sources.id }, '*');
         else r.queue.push(copy);
@@ -1813,11 +1964,35 @@ Card 2</textarea></div>
       hide() { if (alive() && r.frame) { call('ui.hide'); setWindowState('hidden'); } },
       close() { if (alive()) { call('ui.close'); if (r.frame) r.frame.remove(); r.frame = null; setWindowState('closed'); } },
     };
+    // Design has variables and Dev Mode reads them (it can't write); Slides has none (docs/surfaces.md).
+    // FigJam and Buzz are not documented either way, so the stub leaves them out there too.
+    const variable = (/** @type {typeof variableData[number]} */ v) => ({
+      id: v.id, name: v.name, resolvedType: 'COLOR', variableCollectionId: COLLECTION_ID, remote: false,
+      get valuesByMode() { return clone(v.values); },
+      setValueForMode(/** @type {string} */ modeId, /** @type {unknown} */ value) {
+        if (r.editor === 'dev') throw new Error('figma stub: Dev Mode is read-only, variables cannot be changed');
+        if (!VARIABLE_MODES.some((m) => m.modeId === modeId)) throw new Error(`figma stub: no mode ${modeId} in this collection`);
+        call('variable.setValueForMode', v.id, modeId, value);
+        /** @type {Record<string, unknown>} */ (v.values)[modeId] = clone(value);
+      },
+    });
+    const collection = () => ({
+      id: COLLECTION_ID, name: 'Colors', remote: false, isExtension: false, defaultModeId: VARIABLE_MODES[0].modeId,
+      modes: clone(VARIABLE_MODES), variableIds: variableData.map((v) => v.id),
+    });
+    const variables = r.editor !== 'figma' && r.editor !== 'dev' ? undefined : {
+      getLocalVariableCollectionsAsync() { call('variables.getLocalVariableCollectionsAsync'); return later(() => [collection()]); },
+      getLocalVariablesAsync(/** @type {string | undefined} */ type) { call('variables.getLocalVariablesAsync', type); return later(() => (type && type !== 'COLOR' ? [] : variableData.map(variable))); },
+      getVariableByIdAsync(/** @type {string} */ id) { call('variables.getVariableByIdAsync', id); return later(() => { const v = variableData.find((d) => d.id === id); return v ? variable(v) : null; }); },
+      getVariableCollectionByIdAsync(/** @type {string} */ id) { call('variables.getVariableCollectionByIdAsync', id); return later(() => (id === COLLECTION_ID ? collection() : null)); },
+    };
     return {
       editorType: r.editor,
       apiVersion: '1.0.0',
       command: '',
+      mixed: MIXED,
       currentPage,
+      variables,
       viewport: {
         center: { x: 0, y: 0 },
         zoom: 1,
@@ -1861,6 +2036,13 @@ Card 2</textarea></div>
       createRectangle() { return node('RECTANGLE'); },
       createEllipse() { return node('ELLIPSE'); },
       getNodeByIdAsync(/** @type {string} */ id) { call('getNodeByIdAsync', id); return later(() => find(id)); },
+      // Every font is available here, so every load resolves (Figma rejects a font it doesn't have).
+      loadFontAsync(/** @type {{ family: string, style: string }} */ font) {
+        call('loadFontAsync', font);
+        if (!font || typeof font.family !== 'string' || typeof font.style !== 'string') return Promise.reject(new TypeError('figma stub: loadFontAsync needs { family, style }'));
+        const key = fontKey(font);
+        return later(() => { fontsLoaded.add(key); });
+      },
       commitUndo() { call('commitUndo'); },
       notify(/** @type {string} */ message, /** @type {any} */ options = {}) {
         call('notify', message, options);
@@ -1880,8 +2062,9 @@ Card 2</textarea></div>
   /** Runs code.js from the top, as Figma does when the person starts the plugin. */
   function startRun() {
     stopRun('reload');
+    fontsLoaded = new Set(); // a new run has loaded no fonts yet
     const r = {
-      id: ++runCount, started: performance.now(), editor: settings.editor, mode: settings.mode,
+      id: ++runCount, started: performance.now(), editor: settings.editor, mode: settings.mode, initMode: /** @type {string | null} */ (null),
       dead: false, figma: /** @type {any} */ (null), frame: /** @type {HTMLIFrameElement | null} */ (null), loaded: false, queue: /** @type {unknown[]} */ ([]),
       handlers: /** @type {{ cb: Function, once: boolean }[]} */ ([]), events: /** @type {Record<string, { cb: Function, once: boolean }[]>} */ ({}),
       pageEvents: /** @type {Record<string, { cb: Function, once: boolean }[]>} */ ({}),
@@ -1895,7 +2078,10 @@ Card 2</textarea></div>
     };
     run = r;
     r.figma = createFigma(r);
-    log('host', `run code.js · editorType ${r.editor} · mode ${r.mode} · theme ${settings.theme}${settings.noInter ? ' · no Inter' : ''}`);
+    log('host', `run ${settings.plugin ? settings.plugin + '/' : ''}code.js · editorType ${r.editor} · mode ${r.mode === 'own' ? "the plugin's own" : r.mode} · theme ${settings.theme}${settings.noInter ? ' · no Inter' : ''}`);
+    if (sources.editorTypes && !sources.editorTypes.includes(r.editor)) {
+      log('host', `manifest.json's editorType does not list ${r.editor}: Figma would not offer this plugin there`);
+    }
     try {
       // Figma runs main as one plain script; the stub's timers die with the run, like Figma's.
       new Function('figma', '__html__', 'setTimeout', 'clearTimeout', codeForMode(sources.code, r.mode))(r.figma, sources.ui, r.setTimeout, r.clearTimeout);
@@ -1918,19 +2104,40 @@ Card 2</textarea></div>
     }
   });
 
+  /** Fetches the picked plugin's ui.html, code.js and manifest.json (the repo root's, or examples/<name>/'s). */
   async function loadSources() {
     const get = async (/** @type {string} */ path) => {
       const response = await fetch(path, { cache: 'no-store' });
       if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
       return response.text();
     };
-    const [ui, code, fallback, manifest] = await Promise.all([get('ui.html'), get('code.js'), get('tokens.figma-fallback.css'), get('manifest.json')]);
-    Object.assign(sources, { ui, code, fallback });
+    const base = settings.plugin ? `${settings.plugin}/` : '';
+    const [ui, code, fallback, manifest] = await Promise.all([get(`${base}ui.html`), get(`${base}code.js`), sources.fallback || get('tokens.figma-fallback.css'), get(`${base}manifest.json`)]);
+    Object.assign(sources, { ui, code, fallback, name: 'Plugin', id: 'kit-preview', editorTypes: null });
     try {
       const m = JSON.parse(manifest);
       if (typeof m.name === 'string') sources.name = m.name;
       if (typeof m.id === 'string') sources.id = m.id;
+      if (Array.isArray(m.editorType)) sources.editorTypes = m.editorType.filter((/** @type {unknown} */ t) => typeof t === 'string');
     } catch { /* keep the defaults */ }
+  }
+
+  /** Loads the picked plugin and runs it; a later pick wins over a load still in flight. */
+  let loading = 0;
+  function loadAndRun() {
+    const ticket = ++loading;
+    stopRun('another plugin picked');
+    Object.assign(sources, { ui: '', code: '' });
+    return loadSources().then(() => {
+      if (ticket !== loading) return;
+      $('live-note').hidden = true;
+      ready = true;
+      startRun();
+    }, (error) => {
+      if (ticket !== loading) return;
+      showNote(`Could not load the plugin files (${error instanceof Error ? error.message : String(error)}).`);
+      ready = true;
+    });
   }
 
   function showNote(/** @type {string} */ text) {
@@ -1957,6 +2164,13 @@ Card 2</textarea></div>
     });
   }
   $('preview-no-inter').addEventListener('click', () => { settings.noInter = !settings.noInter; applyPageSettings(); restart(); });
+  const pluginSelect = /** @type {HTMLSelectElement} */ ($('live-plugin'));
+  pluginSelect.value = settings.plugin;
+  pluginSelect.addEventListener('change', () => {
+    settings.plugin = pick(pluginSelect.value, PLUGINS, '');
+    saveSettings();
+    if (location.protocol !== 'file:') loadAndRun();
+  });
   const editorSelect = /** @type {HTMLSelectElement} */ ($('live-editor'));
   const modeSelect = /** @type {HTMLSelectElement} */ ($('live-mode'));
   const selectionSelect = /** @type {HTMLSelectElement} */ ($('live-selection'));
@@ -1969,6 +2183,11 @@ Card 2</textarea></div>
   });
   modeSelect.addEventListener('change', () => { settings.mode = modeSelect.value; restart(); });
   selectionSelect.addEventListener('change', () => {
+    if (selectionSelect.value === 'sample') {
+      log('host', 'selection set to the sample: the Card frame (Title and Caption inside) and the Label text');
+      setSelection(sampleScene());
+      return;
+    }
     const n = Number(selectionSelect.value);
     log('host', `selection set to ${n} layer${n === 1 ? '' : 's'}`);
     // The newest layers on the page, topped up with placeholder frames when there are fewer.
@@ -2008,7 +2227,12 @@ Card 2</textarea></div>
     reload: () => { if (sources.code) startRun(); },
     close: () => { if (run) { fire('close'); stopRun('kitPreviewHost.close'); } },
     postToUi: (/** @type {unknown} */ msg) => { if (run) run.figma.ui.postMessage(msg); },
-    select: (/** @type {number} */ n) => { selectionSelect.value = String(n); selectionSelect.dispatchEvent(new Event('change')); },
+    /** Sets the selection as the picker does: 0, 1 or 3 layers, or 'sample' for the sample card and label. */
+    select: (/** @type {number | 'sample'} */ n) => { selectionSelect.value = String(n); selectionSelect.dispatchEvent(new Event('change')); },
+    /** The picked plugin: '' for the starter, else its examples/ folder. */
+    plugin: () => settings.plugin,
+    /** The stub's colour variables as they are now (setValueForMode writes land here). */
+    variables: () => clone(variableData),
     nodes: () => page.children.map((n) => ({ type: n.type, name: n.name })),
     storage: () => Object.fromEntries(storage.keys().map((k) => [k, storage.get(k)])),
     demoStates: () => demoStates,
@@ -2020,10 +2244,7 @@ Card 2</textarea></div>
   if (location.protocol === 'file:') {
     showNote('The live plugin needs a web server: browsers block fetch() on file:// pages.');
   } else {
-    loadSources().then(() => { ready = true; startRun(); }, (error) => {
-      showNote(`Could not load the plugin files (${error instanceof Error ? error.message : String(error)}).`);
-      ready = true;
-    });
+    loadAndRun();
   }
 })();
 </script>

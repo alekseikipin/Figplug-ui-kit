@@ -1,0 +1,1056 @@
+The one-shot agent's change to the kit 0.3.0 starter (content-fill archetype, 2026-10-13), as left in
+its clone: git diff HEAD -- . ":(exclude)package-lock.json"
+Untracked files: none (git status --untracked-files=all lists only the four modified files below;
+node_modules/ is ignored). Nothing was committed. Curated result: README.md in this folder.
+ code.js       | 332 +++++++++++++++++++++++++++++++++++++++++------
+ code.ts       | 409 +++++++++++++++++++++++++++++++++++++++++++++++++++-------
+ manifest.json |   4 +-
+ ui.html       | 185 ++++++++++++++++----------
+ 4 files changed, 773 insertions(+), 157 deletions(-)
+
+diff --git a/code.js b/code.js
+index f1d934e..65cc1e1 100644
+--- a/code.js
++++ b/code.js
+@@ -416,59 +416,305 @@ function installKitWindow(options = {}) {
+ }
+ // ==== kit:window:end ====
+ // ---- Your plugin starts here ----
+-// Everything below is a demo: replace it with your plugin. Keep installKitWindow() first so the
+-// window exists before anything posts to it, and name your message types without the kit: prefix.
++// Content fill: fills the selected text layers with realistic names, emails, dates or numbers,
++// one kind at a time, picked from the UI's dropdown. Each layer gets a different value where the
++// kind has enough of them. One Cmd+Z undoes a whole fill.
++//
++// UI -> main: 'cf-fill' { kind, nested } and 'cf-close'.
++// Main -> UI: 'cf-selection' { direct, nested }, 'cf-filled' { ... } and 'cf-settings' { kind, nested }.
+ installKitWindow({ mode: 'fit-content' });
+-// The demo UI's count field accepts the same range; this clamp is the backstop, so a typo like
+-// 1000 can never freeze the file.
+-const MAX_SHAPES = 50;
+-// Messages arrive untyped from another window: check the shape before trusting it.
+-function messageType(msg) {
+-    return typeof msg === 'object' && msg !== null ? msg.type : undefined;
+-}
+-function isCreateShapesMessage(msg) {
+-    if (messageType(msg) !== 'create-shapes')
+-        return false;
+-    const { count } = msg;
+-    return typeof count === 'number' && Number.isFinite(count);
++const CF_KINDS = [
++    'full-name', 'first-name', 'last-name', 'email', 'date-short', 'date-long', 'date-iso', 'number', 'price', 'percent',
++];
++function cfIsKind(value) {
++    return typeof value === 'string' && CF_KINDS.indexOf(value) >= 0;
++}
++// Messages arrive untyped from another window: check the type and every field before trusting one.
++function cfReadMessage(msg) {
++    if (typeof msg !== 'object' || msg === null)
++        return null;
++    const fields = msg;
++    if (fields.type === 'cf-close')
++        return { type: 'cf-close' };
++    if (fields.type === 'cf-fill' && cfIsKind(fields.kind) && typeof fields.nested === 'boolean') {
++        return { type: 'cf-fill', kind: fields.kind, nested: fields.nested };
++    }
++    return null; // kit:* and anything else
++}
++function cfPost(msg) {
++    figma.ui.postMessage(msg);
++}
++function cfErrorText(error) {
++    return error instanceof Error ? error.message : String(error);
++}
++// ---- Content ----
++// Plain ASCII names, so every font has the glyphs. Emails use the reserved example.* domains
++// (RFC 2606), so a filled design never holds a real person's address.
++const CF_FIRST_NAMES = [
++    'Olivia', 'Liam', 'Emma', 'Noah', 'Ava', 'Mateo', 'Sofia', 'Lucas', 'Mia', 'Ethan',
++    'Amara', 'Kenji', 'Priya', 'Arjun', 'Hana', 'Omar', 'Leila', 'Diego', 'Chloe', 'Samuel',
++    'Isabella', 'Daniel', 'Grace', 'Wei', 'Mei', 'Yusuf', 'Fatima', 'Aaliyah', 'Jamal', 'Nora',
++    'Elijah', 'Maya', 'Julian', 'Ingrid', 'Lars', 'Freya', 'Hugo', 'Elena', 'Marco', 'Aisha',
++    'Kwame', 'Zara', 'Ravi', 'Sakura', 'Tomas', 'Anya', 'Felix', 'Ruby', 'Oscar', 'Ines',
++    'Kai', 'Layla', 'Theo', 'Camila', 'Gabriel', 'Naomi', 'Adrian', 'Sienna', 'Nikolai', 'Esther',
++];
++const CF_LAST_NAMES = [
++    'Martinez', 'Johnson', 'Nguyen', 'Patel', 'Kim', 'Garcia', 'Smith', 'Chen', 'Okafor', 'Rossi',
++    'Becker', 'Kowalski', 'Tanaka', 'Silva', 'Haddad', 'Andersson', "O'Brien", 'Dubois', 'Petrov', 'Khan',
++    'Mensah', 'Rahman', 'Lopez', 'Brown', 'Wilson', 'Taylor', 'Moreau', 'Schmidt', 'Novak', 'Yilmaz',
++    'Sato', 'Park', 'Singh', 'Cohen', 'Murphy', 'Walker', 'Hughes', 'Carter', 'Reyes', 'Torres',
++    'Bennett', 'Fischer', 'Larsen', 'Costa', 'Romano', 'Adeyemi', 'Wong', 'Ali', 'Hernandez', 'Mitchell',
++    'Sullivan', 'Jensen', 'Ortiz', 'Ward', 'Brooks', 'Price', 'Diaz', 'Foster', 'Hayes', 'Lindqvist',
++];
++const CF_EMAIL_DOMAINS = ['example.com', 'example.org', 'example.net'];
++const CF_MONTHS = [
++    'January', 'February', 'March', 'April', 'May', 'June',
++    'July', 'August', 'September', 'October', 'November', 'December',
++];
++const CF_DAY_MS = 24 * 60 * 60 * 1000;
++function cfRandomInt(min, max) {
++    return min + Math.floor(Math.random() * (max - min + 1));
++}
++function cfPick(list) {
++    return list[Math.floor(Math.random() * list.length)];
++}
++/** Spread over orders of magnitude, so small values are as common as large ones (7, 84, 1,203). */
++function cfLogUniform(min, max) {
++    return Math.exp(Math.log(min) + Math.random() * (Math.log(max) - Math.log(min)));
++}
++// Grouped by hand: the plugin sandbox may have no Intl or toLocaleString.
++function cfGroupThousands(n) {
++    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
++}
++function cfPad2(n) {
++    return n < 10 ? '0' + n : String(n);
++}
++function cfEmailPart(name) {
++    return name.toLowerCase().replace(/[^a-z]/g, '');
++}
++function cfEmail() {
++    const first = cfEmailPart(cfPick(CF_FIRST_NAMES));
++    const last = cfEmailPart(cfPick(CF_LAST_NAMES));
++    const local = cfPick([
++        first + '.' + last,
++        first + '.' + last,
++        first + '.' + last + cfRandomInt(1, 99),
++        first.charAt(0) + last,
++        first + last.charAt(0),
++        first + '_' + last,
++        first,
++    ]);
++    return local + '@' + cfPick(CF_EMAIL_DOMAINS);
++}
++/** A random day within a year either side of `today` (UTC midnight, in ms). */
++function cfDate(format, today) {
++    const date = new Date(today + cfRandomInt(-365, 365) * CF_DAY_MS);
++    const year = date.getUTCFullYear();
++    const month = date.getUTCMonth();
++    const day = date.getUTCDate();
++    if (format === 'date-iso')
++        return year + '-' + cfPad2(month + 1) + '-' + cfPad2(day);
++    if (format === 'date-long')
++        return day + ' ' + CF_MONTHS[month] + ' ' + year;
++    return CF_MONTHS[month].slice(0, 3) + ' ' + day + ', ' + year;
++}
++function cfPrice() {
++    const dollars = Math.min(999, Math.max(1, Math.round(cfLogUniform(1, 999))));
++    const cents = cfPick(['99', '99', '95', '49', '50', '00', cfPad2(cfRandomInt(0, 99))]);
++    return '$' + cfGroupThousands(dollars) + '.' + cents;
++}
++const CF_GENERATORS = {
++    'full-name': () => cfPick(CF_FIRST_NAMES) + ' ' + cfPick(CF_LAST_NAMES),
++    'first-name': () => cfPick(CF_FIRST_NAMES),
++    'last-name': () => cfPick(CF_LAST_NAMES),
++    email: () => cfEmail(),
++    'date-short': (today) => cfDate('date-short', today),
++    'date-long': (today) => cfDate('date-long', today),
++    'date-iso': (today) => cfDate('date-iso', today),
++    number: () => cfGroupThousands(Math.min(99999, Math.max(1, Math.round(cfLogUniform(1, 99999))))),
++    price: () => cfPrice(),
++    percent: () => cfRandomInt(0, 100) + '%',
++};
++/** `count` values of one kind, all different while the kind has enough of them. */
++function cfValues(kind, count) {
++    const make = CF_GENERATORS[kind];
++    const now = new Date();
++    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
++    const seen = new Set();
++    const values = [];
++    for (let i = 0; i < count; i++) {
++        let value = make(today);
++        for (let tries = 0; seen.has(value) && tries < 25; tries++)
++            value = make(today);
++        seen.add(value);
++        values.push(value);
++    }
++    return values;
+ }
+-function postSelectionCount() {
+-    // Under "documentAccess": "dynamic-page" the current page is always loaded, so reading its
+-    // selection synchronously is allowed (other pages need loadAsync first).
+-    figma.ui.postMessage({ type: 'selection', count: figma.currentPage.selection.length });
++// ---- The selection ----
++const CF_TEXT_TYPES = ['TEXT', 'STICKY', 'SHAPE_WITH_TEXT'];
++function cfTextOf(node) {
++    if (node.type === 'TEXT')
++        return node;
++    if (node.type === 'STICKY' || node.type === 'SHAPE_WITH_TEXT')
++        return node.text;
++    return null;
+ }
+-function createShapes(count, shape) {
+-    const nodes = [];
+-    const { x, y } = figma.viewport.center;
++/**
++ * The text layers to fill, in selection order, each once: the selected ones, plus with `nested`
++ * the visible ones inside the selected frames, groups, sections and components.
++ */
++function cfTargets(nested) {
++    const seen = new Set();
++    const targets = [];
++    const add = (node) => {
++        const text = cfTextOf(node);
++        if (!text || seen.has(node.id))
++            return;
++        seen.add(node.id);
++        targets.push(text);
++    };
++    // Under "documentAccess": "dynamic-page" the current page is always loaded, so its selection
++    // and the subtrees under it can be read synchronously.
++    for (const node of figma.currentPage.selection) {
++        add(node);
++        if (nested && 'findAllWithCriteria' in node) {
++            for (const child of node.findAllWithCriteria({ types: CF_TEXT_TYPES })) {
++                if (child.visible)
++                    add(child);
++            }
++        }
++    }
++    return targets;
++}
++function cfPostSelection() {
+     try {
+-        for (let i = 0; i < count; i++) {
+-            const node = shape === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
+-            node.x = Math.round(x) + i * 150;
+-            node.y = Math.round(y);
+-            node.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
+-            nodes.push(node);
++        cfPost({ type: 'cf-selection', direct: cfTargets(false).length, nested: cfTargets(true).length });
++    }
++    catch (error) {
++        console.warn('Content fill: could not read the selection', error);
++    }
++}
++// ---- Filling ----
++function cfFontKey(font) {
++    return font.family + '\u0000' + font.style;
++}
++/** Every font the layer uses; an empty layer has a single one. */
++function cfFontsOf(text) {
++    const length = text.characters.length;
++    if (length > 0)
++        return text.getRangeAllFontNames(0, length);
++    const font = text.fontName;
++    return font === figma.mixed ? [] : [font];
++}
++async function cfFill(kind, nested) {
++    const result = { type: 'cf-filled', kind, filled: 0, missingFonts: 0, failed: 0, error: null };
++    // Collect the fonts first and load each one once, however many layers use it.
++    const fonts = new Map();
++    const ready = [];
++    for (const text of cfTargets(nested)) {
++        if (text.hasMissingFont) {
++            result.missingFonts++;
++            continue;
+         }
+-        figma.currentPage.selection = nodes;
+-        figma.viewport.scrollAndZoomIntoView(nodes);
++        const used = cfFontsOf(text);
++        for (const font of used)
++            fonts.set(cfFontKey(font), font);
++        ready.push({ text, fontKeys: used.map(cfFontKey) });
++    }
++    const toLoad = Array.from(fonts.entries());
++    const loaded = await Promise.allSettled(toLoad.map((entry) => figma.loadFontAsync(entry[1])));
++    const unavailable = new Set();
++    for (let i = 0; i < loaded.length; i++) {
++        if (loaded[i].status === 'rejected')
++            unavailable.add(toLoad[i][0]);
++    }
++    const values = cfValues(kind, ready.length);
++    for (let i = 0; i < ready.length; i++) {
++        const { text, fontKeys } = ready[i];
++        if (fontKeys.some((key) => unavailable.has(key))) {
++            result.missingFonts++;
++            continue;
++        }
++        try {
++            // Replacing all the characters keeps the style of the first one.
++            text.characters = values[i];
++            result.filled++;
++        }
++        catch (error) {
++            // A locked component property or a read-only layer: leave it and count it.
++            if (result.failed === 0)
++                console.warn('Content fill: could not change a text layer', error);
++            result.failed++;
++        }
++    }
++    // One undo step per fill. The layers are already filled, so a failure here costs only that.
++    if (result.filled > 0) {
++        try {
++            figma.commitUndo();
++        }
++        catch (error) {
++            console.warn('Content fill: could not mark the undo step', error);
++        }
++    }
++    return result;
++}
++// ---- Settings: the last kind and scope, kept between runs ----
++const CF_SETTINGS_KEY = 'content-fill:settings';
++async function cfLoadSettings() {
++    try {
++        const saved = await figma.clientStorage.getAsync(CF_SETTINGS_KEY);
++        if (typeof saved !== 'object' || saved === null)
++            return;
++        const { kind, nested } = saved;
++        if (cfIsKind(kind) && typeof nested === 'boolean')
++            cfPost({ type: 'cf-settings', kind, nested });
++    }
++    catch (error) {
++        console.warn('Content fill: could not read the saved settings', error);
++    }
++}
++async function cfSaveSettings(kind, nested) {
++    try {
++        await figma.clientStorage.setAsync(CF_SETTINGS_KEY, { kind, nested });
+     }
+     catch (error) {
+-        // Dev Mode is read-only and not every editor can create every node: say so instead of
+-        // failing silently in the console.
+-        figma.notify('Could not create shapes: ' + (error instanceof Error ? error.message : String(error)), { error: true });
++        console.warn('Content fill: could not save the settings', error);
+     }
+-    // Always answer, so a UI waiting on this reply (a busy button) never gets stuck.
+-    figma.ui.postMessage({ type: 'created', count: nodes.length });
+ }
+-figma.ui.on('message', (msg) => {
+-    // Sent by the demo UI's Close button. closePlugin does not stop this function: return at once.
+-    if (messageType(msg) === 'close') {
++// ---- Wiring ----
++let cfBusy = false;
++async function cfHandleFill(msg) {
++    // The UI waits for each answer before it sends another fill; this is the backstop.
++    if (cfBusy)
++        return;
++    cfBusy = true;
++    let reply;
++    try {
++        reply = await cfFill(msg.kind, msg.nested);
++    }
++    catch (error) {
++        reply = { type: 'cf-filled', kind: msg.kind, filled: 0, missingFonts: 0, failed: 0, error: cfErrorText(error) };
++    }
++    finally {
++        cfBusy = false;
++    }
++    // Always answer, so the busy Fill button never gets stuck.
++    cfPost(reply);
++    await cfSaveSettings(msg.kind, msg.nested);
++}
++figma.ui.on('message', (raw) => {
++    const msg = cfReadMessage(raw);
++    if (!msg)
++        return;
++    if (msg.type === 'cf-close') {
++        // closePlugin does not stop this function: return at once.
+         figma.closePlugin();
+         return;
+     }
+-    if (!isCreateShapesMessage(msg))
+-        return; // kit:* and anything else falls through
+-    const count = Math.min(MAX_SHAPES, Math.max(1, Math.round(msg.count)));
+-    createShapes(count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle');
++    cfHandleFill(msg).catch((error) => console.warn('Content fill: the fill did not finish', error));
+ });
+-figma.on('selectionchange', postSelectionCount);
+-postSelectionCount();
++figma.on('selectionchange', cfPostSelection);
++figma.on('currentpagechange', cfPostSelection);
++cfPostSelection();
++cfLoadSettings().catch((error) => console.warn('Content fill: could not read the saved settings', error));
+diff --git a/code.ts b/code.ts
+index 0d0a932..538ee60 100644
+--- a/code.ts
++++ b/code.ts
+@@ -422,71 +422,390 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
+ // ==== kit:window:end ====
+ 
+ // ---- Your plugin starts here ----
+-// Everything below is a demo: replace it with your plugin. Keep installKitWindow() first so the
+-// window exists before anything posts to it, and name your message types without the kit: prefix.
++// Content fill: fills the selected text layers with realistic names, emails, dates or numbers,
++// one kind at a time, picked from the UI's dropdown. Each layer gets a different value where the
++// kind has enough of them. One Cmd+Z undoes a whole fill.
++//
++// UI -> main: 'cf-fill' { kind, nested } and 'cf-close'.
++// Main -> UI: 'cf-selection' { direct, nested }, 'cf-filled' { ... } and 'cf-settings' { kind, nested }.
+ 
+ installKitWindow({ mode: 'fit-content' });
+ 
+-// The demo UI's count field accepts the same range; this clamp is the backstop, so a typo like
+-// 1000 can never freeze the file.
+-const MAX_SHAPES = 50;
++/** What to fill with. The UI's <select> uses the same values. */
++type CfKind =
++  | 'full-name'
++  | 'first-name'
++  | 'last-name'
++  | 'email'
++  | 'date-short'
++  | 'date-long'
++  | 'date-iso'
++  | 'number'
++  | 'price'
++  | 'percent';
++
++/** A layer whose text can be replaced: a text layer, or the text of a FigJam sticky or shape. */
++type CfText = TextNode | TextSublayerNode;
++
++// ---- Messages ----
++
++/** UI -> main: fill the text layers in scope with values of one kind. */
++interface CfFillMessage {
++  type: 'cf-fill';
++  kind: CfKind;
++  /** Also fill text layers inside the selected frames, groups and components. */
++  nested: boolean;
++}
++
++/** UI -> main: the Close button. */
++interface CfCloseMessage {
++  type: 'cf-close';
++}
++
++type CfUiToMain = CfFillMessage | CfCloseMessage;
++
++/** Main -> UI: how many text layers each scope holds, after every selection change. */
++interface CfSelectionMessage {
++  type: 'cf-selection';
++  /** Text layers selected directly. */
++  direct: number;
++  /** Those plus the text layers inside the selected frames, groups and components. */
++  nested: number;
++}
++
++/** Main -> UI: the answer to every 'cf-fill', also when it failed. */
++interface CfFilledMessage {
++  type: 'cf-filled';
++  kind: CfKind;
++  filled: number;
++  /** Layers left as they were because a font they use is missing or would not load. */
++  missingFonts: number;
++  /** Layers Figma refused to change. */
++  failed: number;
++  /** Set when the whole fill failed. */
++  error: string | null;
++}
++
++/** Main -> UI: the kind and scope of the last fill, read from clientStorage at startup. */
++interface CfSettingsMessage {
++  type: 'cf-settings';
++  kind: CfKind;
++  nested: boolean;
++}
++
++type CfMainToUi = CfSelectionMessage | CfFilledMessage | CfSettingsMessage;
++
++const CF_KINDS: readonly CfKind[] = [
++  'full-name', 'first-name', 'last-name', 'email', 'date-short', 'date-long', 'date-iso', 'number', 'price', 'percent',
++];
++
++function cfIsKind(value: unknown): value is CfKind {
++  return typeof value === 'string' && (CF_KINDS as readonly string[]).indexOf(value) >= 0;
++}
++
++// Messages arrive untyped from another window: check the type and every field before trusting one.
++function cfReadMessage(msg: unknown): CfUiToMain | null {
++  if (typeof msg !== 'object' || msg === null) return null;
++  const fields = msg as Record<string, unknown>;
++  if (fields.type === 'cf-close') return { type: 'cf-close' };
++  if (fields.type === 'cf-fill' && cfIsKind(fields.kind) && typeof fields.nested === 'boolean') {
++    return { type: 'cf-fill', kind: fields.kind, nested: fields.nested };
++  }
++  return null; // kit:* and anything else
++}
++
++function cfPost(msg: CfMainToUi): void {
++  figma.ui.postMessage(msg);
++}
++
++function cfErrorText(error: unknown): string {
++  return error instanceof Error ? error.message : String(error);
++}
++
++// ---- Content ----
++// Plain ASCII names, so every font has the glyphs. Emails use the reserved example.* domains
++// (RFC 2606), so a filled design never holds a real person's address.
++
++const CF_FIRST_NAMES: readonly string[] = [
++  'Olivia', 'Liam', 'Emma', 'Noah', 'Ava', 'Mateo', 'Sofia', 'Lucas', 'Mia', 'Ethan',
++  'Amara', 'Kenji', 'Priya', 'Arjun', 'Hana', 'Omar', 'Leila', 'Diego', 'Chloe', 'Samuel',
++  'Isabella', 'Daniel', 'Grace', 'Wei', 'Mei', 'Yusuf', 'Fatima', 'Aaliyah', 'Jamal', 'Nora',
++  'Elijah', 'Maya', 'Julian', 'Ingrid', 'Lars', 'Freya', 'Hugo', 'Elena', 'Marco', 'Aisha',
++  'Kwame', 'Zara', 'Ravi', 'Sakura', 'Tomas', 'Anya', 'Felix', 'Ruby', 'Oscar', 'Ines',
++  'Kai', 'Layla', 'Theo', 'Camila', 'Gabriel', 'Naomi', 'Adrian', 'Sienna', 'Nikolai', 'Esther',
++];
++
++const CF_LAST_NAMES: readonly string[] = [
++  'Martinez', 'Johnson', 'Nguyen', 'Patel', 'Kim', 'Garcia', 'Smith', 'Chen', 'Okafor', 'Rossi',
++  'Becker', 'Kowalski', 'Tanaka', 'Silva', 'Haddad', 'Andersson', "O'Brien", 'Dubois', 'Petrov', 'Khan',
++  'Mensah', 'Rahman', 'Lopez', 'Brown', 'Wilson', 'Taylor', 'Moreau', 'Schmidt', 'Novak', 'Yilmaz',
++  'Sato', 'Park', 'Singh', 'Cohen', 'Murphy', 'Walker', 'Hughes', 'Carter', 'Reyes', 'Torres',
++  'Bennett', 'Fischer', 'Larsen', 'Costa', 'Romano', 'Adeyemi', 'Wong', 'Ali', 'Hernandez', 'Mitchell',
++  'Sullivan', 'Jensen', 'Ortiz', 'Ward', 'Brooks', 'Price', 'Diaz', 'Foster', 'Hayes', 'Lindqvist',
++];
++
++const CF_EMAIL_DOMAINS: readonly string[] = ['example.com', 'example.org', 'example.net'];
++
++const CF_MONTHS: readonly string[] = [
++  'January', 'February', 'March', 'April', 'May', 'June',
++  'July', 'August', 'September', 'October', 'November', 'December',
++];
++
++const CF_DAY_MS = 24 * 60 * 60 * 1000;
++
++function cfRandomInt(min: number, max: number): number {
++  return min + Math.floor(Math.random() * (max - min + 1));
++}
++
++function cfPick<T>(list: readonly T[]): T {
++  return list[Math.floor(Math.random() * list.length)];
++}
++
++/** Spread over orders of magnitude, so small values are as common as large ones (7, 84, 1,203). */
++function cfLogUniform(min: number, max: number): number {
++  return Math.exp(Math.log(min) + Math.random() * (Math.log(max) - Math.log(min)));
++}
++
++// Grouped by hand: the plugin sandbox may have no Intl or toLocaleString.
++function cfGroupThousands(n: number): string {
++  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
++}
++
++function cfPad2(n: number): string {
++  return n < 10 ? '0' + n : String(n);
++}
++
++function cfEmailPart(name: string): string {
++  return name.toLowerCase().replace(/[^a-z]/g, '');
++}
+ 
+-/** Sent by the demo UI when the person presses Create. */
+-interface CreateShapesMessage {
+-  type: 'create-shapes';
+-  count: number;
+-  shape: 'rectangle' | 'ellipse';
++function cfEmail(): string {
++  const first = cfEmailPart(cfPick(CF_FIRST_NAMES));
++  const last = cfEmailPart(cfPick(CF_LAST_NAMES));
++  const local = cfPick([
++    first + '.' + last,
++    first + '.' + last,
++    first + '.' + last + cfRandomInt(1, 99),
++    first.charAt(0) + last,
++    first + last.charAt(0),
++    first + '_' + last,
++    first,
++  ]);
++  return local + '@' + cfPick(CF_EMAIL_DOMAINS);
+ }
+ 
+-// Messages arrive untyped from another window: check the shape before trusting it.
+-function messageType(msg: unknown): unknown {
+-  return typeof msg === 'object' && msg !== null ? (msg as { type?: unknown }).type : undefined;
++/** A random day within a year either side of `today` (UTC midnight, in ms). */
++function cfDate(format: 'date-short' | 'date-long' | 'date-iso', today: number): string {
++  const date = new Date(today + cfRandomInt(-365, 365) * CF_DAY_MS);
++  const year = date.getUTCFullYear();
++  const month = date.getUTCMonth();
++  const day = date.getUTCDate();
++  if (format === 'date-iso') return year + '-' + cfPad2(month + 1) + '-' + cfPad2(day);
++  if (format === 'date-long') return day + ' ' + CF_MONTHS[month] + ' ' + year;
++  return CF_MONTHS[month].slice(0, 3) + ' ' + day + ', ' + year;
+ }
+ 
+-function isCreateShapesMessage(msg: unknown): msg is CreateShapesMessage {
+-  if (messageType(msg) !== 'create-shapes') return false;
+-  const { count } = msg as Record<string, unknown>;
+-  return typeof count === 'number' && Number.isFinite(count);
++function cfPrice(): string {
++  const dollars = Math.min(999, Math.max(1, Math.round(cfLogUniform(1, 999))));
++  const cents = cfPick(['99', '99', '95', '49', '50', '00', cfPad2(cfRandomInt(0, 99))]);
++  return '$' + cfGroupThousands(dollars) + '.' + cents;
+ }
+ 
+-function postSelectionCount(): void {
+-  // Under "documentAccess": "dynamic-page" the current page is always loaded, so reading its
+-  // selection synchronously is allowed (other pages need loadAsync first).
+-  figma.ui.postMessage({ type: 'selection', count: figma.currentPage.selection.length });
++const CF_GENERATORS: Record<CfKind, (today: number) => string> = {
++  'full-name': () => cfPick(CF_FIRST_NAMES) + ' ' + cfPick(CF_LAST_NAMES),
++  'first-name': () => cfPick(CF_FIRST_NAMES),
++  'last-name': () => cfPick(CF_LAST_NAMES),
++  email: () => cfEmail(),
++  'date-short': (today) => cfDate('date-short', today),
++  'date-long': (today) => cfDate('date-long', today),
++  'date-iso': (today) => cfDate('date-iso', today),
++  number: () => cfGroupThousands(Math.min(99999, Math.max(1, Math.round(cfLogUniform(1, 99999))))),
++  price: () => cfPrice(),
++  percent: () => cfRandomInt(0, 100) + '%',
++};
++
++/** `count` values of one kind, all different while the kind has enough of them. */
++function cfValues(kind: CfKind, count: number): string[] {
++  const make = CF_GENERATORS[kind];
++  const now = new Date();
++  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
++  const seen = new Set<string>();
++  const values: string[] = [];
++  for (let i = 0; i < count; i++) {
++    let value = make(today);
++    for (let tries = 0; seen.has(value) && tries < 25; tries++) value = make(today);
++    seen.add(value);
++    values.push(value);
++  }
++  return values;
++}
++
++// ---- The selection ----
++
++const CF_TEXT_TYPES: ('TEXT' | 'STICKY' | 'SHAPE_WITH_TEXT')[] = ['TEXT', 'STICKY', 'SHAPE_WITH_TEXT'];
++
++function cfTextOf(node: SceneNode): CfText | null {
++  if (node.type === 'TEXT') return node;
++  if (node.type === 'STICKY' || node.type === 'SHAPE_WITH_TEXT') return node.text;
++  return null;
+ }
+ 
+-function createShapes(count: number, shape: 'rectangle' | 'ellipse'): void {
+-  const nodes: SceneNode[] = [];
+-  const { x, y } = figma.viewport.center;
++/**
++ * The text layers to fill, in selection order, each once: the selected ones, plus with `nested`
++ * the visible ones inside the selected frames, groups, sections and components.
++ */
++function cfTargets(nested: boolean): CfText[] {
++  const seen = new Set<string>();
++  const targets: CfText[] = [];
++  const add = (node: SceneNode): void => {
++    const text = cfTextOf(node);
++    if (!text || seen.has(node.id)) return;
++    seen.add(node.id);
++    targets.push(text);
++  };
++  // Under "documentAccess": "dynamic-page" the current page is always loaded, so its selection
++  // and the subtrees under it can be read synchronously.
++  for (const node of figma.currentPage.selection) {
++    add(node);
++    if (nested && 'findAllWithCriteria' in node) {
++      for (const child of node.findAllWithCriteria({ types: CF_TEXT_TYPES })) {
++        if (child.visible) add(child);
++      }
++    }
++  }
++  return targets;
++}
++
++function cfPostSelection(): void {
+   try {
+-    for (let i = 0; i < count; i++) {
+-      const node = shape === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
+-      node.x = Math.round(x) + i * 150;
+-      node.y = Math.round(y);
+-      node.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
+-      nodes.push(node);
++    cfPost({ type: 'cf-selection', direct: cfTargets(false).length, nested: cfTargets(true).length });
++  } catch (error) {
++    console.warn('Content fill: could not read the selection', error);
++  }
++}
++
++// ---- Filling ----
++
++function cfFontKey(font: FontName): string {
++  return font.family + '\u0000' + font.style;
++}
++
++/** Every font the layer uses; an empty layer has a single one. */
++function cfFontsOf(text: CfText): FontName[] {
++  const length = text.characters.length;
++  if (length > 0) return text.getRangeAllFontNames(0, length);
++  const font = text.fontName;
++  return font === figma.mixed ? [] : [font];
++}
++
++async function cfFill(kind: CfKind, nested: boolean): Promise<CfFilledMessage> {
++  const result: CfFilledMessage = { type: 'cf-filled', kind, filled: 0, missingFonts: 0, failed: 0, error: null };
++
++  // Collect the fonts first and load each one once, however many layers use it.
++  const fonts = new Map<string, FontName>();
++  const ready: { text: CfText; fontKeys: string[] }[] = [];
++  for (const text of cfTargets(nested)) {
++    if (text.hasMissingFont) {
++      result.missingFonts++;
++      continue;
++    }
++    const used = cfFontsOf(text);
++    for (const font of used) fonts.set(cfFontKey(font), font);
++    ready.push({ text, fontKeys: used.map(cfFontKey) });
++  }
++
++  const toLoad = Array.from(fonts.entries());
++  const loaded = await Promise.allSettled(toLoad.map((entry) => figma.loadFontAsync(entry[1])));
++  const unavailable = new Set<string>();
++  for (let i = 0; i < loaded.length; i++) {
++    if (loaded[i].status === 'rejected') unavailable.add(toLoad[i][0]);
++  }
++
++  const values = cfValues(kind, ready.length);
++  for (let i = 0; i < ready.length; i++) {
++    const { text, fontKeys } = ready[i];
++    if (fontKeys.some((key) => unavailable.has(key))) {
++      result.missingFonts++;
++      continue;
+     }
+-    figma.currentPage.selection = nodes;
+-    figma.viewport.scrollAndZoomIntoView(nodes);
++    try {
++      // Replacing all the characters keeps the style of the first one.
++      text.characters = values[i];
++      result.filled++;
++    } catch (error) {
++      // A locked component property or a read-only layer: leave it and count it.
++      if (result.failed === 0) console.warn('Content fill: could not change a text layer', error);
++      result.failed++;
++    }
++  }
++
++  // One undo step per fill. The layers are already filled, so a failure here costs only that.
++  if (result.filled > 0) {
++    try {
++      figma.commitUndo();
++    } catch (error) {
++      console.warn('Content fill: could not mark the undo step', error);
++    }
++  }
++  return result;
++}
++
++// ---- Settings: the last kind and scope, kept between runs ----
++
++const CF_SETTINGS_KEY = 'content-fill:settings';
++
++async function cfLoadSettings(): Promise<void> {
++  try {
++    const saved: unknown = await figma.clientStorage.getAsync(CF_SETTINGS_KEY);
++    if (typeof saved !== 'object' || saved === null) return;
++    const { kind, nested } = saved as Record<string, unknown>;
++    if (cfIsKind(kind) && typeof nested === 'boolean') cfPost({ type: 'cf-settings', kind, nested });
++  } catch (error) {
++    console.warn('Content fill: could not read the saved settings', error);
++  }
++}
++
++async function cfSaveSettings(kind: CfKind, nested: boolean): Promise<void> {
++  try {
++    await figma.clientStorage.setAsync(CF_SETTINGS_KEY, { kind, nested });
++  } catch (error) {
++    console.warn('Content fill: could not save the settings', error);
++  }
++}
++
++// ---- Wiring ----
++
++let cfBusy = false;
++
++async function cfHandleFill(msg: CfFillMessage): Promise<void> {
++  // The UI waits for each answer before it sends another fill; this is the backstop.
++  if (cfBusy) return;
++  cfBusy = true;
++  let reply: CfFilledMessage;
++  try {
++    reply = await cfFill(msg.kind, msg.nested);
+   } catch (error) {
+-    // Dev Mode is read-only and not every editor can create every node: say so instead of
+-    // failing silently in the console.
+-    figma.notify('Could not create shapes: ' + (error instanceof Error ? error.message : String(error)), { error: true });
++    reply = { type: 'cf-filled', kind: msg.kind, filled: 0, missingFonts: 0, failed: 0, error: cfErrorText(error) };
++  } finally {
++    cfBusy = false;
+   }
+-  // Always answer, so a UI waiting on this reply (a busy button) never gets stuck.
+-  figma.ui.postMessage({ type: 'created', count: nodes.length });
++  // Always answer, so the busy Fill button never gets stuck.
++  cfPost(reply);
++  await cfSaveSettings(msg.kind, msg.nested);
+ }
+ 
+-figma.ui.on('message', (msg: unknown) => {
+-  // Sent by the demo UI's Close button. closePlugin does not stop this function: return at once.
+-  if (messageType(msg) === 'close') {
++figma.ui.on('message', (raw: unknown) => {
++  const msg = cfReadMessage(raw);
++  if (!msg) return;
++  if (msg.type === 'cf-close') {
++    // closePlugin does not stop this function: return at once.
+     figma.closePlugin();
+     return;
+   }
+-  if (!isCreateShapesMessage(msg)) return; // kit:* and anything else falls through
+-  const count = Math.min(MAX_SHAPES, Math.max(1, Math.round(msg.count)));
+-  createShapes(count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle');
++  cfHandleFill(msg).catch((error) => console.warn('Content fill: the fill did not finish', error));
+ });
+ 
+-figma.on('selectionchange', postSelectionCount);
+-postSelectionCount();
++figma.on('selectionchange', cfPostSelection);
++figma.on('currentpagechange', cfPostSelection);
++cfPostSelection();
++cfLoadSettings().catch((error) => console.warn('Content fill: could not read the saved settings', error));
+diff --git a/manifest.json b/manifest.json
+index bceae08..7ab5749 100644
+--- a/manifest.json
++++ b/manifest.json
+@@ -1,6 +1,6 @@
+ {
+-  "name": "Kit starter",
+-  "id": "kit-starter-change-this-id",
++  "name": "Content fill",
++  "id": "content-fill-10d22b5c",
+   "api": "1.0.0",
+   "main": "code.js",
+   "ui": "ui.html",
+diff --git a/ui.html b/ui.html
+index 6470d31..879fe86 100644
+--- a/ui.html
++++ b/ui.html
+@@ -3,7 +3,7 @@
+ <head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+-<title>Kit starter</title>
++<title>Content fill</title>
+ <meta name="kit" content="kit v0.3.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+ <style data-kit="tokens">
+ /* kit tokens v0.3.0 · protocol 1 · MIT · https://github.com/alekseikipin/Figplug-ui-kit · issues: https://github.com/alekseikipin/Figplug-ui-kit/issues · re-paste all three data-kit blocks to upgrade */
+@@ -911,109 +911,160 @@ else boot();
+ })();
+ </script>
+ <style>
+-/* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
+-.demo-status { flex: 1 1 0; min-width: 0; }
++/* Your styles. Build with kit classes first; add rules here only for what they don't cover.
++   Content fill needs none: everything below is kit classes. */
+ </style>
+ </head>
+ <body>
+ <main class="kit-app" data-kit-root>
+   <div class="kit-section kit-stack">
+-    <h1 class="kit-heading">Create shapes</h1>
++    <h1 class="kit-heading">Fill text layers</h1>
+     <div class="kit-field">
+-      <label class="kit-label" for="count">Count</label>
+-      <input class="kit-input" id="count" type="text" inputmode="numeric" autocomplete="off" value="5" aria-describedby="count-help">
+-      <p class="kit-help" id="count-help">From 1 to 50, placed in a row.</p>
+-    </div>
+-    <div class="kit-field">
+-      <label class="kit-label" for="shape">Shape</label>
++      <label class="kit-label" for="kind">Fill with</label>
+       <div class="kit-select">
+-        <select id="shape">
+-          <option value="rectangle">Rectangle</option>
+-          <option value="ellipse">Ellipse</option>
++        <select id="kind" aria-describedby="kind-help">
++          <optgroup label="Names">
++            <option value="full-name" selected>Full name</option>
++            <option value="first-name">First name</option>
++            <option value="last-name">Last name</option>
++          </optgroup>
++          <optgroup label="Emails">
++            <option value="email">Email address</option>
++          </optgroup>
++          <optgroup label="Dates">
++            <option value="date-short">Date (Mar 4, 2026)</option>
++            <option value="date-long">Date (4 March 2026)</option>
++            <option value="date-iso">Date (2026-03-04)</option>
++          </optgroup>
++          <optgroup label="Numbers">
++            <option value="number">Number (1,234)</option>
++            <option value="price">Price ($12.99)</option>
++            <option value="percent">Percentage (42%)</option>
++          </optgroup>
+         </select>
+       </div>
++      <p class="kit-help" id="kind-help">First and last names, like Olivia Martinez.</p>
+     </div>
++    <label class="kit-checkbox"><input type="checkbox" id="nested">Include text inside selected frames and groups</label>
+   </div>
+-  <hr class="kit-divider">
+-  <div class="kit-section kit-row">
+-    <p class="kit-text-secondary demo-status" id="status" role="status">Nothing selected</p>
+-    <button class="kit-button kit-button-secondary" id="close" type="button">Close</button>
+-    <button class="kit-button kit-button-primary" id="create" type="button">Create</button>
+-  </div>
++  <footer class="kit-footer">
++    <p class="kit-text-secondary" id="status" role="status">Select text layers to fill</p>
++    <div class="kit-row">
++      <button class="kit-button kit-button-secondary" id="close" type="button">Close</button>
++      <button class="kit-button kit-button-primary" id="fill" type="button" disabled>Fill</button>
++    </div>
++  </footer>
+ </main>
+ <button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+ <script>
+ 'use strict';
+-// The demo: replace this script and <main>'s markup with your plugin (keep data-kit-root and the handle;
+-// no HTML comments). It sends 'create-shapes' and 'close'; code.ts answers 'selection' and 'created'.
++// Content fill. Sends 'cf-fill' { kind, nested } and 'cf-close'; code.ts answers 'cf-selection'
++// { direct, nested } on every selection change, 'cf-filled' after every fill, and 'cf-settings'
++// once at startup with the kind and scope of the last fill.
+ (() => {
+-const MIN = 1;
+-const MAX = 50; // code.ts clamps to the same range
+-const count = /** @type {HTMLInputElement} */ (document.getElementById('count'));
+-const shape = /** @type {HTMLSelectElement} */ (document.getElementById('shape'));
+-const help = document.getElementById('count-help');
+-const create = document.getElementById('create');
++const kind = /** @type {HTMLSelectElement} */ (document.getElementById('kind'));
++const kindHelp = document.getElementById('kind-help');
++const nested = /** @type {HTMLInputElement} */ (document.getElementById('nested'));
++const fill = /** @type {HTMLButtonElement} */ (document.getElementById('fill'));
+ const status = document.getElementById('status');
+-let selected = 0;
++
++const DATE_HELP = 'Days within a year either side of today.';
++/** @type {Record<string, { help: string, one: string, many: string }>} */
++const KINDS = {
++  'full-name': { help: 'First and last names, like Olivia Martinez.', one: 'a full name', many: 'full names' },
++  'first-name': { help: 'First names, like Kenji or Amara.', one: 'a first name', many: 'first names' },
++  'last-name': { help: 'Last names, like Okafor or Lindqvist.', one: 'a last name', many: 'last names' },
++  email: { help: 'Made-up addresses on reserved example domains, so none reach a real inbox.', one: 'an email address', many: 'email addresses' },
++  'date-short': { help: DATE_HELP, one: 'a date', many: 'dates' },
++  'date-long': { help: DATE_HELP, one: 'a date', many: 'dates' },
++  'date-iso': { help: DATE_HELP, one: 'a date', many: 'dates' },
++  number: { help: 'Whole numbers from 1 to 99,999, small ones as often as large ones.', one: 'a number', many: 'numbers' },
++  price: { help: 'Prices in US dollars, from $1.00 to $999.99.', one: 'a price', many: 'prices' },
++  percent: { help: 'Whole percentages from 0% to 100%.', one: 'a percentage', many: 'percentages' },
++};
++
++let direct = 0; // text layers selected directly
++let inside = 0; // those plus the ones inside selected frames and groups
+ let result = '';
+-let made = 'rectangle';
++let touched = false; // the person changed a setting before the saved ones arrived
+ 
+ /** @param {{ type: string } & Record<string, unknown>} message */
+ const post = (message) => parent.postMessage({ pluginMessage: message }, '*');
+ 
+-function readCount() {
+-  const text = count.value.trim();
+-  const n = Number(text);
+-  return /^\d+$/.test(text) && n >= MIN && n <= MAX ? n : null;
++/** @param {unknown} value */
++const isKind = (value) => typeof value === 'string' && Object.prototype.hasOwnProperty.call(KINDS, value);
++
++const plural = (/** @type {number} */ n, /** @type {string} */ word) => `${n} ${word}${n === 1 ? '' : 's'}`;
++
++const inScope = () => (nested.checked ? inside : direct);
++
++function selectionText() {
++  const n = inScope();
++  if (n > 0) return nested.checked ? `${plural(n, 'text layer')} in the selection` : `${plural(n, 'text layer')} selected`;
++  if (inside > 0) return `No text layers selected; ${inside} inside frames and groups`;
++  return 'Select text layers to fill';
+ }
+ 
+-// The error state is aria-invalid: the kit recolours the ring and the help text it points at.
+-function validate() {
+-  const ok = readCount() !== null;
+-  if (ok) count.removeAttribute('aria-invalid');
+-  else count.setAttribute('aria-invalid', 'true');
+-  help.textContent = ok ? `From ${MIN} to ${MAX}, placed in a row.` : `Enter a whole number from ${MIN} to ${MAX}.`;
++/** @param {{ kind: string, filled: number, missingFonts: number, failed: number, error: unknown }} msg */
++function resultText(msg) {
++  if (typeof msg.error === 'string' && msg.error) return `Couldn't fill: ${msg.error}`;
++  const words = KINDS[msg.kind] || KINDS['full-name'];
++  const parts = [];
++  if (msg.filled > 0) parts.push(`Filled ${plural(msg.filled, 'layer')} with ${msg.filled === 1 ? words.one : words.many}`);
++  if (msg.missingFonts > 0) parts.push(`Skipped ${plural(msg.missingFonts, 'layer')} with ${msg.missingFonts === 1 ? 'a missing font' : 'missing fonts'}`);
++  if (msg.failed > 0) parts.push(`${plural(msg.failed, 'layer')} couldn't be changed`);
++  return parts.length ? parts.join('. ') + '.' : 'Nothing to fill.';
+ }
+ 
+ function render() {
+-  const selection = selected === 0 ? 'Nothing selected' : `${selected} layer${selected === 1 ? '' : 's'} selected`;
+-  status.replaceChildren(selection, ...(result ? [document.createElement('br'), result] : []));
++  fill.disabled = inScope() === 0;
++  status.replaceChildren(selectionText(), ...(result ? [document.createElement('br'), result] : []));
+ }
+ 
+-function createShapes() {
+-  if (create.getAttribute('aria-busy') === 'true') return; // aria-busy stops the mouse, not Enter or Space
+-  const n = readCount();
+-  if (n === null) {
+-    validate();
+-    count.focus();
+-    return;
+-  }
+-  made = shape.value;
+-  create.setAttribute('aria-busy', 'true');
+-  post({ type: 'create-shapes', count: n, shape: made });
+-}
+-
+-count.addEventListener('input', validate);
+-create.addEventListener('click', createShapes);
+-// Enter creates too. No <form>: a sandboxed iframe may block its submit (docs/pitfalls.md#17-smaller-traps).
+-count.addEventListener('keydown', (event) => {
+-  if (event.key !== 'Enter' || event.isComposing) return;
+-  event.preventDefault();
+-  createShapes();
++function showHelp() {
++  kindHelp.textContent = (KINDS[kind.value] || KINDS['full-name']).help;
++}
++
++function doFill() {
++  // aria-busy stops the mouse, not Enter or Space.
++  if (fill.disabled || fill.getAttribute('aria-busy') === 'true') return;
++  fill.setAttribute('aria-busy', 'true');
++  post({ type: 'cf-fill', kind: kind.value, nested: nested.checked });
++}
++
++kind.addEventListener('change', () => {
++  touched = true;
++  showHelp();
++});
++nested.addEventListener('change', () => {
++  touched = true;
++  render();
+ });
+-document.getElementById('close').addEventListener('click', () => post({ type: 'close' }));
++fill.addEventListener('click', doFill);
++document.getElementById('close').addEventListener('click', () => post({ type: 'cf-close' }));
+ 
+ // Added at once: Figma delivers what code.ts posted at startup as soon as the page has loaded.
+ window.addEventListener('message', (event) => {
+   const msg = event.data && event.data.pluginMessage;
+-  if (!msg || typeof msg !== 'object' || typeof msg.count !== 'number') return;
+-  if (msg.type === 'selection') selected = msg.count;
+-  else if (msg.type === 'created') {
+-    create.removeAttribute('aria-busy'); // code.ts always answers, with 0 when it failed
+-    result = msg.count > 0 ? `Created ${msg.count} ${made}${msg.count === 1 ? '' : 's'}` : 'Nothing created';
++  if (!msg || typeof msg !== 'object') return;
++  if (msg.type === 'cf-selection' && typeof msg.direct === 'number' && typeof msg.nested === 'number') {
++    direct = msg.direct;
++    inside = msg.nested;
++    result = ''; // a result belongs to the selection it was made on
++  } else if (msg.type === 'cf-filled' && typeof msg.filled === 'number') {
++    fill.removeAttribute('aria-busy'); // code.ts always answers, also when the fill failed
++    result = resultText(msg);
++  } else if (msg.type === 'cf-settings' && isKind(msg.kind) && typeof msg.nested === 'boolean') {
++    if (touched) return;
++    kind.value = msg.kind;
++    nested.checked = msg.nested;
++    showHelp();
+   } else return;
+   render();
+ });
++
++showHelp();
++render();
+ })();
+ </script>
+ </body>

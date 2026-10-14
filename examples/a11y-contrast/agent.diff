@@ -1,0 +1,1969 @@
+The one-shot agent's change to the kit 0.3.0 starter (a11y-contrast archetype, 2026-10-13), as left in
+its clone: git diff HEAD -- . ":(exclude)package-lock.json"
+Untracked files: one, test/contrast.test.mjs (19,056 bytes, 379 lines, not reproduced here). It held
+19 node:test cases that ran the root code.js whole in node:vm against a stub page (the same approach
+as test/example-a11y-contrast.test.mjs, which grew out of it) and skipped when code.js was not the
+plugin: 21:1 black on white and the summary; the AA line between #777777 and #767676 with ratios
+rounded down; large text at 24px and 18.67px bold but not 18px bold; a sibling rectangle as the
+backdrop; a group's opacity fading the group as a whole; semi-transparent text; other text layers
+left out of the backdrop; clipping; masks; ellipses; gradients sampled at the text; images (unknown
+unless covered by an opaque fill); mixed styles; rotated text; a selected frame's shown text only;
+empty selections; Select failing keeping the list; edits re-checking and junk messages ignored;
+Display P3 luminance. Nothing was committed (node_modules/ is ignored). Curated result: README.md in
+this folder.
+ code.js       | 728 +++++++++++++++++++++++++++++++++++++++++++++++---
+ code.ts       | 838 ++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ manifest.json |   4 +-
+ ui.html       | 279 +++++++++++++------
+ 4 files changed, 1678 insertions(+), 171 deletions(-)
+
+diff --git a/code.js b/code.js
+index f1d934e..b846058 100644
+--- a/code.js
++++ b/code.js
+@@ -416,59 +416,707 @@ function installKitWindow(options = {}) {
+ }
+ // ==== kit:window:end ====
+ // ---- Your plugin starts here ----
+-// Everything below is a demo: replace it with your plugin. Keep installKitWindow() first so the
+-// window exists before anything posts to it, and name your message types without the kit: prefix.
+-installKitWindow({ mode: 'fit-content' });
+-// The demo UI's count field accepts the same range; this clamp is the backstop, so a typo like
+-// 1000 can never freeze the file.
+-const MAX_SHAPES = 50;
++// Contrast check. For each selected text layer, and each text layer inside a selected frame, group
++// or component, it measures the contrast between the text and what Figma paints behind it, and
++// flags anything below WCAG 2 AA: 4.5:1, or 3:1 for large text (24px, or 18.67px bold).
++//
++// How it measures: 15 points spread over the text's glyph bounds are rendered twice from a plain
++// snapshot of the page, once with the text's fill painted there and once without, and the two
++// colours are compared; a layer's result is its lowest ratio. Rendering follows Figma's order:
++// fills bottom to top, children back to front, a frame's or group's opacity applied to the whole
++// group (not to each child), clipping frames and masks respected. Other text layers are left out of
++// the backdrop, because their glyphs cover little of their box. Not measured: images, videos and
++// shader fills (the layer is reported as "check by eye"), strokes and effects. Blend modes count as
++// Normal, and vectors, stars and polygons as their bounding box; a result that relied on either
++// says so.
++installKitWindow({ mode: 'fit-content', size: { width: 320, height: 360 } });
++/** WCAG 2 AA minimums. Large text is 18pt, or 14pt bold; Figma sizes are px, and 1pt is 4/3 px. */
++const CONTRAST_AA_TEXT = 4.5;
++const CONTRAST_AA_LARGE = 3;
++/** A selection can hold thousands of text layers: checking stops here so the file never freezes. */
++const CONTRAST_MAX_LAYERS = 250;
++/** Where each text layer is sampled, as fractions of its glyph bounds. */
++const CONTRAST_SAMPLES_X = [0.1, 0.3, 0.5, 0.7, 0.9];
++const CONTRAST_SAMPLES_Y = [0.25, 0.5, 0.75];
++/** Selection changes come in bursts (shift-click, marquee); edits in long streams (a drag). */
++const CONTRAST_SELECTION_DELAY_MS = 120;
++const CONTRAST_EDIT_DELAY_MS = 400;
+ // Messages arrive untyped from another window: check the shape before trusting it.
+-function messageType(msg) {
++function contrastMessageType(msg) {
+     return typeof msg === 'object' && msg !== null ? msg.type : undefined;
+ }
+-function isCreateShapesMessage(msg) {
+-    if (messageType(msg) !== 'create-shapes')
++function isContrastUiMessage(msg) {
++    const type = contrastMessageType(msg);
++    if (type === 'contrast-check')
++        return true;
++    if (type !== 'contrast-select')
+         return false;
+-    const { count } = msg;
+-    return typeof count === 'number' && Number.isFinite(count);
++    const { ids } = msg;
++    return Array.isArray(ids) && ids.every((id) => typeof id === 'string');
+ }
+-function postSelectionCount() {
+-    // Under "documentAccess": "dynamic-page" the current page is always loaded, so reading its
+-    // selection synchronously is allowed (other pages need loadAsync first).
+-    figma.ui.postMessage({ type: 'selection', count: figma.currentPage.selection.length });
++function contrastPost(msg) {
++    figma.ui.postMessage(msg);
+ }
+-function createShapes(count, shape) {
+-    const nodes = [];
+-    const { x, y } = figma.viewport.center;
++const CONTRAST_CLEAR = { r: 0, g: 0, b: 0, a: 0, unknown: false, approx: false, blend: false };
++const CONTRAST_WHITE = { r: 1, g: 1, b: 1, a: 1, unknown: false, approx: false, blend: false };
++/** Source-over: top painted on under. */
++function contrastOver(top, under) {
++    if (top.a <= 0)
++        return under;
++    const k = 1 - top.a;
++    const shows = k > 1e-6; // does anything below still show through?
++    return {
++        r: top.r + under.r * k,
++        g: top.g + under.g * k,
++        b: top.b + under.b * k,
++        a: top.a + under.a * k,
++        unknown: top.unknown || (shows && under.unknown),
++        approx: top.approx || (shows && under.approx),
++        blend: top.blend || (shows && under.blend),
++    };
++}
++/** A whole layer at an opacity: the layer is flattened first, then faded, as Figma draws groups. */
++function contrastFade(color, opacity, blend) {
++    if (color.a <= 0)
++        return CONTRAST_CLEAR;
++    const o = Math.min(1, Math.max(0, opacity));
++    return { r: color.r * o, g: color.g * o, b: color.b * o, a: color.a * o, unknown: color.unknown, approx: color.approx, blend: color.blend || blend };
++}
++/** Relative luminance (WCAG 2). Display P3 files store P3 values, so they use P3's primaries. */
++function contrastLuminance(color, p3) {
++    const linear = (value) => {
++        const v = Math.min(1, Math.max(0, value));
++        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
++    };
++    const r = linear(color.r);
++    const g = linear(color.g);
++    const b = linear(color.b);
++    return p3 ? 0.2289746 * r + 0.6917385 * g + 0.0792869 * b : 0.2126 * r + 0.7152 * g + 0.0722 * b;
++}
++function contrastRatio(one, two, p3) {
++    const a = contrastLuminance(one, p3);
++    const b = contrastLuminance(two, p3);
++    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
++}
++/** An opaque colour as #RRGGBB (rendered colours are opaque, so premultiplied equals straight). */
++function contrastHex(color) {
++    const byte = (value) => Math.round(Math.min(1, Math.max(0, value)) * 255).toString(16).padStart(2, '0');
++    return ('#' + byte(color.r) + byte(color.g) + byte(color.b)).toUpperCase();
++}
++function contrastIsLarge(fontSize, fontWeight) {
++    const pt = fontSize * 0.75;
++    return pt >= 18 || (pt >= 14 && fontWeight >= 700);
++}
++/** Node types with nothing to paint behind text (or only lines), left out of the snapshot. */
++const CONTRAST_SKIP_TYPES = new Set(['SLICE', 'LINE', 'CONNECTOR', 'WIDGET', 'EMBED', 'LINK_UNFURL', 'MEDIA']);
++/** Shapes the renderer can't trace, measured as their bounding box (and flagged as approximate). */
++const CONTRAST_BOX_TYPES = new Set(['POLYGON', 'STAR', 'VECTOR', 'BOOLEAN_OPERATION', 'SHAPE_WITH_TEXT', 'HIGHLIGHT', 'WASHI_TAPE', 'STAMP']);
++function contrastFills(paints) {
++    if (!Array.isArray(paints))
++        return []; // figma.mixed, or no fills at all
++    const fills = [];
++    for (const paint of paints) {
++        if (paint.visible === false)
++            continue;
++        const a = paint.opacity === undefined ? 1 : paint.opacity;
++        if (!(a > 0))
++            continue;
++        const blend = paint.blendMode !== undefined && paint.blendMode !== 'NORMAL' && paint.blendMode !== 'PASS_THROUGH';
++        switch (paint.type) {
++            case 'SOLID':
++                fills.push({ kind: 'solid', r: paint.color.r, g: paint.color.g, b: paint.color.b, a, blend });
++                break;
++            case 'GRADIENT_LINEAR':
++            case 'GRADIENT_RADIAL':
++            case 'GRADIENT_ANGULAR':
++            case 'GRADIENT_DIAMOND': {
++                const stops = paint.gradientStops
++                    .map((stop) => ({ at: stop.position, r: stop.color.r, g: stop.color.g, b: stop.color.b, a: stop.color.a }))
++                    .sort((p, q) => p.at - q.at);
++                if (stops.length > 0)
++                    fills.push({ kind: 'gradient', shape: paint.type, m: paint.gradientTransform, stops, a, blend });
++                break;
++            }
++            default:
++                fills.push({ kind: 'unknown', a, blend }); // image, video, pattern, shader
++        }
++    }
++    return fills;
++}
++function contrastInvert(m) {
++    const [[a, c, e], [b, d, f]] = m;
++    const det = a * d - b * c;
++    if (!Number.isFinite(det) || Math.abs(det) < 1e-12)
++        return null;
++    return [d / det, -b / det, -c / det, a / det, (c * f - d * e) / det, (b * e - a * f) / det];
++}
++function contrastRadii(node, w, h) {
++    let radii = [0, 0, 0, 0];
++    if ('topLeftRadius' in node)
++        radii = [node.topLeftRadius, node.topRightRadius, node.bottomRightRadius, node.bottomLeftRadius];
++    else if ('cornerRadius' in node && typeof node.cornerRadius === 'number')
++        radii = [node.cornerRadius, node.cornerRadius, node.cornerRadius, node.cornerRadius];
++    const max = Math.min(w, h) / 2;
++    const [tl, tr, br, bl] = radii.map((r) => (Number.isFinite(r) ? Math.min(max, Math.max(0, r)) : 0));
++    return [tl, tr, br, bl];
++}
++/**
++ * Copies the page into plain layers, keeping only what can paint at the sample areas: a layer
++ * whose bounds miss every area is dropped, and so is a clipping frame's whole subtree. Children of
++ * frames that don't clip are always visited, since they can hang outside their parent. Masks are
++ * always kept: dropping one would unmask the layers above it.
++ */
++function contrastSnapshot(page, targets, areas) {
++    const hits = (box) => box !== null && areas.some((r) => box.x <= r.x + r.width && r.x <= box.x + box.width && box.y <= r.y + r.height && r.y <= box.y + box.height);
++    const copy = (nodes) => {
++        const layers = [];
++        for (const node of nodes) {
++            try {
++                const layer = copyNode(node);
++                if (layer)
++                    layers.push(layer);
++            }
++            catch (error) {
++                console.warn('contrast check: left out a layer it could not read', node.id, error); // a layer type this code doesn't know
++            }
++        }
++        return layers;
++    };
++    const copyNode = (node) => {
++        if (!node.visible || CONTRAST_SKIP_TYPES.has(node.type))
++            return null;
++        const mask = 'isMask' in node && node.isMask;
++        const target = node.type === 'TEXT' && targets.has(node.id);
++        if (node.type === 'TEXT' && !target && !mask)
++            return null; // other text: its glyphs are too sparse to be a backdrop
++        const hit = hits(node.absoluteBoundingBox);
++        const clip = 'clipsContent' in node && node.clipsContent === true;
++        const kids = 'children' in node && node.type !== 'BOOLEAN_OPERATION' ? node.children : [];
++        const children = kids.length > 0 && (hit || !clip) ? copy(kids) : [];
++        if (!hit && !mask && children.length === 0)
++            return null;
++        const inverse = contrastInvert(node.absoluteTransform);
++        if (!inverse)
++            return null;
++        const w = node.width;
++        const h = node.height;
++        return {
++            id: node.id,
++            target,
++            outline: node.type === 'ELLIPSE' ? 'ellipse' : CONTRAST_BOX_TYPES.has(node.type) ? 'box' : 'rect',
++            inverse,
++            w,
++            h,
++            radii: contrastRadii(node, w, h),
++            arc: node.type === 'ELLIPSE' ? node.arcData : null,
++            fills: hit && !target && 'fills' in node ? contrastFills(node.fills) : [],
++            opacity: 'opacity' in node ? node.opacity : 1,
++            blend: 'blendMode' in node && node.blendMode !== 'NORMAL' && node.blendMode !== 'PASS_THROUGH',
++            clip,
++            mask,
++            children,
++        };
++    };
++    let background = [];
+     try {
+-        for (let i = 0; i < count; i++) {
+-            const node = shape === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
+-            node.x = Math.round(x) + i * 150;
+-            node.y = Math.round(y);
+-            node.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
+-            nodes.push(node);
++        background = contrastFills(page.backgrounds);
++    }
++    catch {
++        // An editor without page backgrounds: the render ends on white.
++    }
++    return { background, children: copy(page.children) };
++}
++function contrastInside(layer, x, y) {
++    const { w, h } = layer;
++    if (!(x >= 0 && y >= 0 && x <= w && y <= h))
++        return false;
++    if (layer.outline === 'box')
++        return true;
++    if (layer.outline === 'ellipse') {
++        const rx = w / 2;
++        const ry = h / 2;
++        if (rx <= 0 || ry <= 0)
++            return false;
++        const dx = (x - rx) / rx;
++        const dy = (y - ry) / ry;
++        const d = dx * dx + dy * dy;
++        if (d > 1)
++            return false;
++        const arc = layer.arc;
++        if (!arc)
++            return true;
++        if (arc.innerRadius > 0 && d < arc.innerRadius * arc.innerRadius)
++            return false;
++        const turn = 2 * Math.PI;
++        const sweep = arc.endingAngle - arc.startingAngle;
++        if (Math.abs(sweep) >= turn - 1e-6)
++            return true;
++        const angle = (((Math.atan2(dy, dx) - arc.startingAngle) % turn) + turn) % turn;
++        return angle <= ((sweep % turn) + turn) % turn;
++    }
++    const [tl, tr, br, bl] = layer.radii;
++    const corner = (cx, cy, r) => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r;
++    if (x < tl && y < tl)
++        return corner(tl, tl, tl);
++    if (x > w - tr && y < tr)
++        return corner(w - tr, tr, tr);
++    if (x > w - br && y > h - br)
++        return corner(w - br, h - br, br);
++    if (x < bl && y > h - bl)
++        return corner(bl, h - bl, bl);
++    return true;
++}
++/** Where (u, v), in the layer's 0..1 box, falls along a gradient. gradientTransform maps the box to gradient space. */
++function contrastGradientAt(fill, u, v) {
++    const [[a, c, e], [b, d, f]] = fill.m;
++    const gx = a * u + c * v + e;
++    const gy = b * u + d * v + f;
++    switch (fill.shape) {
++        case 'GRADIENT_LINEAR':
++            return gx;
++        case 'GRADIENT_RADIAL':
++            return Math.hypot(gx - 0.5, gy - 0.5) * 2;
++        case 'GRADIENT_DIAMOND':
++            return (Math.abs(gx - 0.5) + Math.abs(gy - 0.5)) * 2;
++        default: {
++            const turn = Math.atan2(gy - 0.5, gx - 0.5) / (2 * Math.PI);
++            return turn - Math.floor(turn);
+         }
+-        figma.currentPage.selection = nodes;
+-        figma.viewport.scrollAndZoomIntoView(nodes);
++    }
++}
++function contrastStopAt(stops, t) {
++    const first = stops[0];
++    const last = stops[stops.length - 1];
++    if (t <= first.at)
++        return first;
++    if (t >= last.at)
++        return last;
++    for (let i = 1; i < stops.length; i++) {
++        const q = stops[i];
++        if (t > q.at)
++            continue;
++        const p = stops[i - 1];
++        const k = q.at > p.at ? (t - p.at) / (q.at - p.at) : 1;
++        return { at: t, r: p.r + (q.r - p.r) * k, g: p.g + (q.g - p.g) * k, b: p.b + (q.b - p.b) * k, a: p.a + (q.a - p.a) * k };
++    }
++    return last;
++}
++function contrastFillsAt(fills, u, v) {
++    let color = CONTRAST_CLEAR;
++    for (const fill of fills) {
++        let paint;
++        if (fill.kind === 'unknown') {
++            paint = { r: 0, g: 0, b: 0, a: fill.a, unknown: true, approx: false, blend: fill.blend };
++        }
++        else {
++            const c = fill.kind === 'solid' ? fill : contrastStopAt(fill.stops, contrastGradientAt(fill, u, v));
++            const a = fill.kind === 'solid' ? fill.a : c.a * fill.a;
++            paint = { r: c.r * a, g: c.g * a, b: c.b * a, a, unknown: false, approx: false, blend: fill.blend };
++        }
++        color = contrastOver(paint, color);
++    }
++    return color;
++}
++/** Paints layers back to front over under. A mask hides the siblings above it outside its shape. */
++function contrastRenderLayers(layers, x, y, pass, under) {
++    let color = under;
++    let masked = false;
++    for (const layer of layers) {
++        if (layer.mask) {
++            const m = layer.inverse;
++            masked = !contrastInside(layer, m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]);
++            continue;
++        }
++        if (!masked)
++            color = contrastOver(contrastRenderLayer(layer, x, y, pass), color);
++    }
++    return color;
++}
++/** One layer and its children at (x, y), flattened on its own and then faded by its opacity. */
++function contrastRenderLayer(layer, x, y, pass) {
++    const m = layer.inverse;
++    const lx = m[0] * x + m[2] * y + m[4];
++    const ly = m[1] * x + m[3] * y + m[5];
++    const inside = contrastInside(layer, lx, ly);
++    if (layer.clip && !inside)
++        return CONTRAST_CLEAR;
++    const u = layer.w > 0 ? lx / layer.w : 0;
++    const v = layer.h > 0 ? ly / layer.h : 0;
++    if (layer.target) {
++        if (layer.id !== pass.target)
++            return CONTRAST_CLEAR; // another text layer being checked
++        pass.reached = true;
++        return pass.glyph ? contrastFade(contrastFillsAt(pass.glyph, u, v), layer.opacity, layer.blend) : CONTRAST_CLEAR;
++    }
++    let own = inside && layer.fills.length > 0 ? contrastFillsAt(layer.fills, u, v) : CONTRAST_CLEAR;
++    if (layer.outline === 'box' && own.a > 0)
++        own = { ...own, approx: true };
++    return contrastFade(contrastRenderLayers(layer.children, x, y, pass, own), layer.opacity, layer.blend);
++}
++/** The colour the page shows at point, opaque. */
++function contrastRenderAt(scene, point, pass) {
++    const page = contrastFillsAt(scene.background, 0, 0);
++    return contrastOver(contrastRenderLayers(scene.children, point.x, point.y, pass, page), CONTRAST_WHITE);
++}
++// ---- measuring text layers ----
++/** Sample points over the glyphs: the render bounds when the text is upright, else its rotated box. */
++function contrastSamplePoints(node) {
++    const m = node.absoluteTransform;
++    const upright = Math.abs(m[0][1]) < 1e-9 && Math.abs(m[1][0]) < 1e-9 && m[0][0] > 0 && m[1][1] > 0;
++    const box = upright ? node.absoluteRenderBounds || node.absoluteBoundingBox : null;
++    const points = [];
++    for (const fy of CONTRAST_SAMPLES_Y) {
++        for (const fx of CONTRAST_SAMPLES_X) {
++            if (box) {
++                points.push({ x: box.x + fx * box.width, y: box.y + fy * box.height });
++            }
++            else {
++                const lx = fx * node.width;
++                const ly = fy * node.height;
++                points.push({ x: m[0][0] * lx + m[0][1] * ly + m[0][2], y: m[1][0] * lx + m[1][1] * ly + m[1][2] });
++            }
++        }
++    }
++    return points;
++}
++function contrastArea(points) {
++    const xs = points.map((p) => p.x);
++    const ys = points.map((p) => p.y);
++    const x = Math.min(...xs) - 1;
++    const y = Math.min(...ys) - 1;
++    return { x, y, width: Math.max(...xs) + 1 - x, height: Math.max(...ys) + 1 - y };
++}
++/** The layer's distinct text styles that matter for contrast: fill, and normal or large size. */
++function contrastStyles(node) {
++    const styles = new Map();
++    for (const segment of node.getStyledTextSegments(['fills', 'fontSize', 'fontWeight'])) {
++        if (segment.characters.trim() === '')
++            continue; // spaces and line breaks paint nothing
++        const large = contrastIsLarge(segment.fontSize, segment.fontWeight);
++        const key = JSON.stringify(segment.fills) + (large ? ' large' : ' normal');
++        if (!styles.has(key))
++            styles.set(key, { glyph: contrastFills(segment.fills), large });
++    }
++    return [...styles.values()];
++}
++function contrastBlank(node) {
++    return {
++        id: node.id,
++        name: node.name,
++        excerpt: node.characters.replace(/\s+/g, ' ').trim().slice(0, 80),
++        status: 'unknown',
++        ratio: null,
++        required: CONTRAST_AA_TEXT,
++        large: false,
++        textHex: null,
++        backgroundHex: null,
++        styles: 0,
++        notes: [],
++        meta: '',
++        verdict: '',
++        colors: '',
++    };
++}
++// ---- wording for the UI ----
++/** WCAG compares ratios unrounded, so round down: 4.499 never shows as a passing 4.50. */
++function contrastRatioText(ratio) {
++    return (Math.floor(ratio * 100) / 100).toFixed(2) + ':1';
++}
++function contrastWord(result) {
++    const need = result.large ? `${result.required}:1 for large text (24px, or 18.67px bold)` : `${result.required}:1 for normal-size text`;
++    const ratio = result.ratio === null ? '' : contrastRatioText(result.ratio);
++    const shown = result.status === 'fail' || result.status === 'pass';
++    result.meta = shown ? ratio : '';
++    if (result.status === 'fail')
++        result.verdict = `${ratio}: below AA, which needs ${need}.`;
++    else if (result.status === 'pass')
++        result.verdict = `${ratio}: meets AA, which needs ${need}.`;
++    else if (result.ratio !== null)
++        result.verdict = `Lowest measured ${ratio}; AA needs ${need}.`;
++    else
++        result.verdict = result.status === 'hidden' ? 'Not measured: the layer is not visible.' : 'Not measured.';
++    result.colors = result.textHex && result.backgroundHex ? `Text ${result.textHex} on ${result.backgroundHex}, as they show on the canvas.` : '';
++    return result;
++}
++function contrastSummarize(message) {
++    if (message.error !== null)
++        return { tone: 'danger', text: `Could not check the selection: ${message.error}` };
++    const total = message.results.length;
++    if (total === 0)
++        return null;
++    const fails = message.results.filter((r) => r.status === 'fail').length;
++    const unsure = message.results.filter((r) => r.status === 'unknown' || r.status === 'hidden').length;
++    const more = message.found > total ? ` Checked the first ${total} of ${message.found}.` : '';
++    if (fails > 0) {
++        const head = total === 1 ? 'This text layer is below WCAG AA.' : `${fails} of ${total} text layers ${fails === 1 ? 'is' : 'are'} below WCAG AA.`;
++        return { tone: 'danger', text: head + (unsure > 0 ? ` ${unsure} could not be measured.` : '') + more };
++    }
++    if (unsure > 0) {
++        const passes = total - unsure;
++        const head = total === 1 ? 'This text layer could not be measured.' : `${passes} ${passes === 1 ? 'meets' : 'meet'} WCAG AA; ${unsure} could not be measured.`;
++        return { tone: 'warning', text: `${head} Check ${unsure === 1 ? 'it' : 'them'} by eye.${more}` };
++    }
++    return { tone: 'success', text: (total === 1 ? 'This text layer meets WCAG AA.' : `All ${total} text layers meet WCAG AA.`) + more };
++}
++function contrastMeasureText(node, scene, points, p3) {
++    const result = contrastBlank(node);
++    if (result.excerpt === '') {
++        result.notes.push('The layer has no visible characters.');
++        return result;
++    }
++    // The backdrop at each point, without the text. A point the text never reaches is clipped or masked away.
++    const behind = points.map((point) => {
++        const pass = { target: node.id, glyph: null, reached: false };
++        const color = contrastRenderAt(scene, point, pass);
++        return pass.reached ? color : null;
++    });
++    if (behind.every((color) => color === null)) {
++        result.status = 'hidden';
++        result.notes.push('Not visible on the canvas: the layer or a parent is hidden, clipped or masked.');
++        return result;
++    }
++    const styles = contrastStyles(node);
++    result.styles = styles.length;
++    let worst = Infinity; // lowest ratio / required
++    let measured = 0;
++    let skipped = 0;
++    let filled = 0;
++    let approx = false;
++    let blend = false;
++    for (const style of styles) {
++        if (style.glyph.length === 0)
++            continue; // no visible fill in this style
++        filled++;
++        const required = style.large ? CONTRAST_AA_LARGE : CONTRAST_AA_TEXT;
++        points.forEach((point, i) => {
++            const under = behind[i];
++            if (!under)
++                return;
++            const over = contrastRenderAt(scene, point, { target: node.id, glyph: style.glyph, reached: false });
++            if (over.unknown || under.unknown) {
++                skipped++;
++                return;
++            }
++            measured++;
++            approx = approx || over.approx || under.approx;
++            blend = blend || over.blend || under.blend;
++            const ratio = contrastRatio(over, under, p3);
++            if (ratio / required < worst) {
++                worst = ratio / required;
++                result.ratio = ratio;
++                result.required = required;
++                result.large = style.large;
++                result.textHex = contrastHex(over);
++                result.backgroundHex = contrastHex(under);
++            }
++        });
++    }
++    if (filled === 0)
++        result.notes.push('The text has no visible fill.');
++    else if (measured === 0)
++        result.notes.push('The text or what is behind it is an image, video or shader fill. Check it by eye.');
++    else if (skipped > 0)
++        result.notes.push('Part of the text is over an image, video or shader fill, which is not measured.');
++    if (approx)
++        result.notes.push('A vector, star or polygon behind the text was measured as its bounding box.');
++    if (blend)
++        result.notes.push('Blend modes were measured as Normal.');
++    if (styles.length > 1 && measured > 0)
++        result.notes.push(`Lowest of ${styles.length} text styles in this layer.`);
++    if (measured > 0)
++        result.status = worst < 1 ? 'fail' : skipped > 0 ? 'unknown' : 'pass';
++    return result;
++}
++const CONTRAST_ORDER = { fail: 0, unknown: 1, hidden: 2, pass: 3 };
++/** Failing first, then the ones to check by eye; lowest margin first within each. */
++function contrastCompare(a, b) {
++    const byStatus = CONTRAST_ORDER[a.status] - CONTRAST_ORDER[b.status];
++    if (byStatus !== 0)
++        return byStatus;
++    const ma = a.ratio === null ? Infinity : a.ratio / a.required;
++    const mb = b.ratio === null ? Infinity : b.ratio / b.required;
++    if (ma !== mb)
++        return ma < mb ? -1 : 1;
++    return a.name.localeCompare(b.name);
++}
++function contrastIsP3() {
++    try {
++        return figma.root.documentColorProfile === 'DISPLAY_P3';
++    }
++    catch {
++        return false;
++    }
++}
++function contrastMeasure(texts) {
++    if (texts.length === 0)
++        return [];
++    const p3 = contrastIsP3();
++    const plans = texts.map((node) => ({ node, points: contrastSamplePoints(node) }));
++    const scene = contrastSnapshot(figma.currentPage, new Set(texts.map((node) => node.id)), plans.map((plan) => contrastArea(plan.points)));
++    const results = plans.map(({ node, points }) => {
++        try {
++            return contrastMeasureText(node, scene, points, p3);
++        }
++        catch (error) {
++            const result = contrastBlank(node);
++            result.notes.push('Could not read this layer: ' + (error instanceof Error ? error.message : String(error)));
++            return result;
++        }
++    });
++    return results.sort(contrastCompare).map(contrastWord);
++}
++// ---- what gets checked, and when ----
++/** True when nothing between node and root (root excluded) is hidden. */
++function contrastShownWithin(node, root) {
++    for (let n = node; n !== null && n !== root; n = n.parent) {
++        if ('visible' in n && !n.visible)
++            return false;
++    }
++    return true;
++}
++/** The text layers in the selection: selected ones, and the shown ones inside selected containers. */
++function contrastCollect(roots) {
++    const seen = new Set();
++    const texts = [];
++    const add = (text) => {
++        if (seen.has(text.id))
++            return;
++        seen.add(text.id);
++        if (texts.length < CONTRAST_MAX_LAYERS)
++            texts.push(text);
++    };
++    for (const root of roots) {
++        if (root.removed)
++            continue;
++        if (root.type === 'TEXT')
++            add(root);
++        else if ('findAllWithCriteria' in root) {
++            for (const text of root.findAllWithCriteria({ types: ['TEXT'] })) {
++                if (contrastShownWithin(text, root))
++                    add(text);
++            }
++        }
++    }
++    return { texts, found: seen.size };
++}
++/** The layers the person selected: kept while the plugin itself changes the selection. */
++let contrastRoots = [];
++/** The text layers of the last check, by id, for the UI's select requests. */
++const contrastChecked = new Map();
++/** The selection the plugin set itself, as a key, so its selectionchange doesn't replace the list. */
++let contrastOwnSelection = null;
++let contrastTimer;
++let contrastWatchedPage = null;
++function contrastSelectionKey(nodes) {
++    return nodes.map((node) => node.id).sort().join(' ');
++}
++function contrastCheck() {
++    if (contrastTimer !== undefined)
++        clearTimeout(contrastTimer);
++    contrastTimer = undefined;
++    const message = { type: 'contrast-results', selection: 0, found: 0, results: [], summary: null, error: null };
++    contrastChecked.clear();
++    try {
++        contrastRoots = contrastRoots.filter((node) => !node.removed);
++        message.selection = contrastRoots.length;
++        const { texts, found } = contrastCollect(contrastRoots);
++        message.found = found;
++        for (const text of texts)
++            contrastChecked.set(text.id, text);
++        message.results = contrastMeasure(texts);
+     }
+     catch (error) {
+-        // Dev Mode is read-only and not every editor can create every node: say so instead of
+-        // failing silently in the console.
+-        figma.notify('Could not create shapes: ' + (error instanceof Error ? error.message : String(error)), { error: true });
++        // Answer anyway, so the UI never shows a stale list as if it were current.
++        message.error = error instanceof Error ? error.message : String(error);
+     }
+-    // Always answer, so a UI waiting on this reply (a busy button) never gets stuck.
+-    figma.ui.postMessage({ type: 'created', count: nodes.length });
++    message.summary = contrastSummarize(message);
++    contrastPost(message);
+ }
+-figma.ui.on('message', (msg) => {
+-    // Sent by the demo UI's Close button. closePlugin does not stop this function: return at once.
+-    if (messageType(msg) === 'close') {
+-        figma.closePlugin();
++function contrastSchedule(delay) {
++    if (contrastTimer !== undefined)
++        clearTimeout(contrastTimer);
++    contrastTimer = setTimeout(contrastCheck, delay);
++}
++function contrastTakeSelection() {
++    contrastRoots = figma.currentPage.selection.slice();
++}
++/** Brings the layers into view without changing the zoom, unless they don't fit at this zoom. */
++function contrastReveal(nodes) {
++    const boxes = nodes.map((node) => node.absoluteBoundingBox).filter((box) => box !== null);
++    if (boxes.length === 0)
++        return;
++    const left = Math.min(...boxes.map((box) => box.x));
++    const top = Math.min(...boxes.map((box) => box.y));
++    const right = Math.max(...boxes.map((box) => box.x + box.width));
++    const bottom = Math.max(...boxes.map((box) => box.y + box.height));
++    const view = figma.viewport.bounds;
++    if (left >= view.x && top >= view.y && right <= view.x + view.width && bottom <= view.y + view.height)
+         return;
++    if (right - left <= view.width && bottom - top <= view.height)
++        figma.viewport.center = { x: (left + right) / 2, y: (top + bottom) / 2 };
++    else
++        figma.viewport.scrollAndZoomIntoView(nodes);
++}
++function contrastSelect(ids) {
++    const nodes = [];
++    for (const id of ids) {
++        const node = contrastChecked.get(id);
++        if (node && !node.removed)
++            nodes.push(node);
+     }
+-    if (!isCreateShapesMessage(msg))
++    if (nodes.length === 0)
++        return;
++    try {
++        contrastOwnSelection = contrastSelectionKey(nodes);
++        figma.currentPage.selection = nodes;
++        contrastReveal(nodes);
++    }
++    catch (error) {
++        contrastOwnSelection = null;
++        figma.notify('Could not select the layers: ' + (error instanceof Error ? error.message : String(error)), { error: true });
++    }
++}
++function contrastOnEdit() {
++    if (contrastRoots.length > 0)
++        contrastSchedule(CONTRAST_EDIT_DELAY_MS);
++}
++/** Re-check after edits on the current page, so fixing a colour updates the list. */
++function contrastWatchPage() {
++    try {
++        if (contrastWatchedPage)
++            contrastWatchedPage.off('nodechange', contrastOnEdit);
++        contrastWatchedPage = figma.currentPage;
++        contrastWatchedPage.on('nodechange', contrastOnEdit);
++    }
++    catch (error) {
++        contrastWatchedPage = null;
++        console.warn('contrast check: edits will not re-check on their own here; use Check again', error);
++    }
++}
++figma.ui.on('message', (msg) => {
++    if (!isContrastUiMessage(msg))
+         return; // kit:* and anything else falls through
+-    const count = Math.min(MAX_SHAPES, Math.max(1, Math.round(msg.count)));
+-    createShapes(count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle');
++    if (msg.type === 'contrast-check')
++        contrastCheck();
++    else
++        contrastSelect(msg.ids);
++});
++figma.on('selectionchange', () => {
++    const own = contrastOwnSelection;
++    contrastOwnSelection = null;
++    if (own !== null && own === contrastSelectionKey(figma.currentPage.selection))
++        return; // the plugin selected these: keep the list
++    contrastTakeSelection();
++    contrastSchedule(CONTRAST_SELECTION_DELAY_MS);
++});
++figma.on('currentpagechange', () => {
++    contrastOwnSelection = null;
++    contrastWatchPage();
++    contrastTakeSelection();
++    contrastSchedule(0);
+ });
+-figma.on('selectionchange', postSelectionCount);
+-postSelectionCount();
++// Invisible layers inside instances never paint, so the walk can skip them (much faster on big files).
++figma.skipInvisibleInstanceChildren = true;
++contrastWatchPage();
++contrastTakeSelection();
++contrastCheck();
+diff --git a/code.ts b/code.ts
+index 0d0a932..22b61f8 100644
+--- a/code.ts
++++ b/code.ts
+@@ -422,71 +422,819 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
+ // ==== kit:window:end ====
+ 
+ // ---- Your plugin starts here ----
+-// Everything below is a demo: replace it with your plugin. Keep installKitWindow() first so the
+-// window exists before anything posts to it, and name your message types without the kit: prefix.
++// Contrast check. For each selected text layer, and each text layer inside a selected frame, group
++// or component, it measures the contrast between the text and what Figma paints behind it, and
++// flags anything below WCAG 2 AA: 4.5:1, or 3:1 for large text (24px, or 18.67px bold).
++//
++// How it measures: 15 points spread over the text's glyph bounds are rendered twice from a plain
++// snapshot of the page, once with the text's fill painted there and once without, and the two
++// colours are compared; a layer's result is its lowest ratio. Rendering follows Figma's order:
++// fills bottom to top, children back to front, a frame's or group's opacity applied to the whole
++// group (not to each child), clipping frames and masks respected. Other text layers are left out of
++// the backdrop, because their glyphs cover little of their box. Not measured: images, videos and
++// shader fills (the layer is reported as "check by eye"), strokes and effects. Blend modes count as
++// Normal, and vectors, stars and polygons as their bounding box; a result that relied on either
++// says so.
+ 
+-installKitWindow({ mode: 'fit-content' });
++installKitWindow({ mode: 'fit-content', size: { width: 320, height: 360 } });
+ 
+-// The demo UI's count field accepts the same range; this clamp is the backstop, so a typo like
+-// 1000 can never freeze the file.
+-const MAX_SHAPES = 50;
++/** WCAG 2 AA minimums. Large text is 18pt, or 14pt bold; Figma sizes are px, and 1pt is 4/3 px. */
++const CONTRAST_AA_TEXT = 4.5;
++const CONTRAST_AA_LARGE = 3;
++/** A selection can hold thousands of text layers: checking stops here so the file never freezes. */
++const CONTRAST_MAX_LAYERS = 250;
++/** Where each text layer is sampled, as fractions of its glyph bounds. */
++const CONTRAST_SAMPLES_X = [0.1, 0.3, 0.5, 0.7, 0.9];
++const CONTRAST_SAMPLES_Y = [0.25, 0.5, 0.75];
++/** Selection changes come in bursts (shift-click, marquee); edits in long streams (a drag). */
++const CONTRAST_SELECTION_DELAY_MS = 120;
++const CONTRAST_EDIT_DELAY_MS = 400;
+ 
+-/** Sent by the demo UI when the person presses Create. */
+-interface CreateShapesMessage {
+-  type: 'create-shapes';
+-  count: number;
+-  shape: 'rectangle' | 'ellipse';
++// ---- messages ----
++
++/** UI -> main: measure the same selection again. */
++interface ContrastCheckMessage {
++  type: 'contrast-check';
++}
++/** UI -> main: select these checked text layers on the canvas (a row click, or Select failing). */
++interface ContrastSelectMessage {
++  type: 'contrast-select';
++  ids: string[];
++}
++type ContrastUiToMain = ContrastCheckMessage | ContrastSelectMessage;
++
++type ContrastStatus = 'fail' | 'unknown' | 'hidden' | 'pass';
++
++/**
++ * One checked text layer. ratio is the lowest measured contrast (null when nothing could be
++ * measured), required the AA minimum for the text style it was measured on. textHex and
++ * backgroundHex are the two colours of that lowest sample as they appear on the canvas, after
++ * opacity. notes say what the number rests on. meta, verdict and colors are the UI's wording
++ * (main writes it, so ui.html stays small): the row's ratio ('' when there is none to show), the
++ * details sentence, and the colours line ('' without colours).
++ */
++interface ContrastResult {
++  id: string;
++  name: string;
++  excerpt: string;
++  status: ContrastStatus;
++  ratio: number | null;
++  required: number;
++  large: boolean;
++  textHex: string | null;
++  backgroundHex: string | null;
++  styles: number;
++  notes: string[];
++  meta: string;
++  verdict: string;
++  colors: string;
++}
++
++/** The one-line outcome the UI announces. null: nothing to check (the UI shows its empty state). */
++interface ContrastSummary {
++  tone: 'success' | 'warning' | 'danger';
++  text: string;
+ }
+ 
++/**
++ * main -> UI, after every check. selection: layers the person selected; found: text layers in
++ * them; results: the first CONTRAST_MAX_LAYERS of those, failing first; error: why the check
++ * stopped, if it did (the summary says it too).
++ */
++interface ContrastResultsMessage {
++  type: 'contrast-results';
++  selection: number;
++  found: number;
++  results: ContrastResult[];
++  summary: ContrastSummary | null;
++  error: string | null;
++}
++type ContrastMainToUi = ContrastResultsMessage;
++
+ // Messages arrive untyped from another window: check the shape before trusting it.
+-function messageType(msg: unknown): unknown {
++function contrastMessageType(msg: unknown): unknown {
+   return typeof msg === 'object' && msg !== null ? (msg as { type?: unknown }).type : undefined;
+ }
+ 
+-function isCreateShapesMessage(msg: unknown): msg is CreateShapesMessage {
+-  if (messageType(msg) !== 'create-shapes') return false;
+-  const { count } = msg as Record<string, unknown>;
+-  return typeof count === 'number' && Number.isFinite(count);
++function isContrastUiMessage(msg: unknown): msg is ContrastUiToMain {
++  const type = contrastMessageType(msg);
++  if (type === 'contrast-check') return true;
++  if (type !== 'contrast-select') return false;
++  const { ids } = msg as Record<string, unknown>;
++  return Array.isArray(ids) && ids.every((id) => typeof id === 'string');
++}
++
++function contrastPost(msg: ContrastMainToUi): void {
++  figma.ui.postMessage(msg);
++}
++
++// ---- colour maths ----
++
++/**
++ * A colour while compositing: premultiplied RGBA, each 0..1, plus what it rests on that the check
++ * can't see exactly. A flag survives until something opaque covers it.
++ */
++interface ContrastColor {
++  r: number;
++  g: number;
++  b: number;
++  a: number;
++  /** An image, video or shader fill shows through. */
++  unknown: boolean;
++  /** A vector, star or polygon was taken as its bounding box. */
++  approx: boolean;
++  /** A blend mode other than Normal was taken as Normal. */
++  blend: boolean;
++}
++
++const CONTRAST_CLEAR: ContrastColor = { r: 0, g: 0, b: 0, a: 0, unknown: false, approx: false, blend: false };
++const CONTRAST_WHITE: ContrastColor = { r: 1, g: 1, b: 1, a: 1, unknown: false, approx: false, blend: false };
++
++/** Source-over: top painted on under. */
++function contrastOver(top: ContrastColor, under: ContrastColor): ContrastColor {
++  if (top.a <= 0) return under;
++  const k = 1 - top.a;
++  const shows = k > 1e-6; // does anything below still show through?
++  return {
++    r: top.r + under.r * k,
++    g: top.g + under.g * k,
++    b: top.b + under.b * k,
++    a: top.a + under.a * k,
++    unknown: top.unknown || (shows && under.unknown),
++    approx: top.approx || (shows && under.approx),
++    blend: top.blend || (shows && under.blend),
++  };
++}
++
++/** A whole layer at an opacity: the layer is flattened first, then faded, as Figma draws groups. */
++function contrastFade(color: ContrastColor, opacity: number, blend: boolean): ContrastColor {
++  if (color.a <= 0) return CONTRAST_CLEAR;
++  const o = Math.min(1, Math.max(0, opacity));
++  return { r: color.r * o, g: color.g * o, b: color.b * o, a: color.a * o, unknown: color.unknown, approx: color.approx, blend: color.blend || blend };
++}
++
++/** Relative luminance (WCAG 2). Display P3 files store P3 values, so they use P3's primaries. */
++function contrastLuminance(color: ContrastColor, p3: boolean): number {
++  const linear = (value: number): number => {
++    const v = Math.min(1, Math.max(0, value));
++    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
++  };
++  const r = linear(color.r);
++  const g = linear(color.g);
++  const b = linear(color.b);
++  return p3 ? 0.2289746 * r + 0.6917385 * g + 0.0792869 * b : 0.2126 * r + 0.7152 * g + 0.0722 * b;
++}
++
++function contrastRatio(one: ContrastColor, two: ContrastColor, p3: boolean): number {
++  const a = contrastLuminance(one, p3);
++  const b = contrastLuminance(two, p3);
++  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+ }
+ 
+-function postSelectionCount(): void {
+-  // Under "documentAccess": "dynamic-page" the current page is always loaded, so reading its
+-  // selection synchronously is allowed (other pages need loadAsync first).
+-  figma.ui.postMessage({ type: 'selection', count: figma.currentPage.selection.length });
++/** An opaque colour as #RRGGBB (rendered colours are opaque, so premultiplied equals straight). */
++function contrastHex(color: ContrastColor): string {
++  const byte = (value: number): string => Math.round(Math.min(1, Math.max(0, value)) * 255).toString(16).padStart(2, '0');
++  return ('#' + byte(color.r) + byte(color.g) + byte(color.b)).toUpperCase();
+ }
+ 
+-function createShapes(count: number, shape: 'rectangle' | 'ellipse'): void {
+-  const nodes: SceneNode[] = [];
+-  const { x, y } = figma.viewport.center;
++function contrastIsLarge(fontSize: number, fontWeight: number): boolean {
++  const pt = fontSize * 0.75;
++  return pt >= 18 || (pt >= 14 && fontWeight >= 700);
++}
++
++// ---- a plain snapshot of the page ----
++
++interface ContrastStop {
++  at: number;
++  r: number;
++  g: number;
++  b: number;
++  a: number;
++}
++
++/** A visible paint, reduced to what the renderer needs. a is the paint's opacity. */
++type ContrastFill =
++  | { kind: 'solid'; r: number; g: number; b: number; a: number; blend: boolean }
++  | { kind: 'gradient'; shape: GradientPaint['type']; m: Transform; stops: ContrastStop[]; a: number; blend: boolean }
++  | { kind: 'unknown'; a: number; blend: boolean };
++
++/** Absolute to local coordinates: x' = m[0]*x + m[2]*y + m[4], y' = m[1]*x + m[3]*y + m[5]. */
++type ContrastMatrix = [number, number, number, number, number, number];
++
++/** One layer, copied once per check so that sampling never goes back to the Figma API. */
++interface ContrastLayer {
++  id: string;
++  /** A text layer being checked. Other text layers are not in the snapshot. */
++  target: boolean;
++  outline: 'rect' | 'ellipse' | 'box';
++  inverse: ContrastMatrix;
++  w: number;
++  h: number;
++  /** Top-left, top-right, bottom-right, bottom-left. */
++  radii: [number, number, number, number];
++  arc: ArcData | null;
++  fills: ContrastFill[];
++  opacity: number;
++  blend: boolean;
++  clip: boolean;
++  mask: boolean;
++  children: ContrastLayer[];
++}
++
++interface ContrastScene {
++  background: ContrastFill[];
++  children: ContrastLayer[];
++}
++
++interface ContrastPoint {
++  x: number;
++  y: number;
++}
++
++/** Node types with nothing to paint behind text (or only lines), left out of the snapshot. */
++const CONTRAST_SKIP_TYPES = new Set(['SLICE', 'LINE', 'CONNECTOR', 'WIDGET', 'EMBED', 'LINK_UNFURL', 'MEDIA']);
++/** Shapes the renderer can't trace, measured as their bounding box (and flagged as approximate). */
++const CONTRAST_BOX_TYPES = new Set(['POLYGON', 'STAR', 'VECTOR', 'BOOLEAN_OPERATION', 'SHAPE_WITH_TEXT', 'HIGHLIGHT', 'WASHI_TAPE', 'STAMP']);
++
++function contrastFills(paints: unknown): ContrastFill[] {
++  if (!Array.isArray(paints)) return []; // figma.mixed, or no fills at all
++  const fills: ContrastFill[] = [];
++  for (const paint of paints as Paint[]) {
++    if (paint.visible === false) continue;
++    const a = paint.opacity === undefined ? 1 : paint.opacity;
++    if (!(a > 0)) continue;
++    const blend = paint.blendMode !== undefined && paint.blendMode !== 'NORMAL' && paint.blendMode !== 'PASS_THROUGH';
++    switch (paint.type) {
++      case 'SOLID':
++        fills.push({ kind: 'solid', r: paint.color.r, g: paint.color.g, b: paint.color.b, a, blend });
++        break;
++      case 'GRADIENT_LINEAR':
++      case 'GRADIENT_RADIAL':
++      case 'GRADIENT_ANGULAR':
++      case 'GRADIENT_DIAMOND': {
++        const stops = paint.gradientStops
++          .map((stop) => ({ at: stop.position, r: stop.color.r, g: stop.color.g, b: stop.color.b, a: stop.color.a }))
++          .sort((p, q) => p.at - q.at);
++        if (stops.length > 0) fills.push({ kind: 'gradient', shape: paint.type, m: paint.gradientTransform, stops, a, blend });
++        break;
++      }
++      default:
++        fills.push({ kind: 'unknown', a, blend }); // image, video, pattern, shader
++    }
++  }
++  return fills;
++}
++
++function contrastInvert(m: Transform): ContrastMatrix | null {
++  const [[a, c, e], [b, d, f]] = m;
++  const det = a * d - b * c;
++  if (!Number.isFinite(det) || Math.abs(det) < 1e-12) return null;
++  return [d / det, -b / det, -c / det, a / det, (c * f - d * e) / det, (b * e - a * f) / det];
++}
++
++function contrastRadii(node: SceneNode, w: number, h: number): [number, number, number, number] {
++  let radii: number[] = [0, 0, 0, 0];
++  if ('topLeftRadius' in node) radii = [node.topLeftRadius, node.topRightRadius, node.bottomRightRadius, node.bottomLeftRadius];
++  else if ('cornerRadius' in node && typeof node.cornerRadius === 'number') radii = [node.cornerRadius, node.cornerRadius, node.cornerRadius, node.cornerRadius];
++  const max = Math.min(w, h) / 2;
++  const [tl, tr, br, bl] = radii.map((r) => (Number.isFinite(r) ? Math.min(max, Math.max(0, r)) : 0));
++  return [tl, tr, br, bl];
++}
++
++/**
++ * Copies the page into plain layers, keeping only what can paint at the sample areas: a layer
++ * whose bounds miss every area is dropped, and so is a clipping frame's whole subtree. Children of
++ * frames that don't clip are always visited, since they can hang outside their parent. Masks are
++ * always kept: dropping one would unmask the layers above it.
++ */
++function contrastSnapshot(page: PageNode, targets: Set<string>, areas: Rect[]): ContrastScene {
++  const hits = (box: Rect | null): boolean =>
++    box !== null && areas.some((r) => box.x <= r.x + r.width && r.x <= box.x + box.width && box.y <= r.y + r.height && r.y <= box.y + box.height);
++
++  const copy = (nodes: readonly SceneNode[]): ContrastLayer[] => {
++    const layers: ContrastLayer[] = [];
++    for (const node of nodes) {
++      try {
++        const layer = copyNode(node);
++        if (layer) layers.push(layer);
++      } catch (error) {
++        console.warn('contrast check: left out a layer it could not read', node.id, error); // a layer type this code doesn't know
++      }
++    }
++    return layers;
++  };
++
++  const copyNode = (node: SceneNode): ContrastLayer | null => {
++    if (!node.visible || CONTRAST_SKIP_TYPES.has(node.type)) return null;
++    const mask = 'isMask' in node && node.isMask;
++    const target = node.type === 'TEXT' && targets.has(node.id);
++    if (node.type === 'TEXT' && !target && !mask) return null; // other text: its glyphs are too sparse to be a backdrop
++    const hit = hits(node.absoluteBoundingBox);
++    const clip = 'clipsContent' in node && node.clipsContent === true;
++    const kids = 'children' in node && node.type !== 'BOOLEAN_OPERATION' ? node.children : [];
++    const children = kids.length > 0 && (hit || !clip) ? copy(kids) : [];
++    if (!hit && !mask && children.length === 0) return null;
++    const inverse = contrastInvert(node.absoluteTransform);
++    if (!inverse) return null;
++    const w = node.width;
++    const h = node.height;
++    return {
++      id: node.id,
++      target,
++      outline: node.type === 'ELLIPSE' ? 'ellipse' : CONTRAST_BOX_TYPES.has(node.type) ? 'box' : 'rect',
++      inverse,
++      w,
++      h,
++      radii: contrastRadii(node, w, h),
++      arc: node.type === 'ELLIPSE' ? node.arcData : null,
++      fills: hit && !target && 'fills' in node ? contrastFills(node.fills) : [],
++      opacity: 'opacity' in node ? node.opacity : 1,
++      blend: 'blendMode' in node && node.blendMode !== 'NORMAL' && node.blendMode !== 'PASS_THROUGH',
++      clip,
++      mask,
++      children,
++    };
++  };
++
++  let background: ContrastFill[] = [];
+   try {
+-    for (let i = 0; i < count; i++) {
+-      const node = shape === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
+-      node.x = Math.round(x) + i * 150;
+-      node.y = Math.round(y);
+-      node.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
+-      nodes.push(node);
++    background = contrastFills(page.backgrounds);
++  } catch {
++    // An editor without page backgrounds: the render ends on white.
++  }
++  return { background, children: copy(page.children) };
++}
++
++// ---- rendering one point ----
++
++/** One render of one point: which text layer is checked, and its fill (null renders it absent). */
++interface ContrastPass {
++  target: string;
++  glyph: ContrastFill[] | null;
++  reached: boolean;
++}
++
++function contrastInside(layer: ContrastLayer, x: number, y: number): boolean {
++  const { w, h } = layer;
++  if (!(x >= 0 && y >= 0 && x <= w && y <= h)) return false;
++  if (layer.outline === 'box') return true;
++  if (layer.outline === 'ellipse') {
++    const rx = w / 2;
++    const ry = h / 2;
++    if (rx <= 0 || ry <= 0) return false;
++    const dx = (x - rx) / rx;
++    const dy = (y - ry) / ry;
++    const d = dx * dx + dy * dy;
++    if (d > 1) return false;
++    const arc = layer.arc;
++    if (!arc) return true;
++    if (arc.innerRadius > 0 && d < arc.innerRadius * arc.innerRadius) return false;
++    const turn = 2 * Math.PI;
++    const sweep = arc.endingAngle - arc.startingAngle;
++    if (Math.abs(sweep) >= turn - 1e-6) return true;
++    const angle = (((Math.atan2(dy, dx) - arc.startingAngle) % turn) + turn) % turn;
++    return angle <= ((sweep % turn) + turn) % turn;
++  }
++  const [tl, tr, br, bl] = layer.radii;
++  const corner = (cx: number, cy: number, r: number): boolean => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r;
++  if (x < tl && y < tl) return corner(tl, tl, tl);
++  if (x > w - tr && y < tr) return corner(w - tr, tr, tr);
++  if (x > w - br && y > h - br) return corner(w - br, h - br, br);
++  if (x < bl && y > h - bl) return corner(bl, h - bl, bl);
++  return true;
++}
++
++/** Where (u, v), in the layer's 0..1 box, falls along a gradient. gradientTransform maps the box to gradient space. */
++function contrastGradientAt(fill: { shape: GradientPaint['type']; m: Transform }, u: number, v: number): number {
++  const [[a, c, e], [b, d, f]] = fill.m;
++  const gx = a * u + c * v + e;
++  const gy = b * u + d * v + f;
++  switch (fill.shape) {
++    case 'GRADIENT_LINEAR':
++      return gx;
++    case 'GRADIENT_RADIAL':
++      return Math.hypot(gx - 0.5, gy - 0.5) * 2;
++    case 'GRADIENT_DIAMOND':
++      return (Math.abs(gx - 0.5) + Math.abs(gy - 0.5)) * 2;
++    default: {
++      const turn = Math.atan2(gy - 0.5, gx - 0.5) / (2 * Math.PI);
++      return turn - Math.floor(turn);
++    }
++  }
++}
++
++function contrastStopAt(stops: ContrastStop[], t: number): ContrastStop {
++  const first = stops[0];
++  const last = stops[stops.length - 1];
++  if (t <= first.at) return first;
++  if (t >= last.at) return last;
++  for (let i = 1; i < stops.length; i++) {
++    const q = stops[i];
++    if (t > q.at) continue;
++    const p = stops[i - 1];
++    const k = q.at > p.at ? (t - p.at) / (q.at - p.at) : 1;
++    return { at: t, r: p.r + (q.r - p.r) * k, g: p.g + (q.g - p.g) * k, b: p.b + (q.b - p.b) * k, a: p.a + (q.a - p.a) * k };
++  }
++  return last;
++}
++
++function contrastFillsAt(fills: ContrastFill[], u: number, v: number): ContrastColor {
++  let color = CONTRAST_CLEAR;
++  for (const fill of fills) {
++    let paint: ContrastColor;
++    if (fill.kind === 'unknown') {
++      paint = { r: 0, g: 0, b: 0, a: fill.a, unknown: true, approx: false, blend: fill.blend };
++    } else {
++      const c = fill.kind === 'solid' ? fill : contrastStopAt(fill.stops, contrastGradientAt(fill, u, v));
++      const a = fill.kind === 'solid' ? fill.a : c.a * fill.a;
++      paint = { r: c.r * a, g: c.g * a, b: c.b * a, a, unknown: false, approx: false, blend: fill.blend };
+     }
++    color = contrastOver(paint, color);
++  }
++  return color;
++}
++
++/** Paints layers back to front over under. A mask hides the siblings above it outside its shape. */
++function contrastRenderLayers(layers: ContrastLayer[], x: number, y: number, pass: ContrastPass, under: ContrastColor): ContrastColor {
++  let color = under;
++  let masked = false;
++  for (const layer of layers) {
++    if (layer.mask) {
++      const m = layer.inverse;
++      masked = !contrastInside(layer, m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]);
++      continue;
++    }
++    if (!masked) color = contrastOver(contrastRenderLayer(layer, x, y, pass), color);
++  }
++  return color;
++}
++
++/** One layer and its children at (x, y), flattened on its own and then faded by its opacity. */
++function contrastRenderLayer(layer: ContrastLayer, x: number, y: number, pass: ContrastPass): ContrastColor {
++  const m = layer.inverse;
++  const lx = m[0] * x + m[2] * y + m[4];
++  const ly = m[1] * x + m[3] * y + m[5];
++  const inside = contrastInside(layer, lx, ly);
++  if (layer.clip && !inside) return CONTRAST_CLEAR;
++  const u = layer.w > 0 ? lx / layer.w : 0;
++  const v = layer.h > 0 ? ly / layer.h : 0;
++  if (layer.target) {
++    if (layer.id !== pass.target) return CONTRAST_CLEAR; // another text layer being checked
++    pass.reached = true;
++    return pass.glyph ? contrastFade(contrastFillsAt(pass.glyph, u, v), layer.opacity, layer.blend) : CONTRAST_CLEAR;
++  }
++  let own = inside && layer.fills.length > 0 ? contrastFillsAt(layer.fills, u, v) : CONTRAST_CLEAR;
++  if (layer.outline === 'box' && own.a > 0) own = { ...own, approx: true };
++  return contrastFade(contrastRenderLayers(layer.children, x, y, pass, own), layer.opacity, layer.blend);
++}
++
++/** The colour the page shows at point, opaque. */
++function contrastRenderAt(scene: ContrastScene, point: ContrastPoint, pass: ContrastPass): ContrastColor {
++  const page = contrastFillsAt(scene.background, 0, 0);
++  return contrastOver(contrastRenderLayers(scene.children, point.x, point.y, pass, page), CONTRAST_WHITE);
++}
++
++// ---- measuring text layers ----
++
++/** Sample points over the glyphs: the render bounds when the text is upright, else its rotated box. */
++function contrastSamplePoints(node: TextNode): ContrastPoint[] {
++  const m = node.absoluteTransform;
++  const upright = Math.abs(m[0][1]) < 1e-9 && Math.abs(m[1][0]) < 1e-9 && m[0][0] > 0 && m[1][1] > 0;
++  const box = upright ? node.absoluteRenderBounds || node.absoluteBoundingBox : null;
++  const points: ContrastPoint[] = [];
++  for (const fy of CONTRAST_SAMPLES_Y) {
++    for (const fx of CONTRAST_SAMPLES_X) {
++      if (box) {
++        points.push({ x: box.x + fx * box.width, y: box.y + fy * box.height });
++      } else {
++        const lx = fx * node.width;
++        const ly = fy * node.height;
++        points.push({ x: m[0][0] * lx + m[0][1] * ly + m[0][2], y: m[1][0] * lx + m[1][1] * ly + m[1][2] });
++      }
++    }
++  }
++  return points;
++}
++
++function contrastArea(points: ContrastPoint[]): Rect {
++  const xs = points.map((p) => p.x);
++  const ys = points.map((p) => p.y);
++  const x = Math.min(...xs) - 1;
++  const y = Math.min(...ys) - 1;
++  return { x, y, width: Math.max(...xs) + 1 - x, height: Math.max(...ys) + 1 - y };
++}
++
++/** The layer's distinct text styles that matter for contrast: fill, and normal or large size. */
++function contrastStyles(node: TextNode): { glyph: ContrastFill[]; large: boolean }[] {
++  const styles = new Map<string, { glyph: ContrastFill[]; large: boolean }>();
++  for (const segment of node.getStyledTextSegments(['fills', 'fontSize', 'fontWeight'])) {
++    if (segment.characters.trim() === '') continue; // spaces and line breaks paint nothing
++    const large = contrastIsLarge(segment.fontSize, segment.fontWeight);
++    const key = JSON.stringify(segment.fills) + (large ? ' large' : ' normal');
++    if (!styles.has(key)) styles.set(key, { glyph: contrastFills(segment.fills), large });
++  }
++  return [...styles.values()];
++}
++
++function contrastBlank(node: TextNode): ContrastResult {
++  return {
++    id: node.id,
++    name: node.name,
++    excerpt: node.characters.replace(/\s+/g, ' ').trim().slice(0, 80),
++    status: 'unknown',
++    ratio: null,
++    required: CONTRAST_AA_TEXT,
++    large: false,
++    textHex: null,
++    backgroundHex: null,
++    styles: 0,
++    notes: [],
++    meta: '',
++    verdict: '',
++    colors: '',
++  };
++}
++
++// ---- wording for the UI ----
++
++/** WCAG compares ratios unrounded, so round down: 4.499 never shows as a passing 4.50. */
++function contrastRatioText(ratio: number): string {
++  return (Math.floor(ratio * 100) / 100).toFixed(2) + ':1';
++}
++
++function contrastWord(result: ContrastResult): ContrastResult {
++  const need = result.large ? `${result.required}:1 for large text (24px, or 18.67px bold)` : `${result.required}:1 for normal-size text`;
++  const ratio = result.ratio === null ? '' : contrastRatioText(result.ratio);
++  const shown = result.status === 'fail' || result.status === 'pass';
++  result.meta = shown ? ratio : '';
++  if (result.status === 'fail') result.verdict = `${ratio}: below AA, which needs ${need}.`;
++  else if (result.status === 'pass') result.verdict = `${ratio}: meets AA, which needs ${need}.`;
++  else if (result.ratio !== null) result.verdict = `Lowest measured ${ratio}; AA needs ${need}.`;
++  else result.verdict = result.status === 'hidden' ? 'Not measured: the layer is not visible.' : 'Not measured.';
++  result.colors = result.textHex && result.backgroundHex ? `Text ${result.textHex} on ${result.backgroundHex}, as they show on the canvas.` : '';
++  return result;
++}
++
++function contrastSummarize(message: ContrastResultsMessage): ContrastSummary | null {
++  if (message.error !== null) return { tone: 'danger', text: `Could not check the selection: ${message.error}` };
++  const total = message.results.length;
++  if (total === 0) return null;
++  const fails = message.results.filter((r) => r.status === 'fail').length;
++  const unsure = message.results.filter((r) => r.status === 'unknown' || r.status === 'hidden').length;
++  const more = message.found > total ? ` Checked the first ${total} of ${message.found}.` : '';
++  if (fails > 0) {
++    const head = total === 1 ? 'This text layer is below WCAG AA.' : `${fails} of ${total} text layers ${fails === 1 ? 'is' : 'are'} below WCAG AA.`;
++    return { tone: 'danger', text: head + (unsure > 0 ? ` ${unsure} could not be measured.` : '') + more };
++  }
++  if (unsure > 0) {
++    const passes = total - unsure;
++    const head = total === 1 ? 'This text layer could not be measured.' : `${passes} ${passes === 1 ? 'meets' : 'meet'} WCAG AA; ${unsure} could not be measured.`;
++    return { tone: 'warning', text: `${head} Check ${unsure === 1 ? 'it' : 'them'} by eye.${more}` };
++  }
++  return { tone: 'success', text: (total === 1 ? 'This text layer meets WCAG AA.' : `All ${total} text layers meet WCAG AA.`) + more };
++}
++
++function contrastMeasureText(node: TextNode, scene: ContrastScene, points: ContrastPoint[], p3: boolean): ContrastResult {
++  const result = contrastBlank(node);
++  if (result.excerpt === '') {
++    result.notes.push('The layer has no visible characters.');
++    return result;
++  }
++  // The backdrop at each point, without the text. A point the text never reaches is clipped or masked away.
++  const behind = points.map((point) => {
++    const pass: ContrastPass = { target: node.id, glyph: null, reached: false };
++    const color = contrastRenderAt(scene, point, pass);
++    return pass.reached ? color : null;
++  });
++  if (behind.every((color) => color === null)) {
++    result.status = 'hidden';
++    result.notes.push('Not visible on the canvas: the layer or a parent is hidden, clipped or masked.');
++    return result;
++  }
++  const styles = contrastStyles(node);
++  result.styles = styles.length;
++  let worst = Infinity; // lowest ratio / required
++  let measured = 0;
++  let skipped = 0;
++  let filled = 0;
++  let approx = false;
++  let blend = false;
++  for (const style of styles) {
++    if (style.glyph.length === 0) continue; // no visible fill in this style
++    filled++;
++    const required = style.large ? CONTRAST_AA_LARGE : CONTRAST_AA_TEXT;
++    points.forEach((point, i) => {
++      const under = behind[i];
++      if (!under) return;
++      const over = contrastRenderAt(scene, point, { target: node.id, glyph: style.glyph, reached: false });
++      if (over.unknown || under.unknown) {
++        skipped++;
++        return;
++      }
++      measured++;
++      approx = approx || over.approx || under.approx;
++      blend = blend || over.blend || under.blend;
++      const ratio = contrastRatio(over, under, p3);
++      if (ratio / required < worst) {
++        worst = ratio / required;
++        result.ratio = ratio;
++        result.required = required;
++        result.large = style.large;
++        result.textHex = contrastHex(over);
++        result.backgroundHex = contrastHex(under);
++      }
++    });
++  }
++  if (filled === 0) result.notes.push('The text has no visible fill.');
++  else if (measured === 0) result.notes.push('The text or what is behind it is an image, video or shader fill. Check it by eye.');
++  else if (skipped > 0) result.notes.push('Part of the text is over an image, video or shader fill, which is not measured.');
++  if (approx) result.notes.push('A vector, star or polygon behind the text was measured as its bounding box.');
++  if (blend) result.notes.push('Blend modes were measured as Normal.');
++  if (styles.length > 1 && measured > 0) result.notes.push(`Lowest of ${styles.length} text styles in this layer.`);
++  if (measured > 0) result.status = worst < 1 ? 'fail' : skipped > 0 ? 'unknown' : 'pass';
++  return result;
++}
++
++const CONTRAST_ORDER: Record<ContrastStatus, number> = { fail: 0, unknown: 1, hidden: 2, pass: 3 };
++
++/** Failing first, then the ones to check by eye; lowest margin first within each. */
++function contrastCompare(a: ContrastResult, b: ContrastResult): number {
++  const byStatus = CONTRAST_ORDER[a.status] - CONTRAST_ORDER[b.status];
++  if (byStatus !== 0) return byStatus;
++  const ma = a.ratio === null ? Infinity : a.ratio / a.required;
++  const mb = b.ratio === null ? Infinity : b.ratio / b.required;
++  if (ma !== mb) return ma < mb ? -1 : 1;
++  return a.name.localeCompare(b.name);
++}
++
++function contrastIsP3(): boolean {
++  try {
++    return figma.root.documentColorProfile === 'DISPLAY_P3';
++  } catch {
++    return false;
++  }
++}
++
++function contrastMeasure(texts: TextNode[]): ContrastResult[] {
++  if (texts.length === 0) return [];
++  const p3 = contrastIsP3();
++  const plans = texts.map((node) => ({ node, points: contrastSamplePoints(node) }));
++  const scene = contrastSnapshot(figma.currentPage, new Set(texts.map((node) => node.id)), plans.map((plan) => contrastArea(plan.points)));
++  const results = plans.map(({ node, points }) => {
++    try {
++      return contrastMeasureText(node, scene, points, p3);
++    } catch (error) {
++      const result = contrastBlank(node);
++      result.notes.push('Could not read this layer: ' + (error instanceof Error ? error.message : String(error)));
++      return result;
++    }
++  });
++  return results.sort(contrastCompare).map(contrastWord);
++}
++
++// ---- what gets checked, and when ----
++
++/** True when nothing between node and root (root excluded) is hidden. */
++function contrastShownWithin(node: BaseNode, root: BaseNode): boolean {
++  for (let n: BaseNode | null = node; n !== null && n !== root; n = n.parent) {
++    if ('visible' in n && !n.visible) return false;
++  }
++  return true;
++}
++
++/** The text layers in the selection: selected ones, and the shown ones inside selected containers. */
++function contrastCollect(roots: readonly SceneNode[]): { texts: TextNode[]; found: number } {
++  const seen = new Set<string>();
++  const texts: TextNode[] = [];
++  const add = (text: TextNode): void => {
++    if (seen.has(text.id)) return;
++    seen.add(text.id);
++    if (texts.length < CONTRAST_MAX_LAYERS) texts.push(text);
++  };
++  for (const root of roots) {
++    if (root.removed) continue;
++    if (root.type === 'TEXT') add(root);
++    else if ('findAllWithCriteria' in root) {
++      for (const text of root.findAllWithCriteria({ types: ['TEXT'] })) {
++        if (contrastShownWithin(text, root)) add(text);
++      }
++    }
++  }
++  return { texts, found: seen.size };
++}
++
++/** The layers the person selected: kept while the plugin itself changes the selection. */
++let contrastRoots: SceneNode[] = [];
++/** The text layers of the last check, by id, for the UI's select requests. */
++const contrastChecked = new Map<string, TextNode>();
++/** The selection the plugin set itself, as a key, so its selectionchange doesn't replace the list. */
++let contrastOwnSelection: string | null = null;
++let contrastTimer: number | undefined;
++let contrastWatchedPage: PageNode | null = null;
++
++function contrastSelectionKey(nodes: readonly BaseNode[]): string {
++  return nodes.map((node) => node.id).sort().join(' ');
++}
++
++function contrastCheck(): void {
++  if (contrastTimer !== undefined) clearTimeout(contrastTimer);
++  contrastTimer = undefined;
++  const message: ContrastResultsMessage = { type: 'contrast-results', selection: 0, found: 0, results: [], summary: null, error: null };
++  contrastChecked.clear();
++  try {
++    contrastRoots = contrastRoots.filter((node) => !node.removed);
++    message.selection = contrastRoots.length;
++    const { texts, found } = contrastCollect(contrastRoots);
++    message.found = found;
++    for (const text of texts) contrastChecked.set(text.id, text);
++    message.results = contrastMeasure(texts);
++  } catch (error) {
++    // Answer anyway, so the UI never shows a stale list as if it were current.
++    message.error = error instanceof Error ? error.message : String(error);
++  }
++  message.summary = contrastSummarize(message);
++  contrastPost(message);
++}
++
++function contrastSchedule(delay: number): void {
++  if (contrastTimer !== undefined) clearTimeout(contrastTimer);
++  contrastTimer = setTimeout(contrastCheck, delay);
++}
++
++function contrastTakeSelection(): void {
++  contrastRoots = figma.currentPage.selection.slice();
++}
++
++/** Brings the layers into view without changing the zoom, unless they don't fit at this zoom. */
++function contrastReveal(nodes: SceneNode[]): void {
++  const boxes = nodes.map((node) => node.absoluteBoundingBox).filter((box): box is Rect => box !== null);
++  if (boxes.length === 0) return;
++  const left = Math.min(...boxes.map((box) => box.x));
++  const top = Math.min(...boxes.map((box) => box.y));
++  const right = Math.max(...boxes.map((box) => box.x + box.width));
++  const bottom = Math.max(...boxes.map((box) => box.y + box.height));
++  const view = figma.viewport.bounds;
++  if (left >= view.x && top >= view.y && right <= view.x + view.width && bottom <= view.y + view.height) return;
++  if (right - left <= view.width && bottom - top <= view.height) figma.viewport.center = { x: (left + right) / 2, y: (top + bottom) / 2 };
++  else figma.viewport.scrollAndZoomIntoView(nodes);
++}
++
++function contrastSelect(ids: string[]): void {
++  const nodes: TextNode[] = [];
++  for (const id of ids) {
++    const node = contrastChecked.get(id);
++    if (node && !node.removed) nodes.push(node);
++  }
++  if (nodes.length === 0) return;
++  try {
++    contrastOwnSelection = contrastSelectionKey(nodes);
+     figma.currentPage.selection = nodes;
+-    figma.viewport.scrollAndZoomIntoView(nodes);
++    contrastReveal(nodes);
+   } catch (error) {
+-    // Dev Mode is read-only and not every editor can create every node: say so instead of
+-    // failing silently in the console.
+-    figma.notify('Could not create shapes: ' + (error instanceof Error ? error.message : String(error)), { error: true });
++    contrastOwnSelection = null;
++    figma.notify('Could not select the layers: ' + (error instanceof Error ? error.message : String(error)), { error: true });
+   }
+-  // Always answer, so a UI waiting on this reply (a busy button) never gets stuck.
+-  figma.ui.postMessage({ type: 'created', count: nodes.length });
+ }
+ 
+-figma.ui.on('message', (msg: unknown) => {
+-  // Sent by the demo UI's Close button. closePlugin does not stop this function: return at once.
+-  if (messageType(msg) === 'close') {
+-    figma.closePlugin();
+-    return;
++function contrastOnEdit(): void {
++  if (contrastRoots.length > 0) contrastSchedule(CONTRAST_EDIT_DELAY_MS);
++}
++
++/** Re-check after edits on the current page, so fixing a colour updates the list. */
++function contrastWatchPage(): void {
++  try {
++    if (contrastWatchedPage) contrastWatchedPage.off('nodechange', contrastOnEdit);
++    contrastWatchedPage = figma.currentPage;
++    contrastWatchedPage.on('nodechange', contrastOnEdit);
++  } catch (error) {
++    contrastWatchedPage = null;
++    console.warn('contrast check: edits will not re-check on their own here; use Check again', error);
+   }
+-  if (!isCreateShapesMessage(msg)) return; // kit:* and anything else falls through
+-  const count = Math.min(MAX_SHAPES, Math.max(1, Math.round(msg.count)));
+-  createShapes(count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle');
++}
++
++figma.ui.on('message', (msg: unknown) => {
++  if (!isContrastUiMessage(msg)) return; // kit:* and anything else falls through
++  if (msg.type === 'contrast-check') contrastCheck();
++  else contrastSelect(msg.ids);
++});
++
++figma.on('selectionchange', () => {
++  const own = contrastOwnSelection;
++  contrastOwnSelection = null;
++  if (own !== null && own === contrastSelectionKey(figma.currentPage.selection)) return; // the plugin selected these: keep the list
++  contrastTakeSelection();
++  contrastSchedule(CONTRAST_SELECTION_DELAY_MS);
++});
++
++figma.on('currentpagechange', () => {
++  contrastOwnSelection = null;
++  contrastWatchPage();
++  contrastTakeSelection();
++  contrastSchedule(0);
+ });
+ 
+-figma.on('selectionchange', postSelectionCount);
+-postSelectionCount();
++// Invisible layers inside instances never paint, so the walk can skip them (much faster on big files).
++figma.skipInvisibleInstanceChildren = true;
++contrastWatchPage();
++contrastTakeSelection();
++contrastCheck();
+diff --git a/manifest.json b/manifest.json
+index bceae08..d146407 100644
+--- a/manifest.json
++++ b/manifest.json
+@@ -1,6 +1,6 @@
+ {
+-  "name": "Kit starter",
+-  "id": "kit-starter-change-this-id",
++  "name": "Contrast check",
++  "id": "contrast-check-wcag-aa-4f9b2c71",
+   "api": "1.0.0",
+   "main": "code.js",
+   "ui": "ui.html",
+diff --git a/ui.html b/ui.html
+index 6470d31..2ace1a1 100644
+--- a/ui.html
++++ b/ui.html
+@@ -3,7 +3,7 @@
+ <head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+-<title>Kit starter</title>
++<title>Contrast check</title>
+ <meta name="kit" content="kit v0.3.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+ <style data-kit="tokens">
+ /* kit tokens v0.3.0 · protocol 1 · MIT · https://github.com/alekseikipin/Figplug-ui-kit · issues: https://github.com/alekseikipin/Figplug-ui-kit/issues · re-paste all three data-kit blocks to upgrade */
+@@ -911,108 +911,219 @@ else boot();
+ })();
+ </script>
+ <style>
+-/* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
+-.demo-status { flex: 1 1 0; min-width: 0; }
++/* Only what the kit classes don't cover. A result's colours come from the document, so the script
++   sets them as --contrast-text and --contrast-backdrop. */
++.contrast-status { color: var(--figma-color-icon-secondary); }
++.contrast-status[data-status="fail"] { color: var(--figma-color-icon-danger); }
++.contrast-status[data-status="pass"] { color: var(--figma-color-icon-success); }
++.contrast-chip, .contrast-preview {
++  --contrast-text: var(--figma-color-text-tertiary);
++  --contrast-backdrop: transparent;
++  outline: var(--kit-border-width) solid var(--figma-color-border);
++  outline-offset: -1px;
++  background-color: var(--contrast-backdrop);
++  color: var(--contrast-text);
++}
++.contrast-chip {
++  display: inline-flex; flex: none; align-items: center; justify-content: center;
++  width: var(--kit-icon-size); height: var(--kit-icon-size-small); border-radius: var(--kit-radius-small);
++  font-size: var(--kit-font-size-small); line-height: var(--kit-line-height-small); font-weight: var(--kit-font-weight-strong);
++}
++.contrast-preview {
++  margin: 0; padding: var(--kit-spacer-2); border-radius: var(--kit-radius-medium); overflow-wrap: anywhere;
++  font-size: var(--kit-font-size-large); line-height: var(--kit-line-height-large); letter-spacing: var(--kit-letter-spacing-large);
++}
++.contrast-verdict { margin: 0; }
++.contrast-notes { margin: 0; padding-left: var(--kit-spacer-3); }
+ </style>
+ </head>
+ <body>
+ <main class="kit-app" data-kit-root>
++  <header class="kit-section-header">
++    <h1>Selected text</h1>
++    <span class="kit-tooltip-host">
++      <button class="kit-icon-button" id="recheck" type="button" aria-label="Check again" aria-describedby="recheck-tip">
++        <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 12a4.5 4.5 0 1 1-1.32-3.18M15.5 6.5V9H13" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
++      </button>
++      <span class="kit-tooltip kit-tooltip-end" role="tooltip" id="recheck-tip">Measure the selection again</span>
++    </span>
++  </header>
+   <div class="kit-section kit-stack">
+-    <h1 class="kit-heading">Create shapes</h1>
+-    <div class="kit-field">
+-      <label class="kit-label" for="count">Count</label>
+-      <input class="kit-input" id="count" type="text" inputmode="numeric" autocomplete="off" value="5" aria-describedby="count-help">
+-      <p class="kit-help" id="count-help">From 1 to 50, placed in a row.</p>
+-    </div>
+-    <div class="kit-field">
+-      <label class="kit-label" for="shape">Shape</label>
+-      <div class="kit-select">
+-        <select id="shape">
+-          <option value="rectangle">Rectangle</option>
+-          <option value="ellipse">Ellipse</option>
+-        </select>
++    <div class="kit-stack" role="status">
++      <div class="kit-empty" id="empty">
++        <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor"/><path d="M12 5.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg>
++        <h2 class="kit-empty-title" id="empty-title">Select text layers</h2>
++        <p class="kit-empty-text">Select text layers, or frames and groups that contain text, to check them against WCAG AA.</p>
++      </div>
++      <div class="kit-notice" id="notice" hidden>
++        <svg class="kit-icon" id="notice-pass" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor"/><path d="m9.5 12.2 1.8 1.8 3.4-3.8" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
++        <svg class="kit-icon" id="notice-alert" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor"/><path d="M12 8.75v3.75" fill="none" stroke="currentColor" stroke-linecap="round"/><circle cx="12" cy="15.25" r=".75" fill="currentColor"/></svg>
++        <p class="kit-notice-text" id="notice-text"></p>
+       </div>
+     </div>
++    <div class="kit-scroll" id="results" hidden>
++      <ul class="kit-list" id="list" aria-label="Checked text layers, lowest contrast first"></ul>
++    </div>
+   </div>
+-  <hr class="kit-divider">
+-  <div class="kit-section kit-row">
+-    <p class="kit-text-secondary demo-status" id="status" role="status">Nothing selected</p>
+-    <button class="kit-button kit-button-secondary" id="close" type="button">Close</button>
+-    <button class="kit-button kit-button-primary" id="create" type="button">Create</button>
+-  </div>
++  <hr class="kit-divider" id="details-divider" hidden>
++  <section class="kit-section kit-stack" id="details" aria-labelledby="details-name" hidden>
++    <h2 class="kit-heading" id="details-name"></h2>
++    <p class="contrast-preview" id="details-preview" aria-hidden="true"></p>
++    <p class="contrast-verdict" id="details-verdict"></p>
++    <p class="kit-text-secondary" id="details-colors"></p>
++    <ul class="kit-text-secondary contrast-notes" id="details-notes"></ul>
++  </section>
++  <footer class="kit-footer">
++    <p class="kit-text-secondary">AA: 4.5:1, or 3:1 for large text</p>
++    <div class="kit-row">
++      <button class="kit-button kit-button-primary" id="select-failing" type="button" disabled>Select failing</button>
++    </div>
++  </footer>
+ </main>
+ <button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
++<template id="icon-pass"><svg class="kit-icon kit-icon-small contrast-status" data-status="pass" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor"/><path d="m5.75 8.25 1.5 1.5 3-3.25" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></template>
++<template id="icon-fail"><svg class="kit-icon kit-icon-small contrast-status" data-status="fail" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor"/><path d="M8 5.25V8.5" fill="none" stroke="currentColor" stroke-linecap="round"/><circle cx="8" cy="10.75" r=".75" fill="currentColor"/></svg></template>
++<template id="icon-unknown"><svg class="kit-icon kit-icon-small contrast-status" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor"/><path d="M6.5 6.6a1.5 1.5 0 1 1 2.1 1.4c-.4.2-.6.5-.6.9v.2" fill="none" stroke="currentColor" stroke-linecap="round"/><circle cx="8" cy="11" r=".7" fill="currentColor"/></svg></template>
+ <script>
+ 'use strict';
+-// The demo: replace this script and <main>'s markup with your plugin (keep data-kit-root and the handle;
+-// no HTML comments). It sends 'create-shapes' and 'close'; code.ts answers 'selection' and 'created'.
++// Renders the 'contrast-results' code.ts posts after every check (a selection change, an edit,
++// Check again) and sends back 'contrast-check' and 'contrast-select'. code.ts measures and words
++// everything; this script only shows it.
+ (() => {
+-const MIN = 1;
+-const MAX = 50; // code.ts clamps to the same range
+-const count = /** @type {HTMLInputElement} */ (document.getElementById('count'));
+-const shape = /** @type {HTMLSelectElement} */ (document.getElementById('shape'));
+-const help = document.getElementById('count-help');
+-const create = document.getElementById('create');
+-const status = document.getElementById('status');
+-let selected = 0;
+-let result = '';
+-let made = 'rectangle';
+-
+-/** @param {{ type: string } & Record<string, unknown>} message */
+-const post = (message) => parent.postMessage({ pluginMessage: message }, '*');
+-
+-function readCount() {
+-  const text = count.value.trim();
+-  const n = Number(text);
+-  return /^\d+$/.test(text) && n >= MIN && n <= MAX ? n : null;
+-}
+-
+-// The error state is aria-invalid: the kit recolours the ring and the help text it points at.
+-function validate() {
+-  const ok = readCount() !== null;
+-  if (ok) count.removeAttribute('aria-invalid');
+-  else count.setAttribute('aria-invalid', 'true');
+-  help.textContent = ok ? `From ${MIN} to ${MAX}, placed in a row.` : `Enter a whole number from ${MIN} to ${MAX}.`;
+-}
+-
+-function render() {
+-  const selection = selected === 0 ? 'Nothing selected' : `${selected} layer${selected === 1 ? '' : 's'} selected`;
+-  status.replaceChildren(selection, ...(result ? [document.createElement('br'), result] : []));
+-}
+-
+-function createShapes() {
+-  if (create.getAttribute('aria-busy') === 'true') return; // aria-busy stops the mouse, not Enter or Space
+-  const n = readCount();
+-  if (n === null) {
+-    validate();
+-    count.focus();
+-    return;
++const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
++const list = $('list');
++const scroller = $('results');
++const recheck = $('recheck');
++const failing = /** @type {HTMLButtonElement} */ ($('select-failing'));
++const SAID = { fail: 'Below AA', unknown: 'Check by eye', hidden: 'Not visible', pass: 'Meets AA' };
++/** @type {any} the last ContrastResultsMessage (its types are in code.ts) */
++let state = { selection: 0, results: [], summary: null };
++/** @type {string | null} the row whose details show */
++let current = null;
++let lastMessage = '';
++let lastSummary = '';
++
++const post = (/** @type {{ type: string } & Record<string, unknown>} */ message) => parent.postMessage({ pluginMessage: message }, '*');
++
++function make(/** @type {string} */ tag, /** @type {string} */ className, /** @type {string} */ text) {
++  const node = document.createElement(tag);
++  node.className = className;
++  node.textContent = text;
++  return node;
++}
++
++// Document colours are data: custom properties that the CSS paints with.
++function paint(/** @type {HTMLElement} */ node, /** @type {any} */ result) {
++  const pairs = [['--contrast-text', result.textHex], ['--contrast-backdrop', result.backgroundHex]];
++  for (const [name, hex] of pairs) {
++    if (result.textHex && result.backgroundHex) node.style.setProperty(name, hex);
++    else node.style.removeProperty(name);
+   }
+-  made = shape.value;
+-  create.setAttribute('aria-busy', 'true');
+-  post({ type: 'create-shapes', count: n, shape: made });
+-}
+-
+-count.addEventListener('input', validate);
+-create.addEventListener('click', createShapes);
+-// Enter creates too. No <form>: a sandboxed iframe may block its submit (docs/pitfalls.md#17-smaller-traps).
+-count.addEventListener('keydown', (event) => {
+-  if (event.key !== 'Enter' || event.isComposing) return;
+-  event.preventDefault();
+-  createShapes();
++}
++
++// The status region is the one live region: change it only when its words change.
++function renderSummary() {
++  const summary = state.summary;
++  const key = summary ? summary.tone + summary.text : String(state.selection > 0);
++  if (key === lastSummary) return;
++  lastSummary = key;
++  $('notice').hidden = !summary;
++  $('empty').hidden = !!summary;
++  if (summary) {
++    $('notice').dataset.kitTone = summary.tone;
++    // SVG elements have no .hidden property: set the attribute itself.
++    $('notice-pass').toggleAttribute('hidden', summary.tone !== 'success');
++    $('notice-alert').toggleAttribute('hidden', summary.tone === 'success');
++    $('notice-text').textContent = summary.text;
++  } else {
++    $('empty-title').textContent = state.selection > 0 ? 'No text layers in the selection' : 'Select text layers';
++  }
++}
++
++function makeRow(/** @type {any} */ result) {
++  const row = make('button', 'kit-list-row', '');
++  row.setAttribute('type', 'button');
++  row.dataset.id = result.id;
++  if (result.id === current) row.setAttribute('aria-current', 'true');
++  const icon = /** @type {HTMLTemplateElement} */ ($(result.status === 'fail' || result.status === 'pass' ? 'icon-' + result.status : 'icon-unknown'));
++  const chip = make('span', 'contrast-chip', 'Aa');
++  chip.setAttribute('aria-hidden', 'true');
++  paint(chip, result);
++  const label = make('span', 'kit-list-row-label', '');
++  label.append(make('span', 'kit-visually-hidden', `${SAID[result.status]}: `), result.name || 'Untitled');
++  const meta = make('span', 'kit-list-row-meta', result.meta || '–');
++  if (!result.meta) meta.setAttribute('aria-hidden', 'true');
++  else if (result.status === 'fail') meta.append(make('span', 'kit-visually-hidden', `, needs ${result.required}:1`));
++  row.append(icon.content.cloneNode(true), chip, label, meta);
++  const item = document.createElement('li');
++  item.append(row);
++  return item;
++}
++
++function renderList() {
++  // Rows are rebuilt on every check: keep the scroll position, and focus on the same layer's row.
++  const active = document.activeElement;
++  const focused = active instanceof HTMLElement && list.contains(active) ? active.dataset.id : '';
++  const top = scroller.scrollTop;
++  list.replaceChildren(...state.results.map(makeRow));
++  scroller.hidden = state.results.length === 0;
++  scroller.scrollTop = top;
++  const again = focused ? list.querySelector(`[data-id="${CSS.escape(focused)}"]`) : null;
++  if (again instanceof HTMLElement) again.focus({ preventScroll: true });
++  failing.disabled = !state.results.some((/** @type {any} */ r) => r.status === 'fail');
++}
++
++function renderDetails() {
++  const result = state.results.find((/** @type {any} */ r) => r.id === current);
++  $('details').hidden = !result;
++  $('details-divider').hidden = !result;
++  if (!result) return;
++  $('details-name').textContent = result.name || 'Untitled';
++  $('details-preview').textContent = result.excerpt || 'Aa';
++  paint($('details-preview'), result);
++  $('details-verdict').textContent = result.verdict;
++  $('details-colors').textContent = result.colors;
++  $('details-colors').hidden = !result.colors;
++  $('details-notes').replaceChildren(...result.notes.map((/** @type {string} */ note) => make('li', '', note)));
++  $('details-notes').hidden = result.notes.length === 0;
++}
++
++list.addEventListener('click', (event) => {
++  const row = event.target instanceof Element ? event.target.closest('.kit-list-row') : null;
++  if (!(row instanceof HTMLElement) || !row.dataset.id) return;
++  current = row.dataset.id;
++  list.querySelectorAll('.kit-list-row').forEach((other) => {
++    if (other === row) other.setAttribute('aria-current', 'true');
++    else other.removeAttribute('aria-current');
++  });
++  renderDetails();
++  post({ type: 'contrast-select', ids: [current] }); // selects it on the canvas; the list stays
++});
++
++failing.addEventListener('click', () => {
++  const ids = state.results.filter((/** @type {any} */ r) => r.status === 'fail').map((/** @type {any} */ r) => r.id);
++  if (ids.length > 0) post({ type: 'contrast-select', ids });
++});
++
++recheck.addEventListener('click', () => {
++  if (recheck.getAttribute('aria-busy') === 'true') return; // aria-busy stops the mouse, not Enter or Space
++  recheck.setAttribute('aria-busy', 'true');
++  post({ type: 'contrast-check' });
+ });
+-document.getElementById('close').addEventListener('click', () => post({ type: 'close' }));
+ 
+ // Added at once: Figma delivers what code.ts posted at startup as soon as the page has loaded.
+ window.addEventListener('message', (event) => {
+   const msg = event.data && event.data.pluginMessage;
+-  if (!msg || typeof msg !== 'object' || typeof msg.count !== 'number') return;
+-  if (msg.type === 'selection') selected = msg.count;
+-  else if (msg.type === 'created') {
+-    create.removeAttribute('aria-busy'); // code.ts always answers, with 0 when it failed
+-    result = msg.count > 0 ? `Created ${msg.count} ${made}${msg.count === 1 ? '' : 's'}` : 'Nothing created';
+-  } else return;
+-  render();
++  if (!msg || typeof msg !== 'object' || msg.type !== 'contrast-results' || !Array.isArray(msg.results)) return;
++  recheck.removeAttribute('aria-busy'); // code.ts answers every check, also one that failed
++  const text = JSON.stringify(msg);
++  if (text === lastMessage) return; // same outcome: leave the list, focus and live region alone
++  lastMessage = text;
++  state = msg;
++  if (!state.results.some((/** @type {any} */ r) => r.id === current)) current = state.results.length > 0 ? state.results[0].id : null;
++  renderSummary();
++  renderList();
++  renderDetails();
+ });
+ })();
+ </script>

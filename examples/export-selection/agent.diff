@@ -1,0 +1,719 @@
+One-shot agent diff for examples/export-selection (kit 0.3.0, 2026-10-13).
+Made with: git diff HEAD -- . ":(exclude)package-lock.json" in the agent's fresh clone.
+Untracked files: none (git status lists only the four modified files below; node_modules is ignored).
+Stat: 4 files changed, 445 insertions(+), 158 deletions(-)
+
+diff --git a/code.js b/code.js
+index f1d934e..ff1fd4f 100644
+--- a/code.js
++++ b/code.js
+@@ -416,59 +416,139 @@ function installKitWindow(options = {}) {
+ }
+ // ==== kit:window:end ====
+ // ---- Your plugin starts here ----
+-// Everything below is a demo: replace it with your plugin. Keep installKitWindow() first so the
+-// window exists before anything posts to it, and name your message types without the kit: prefix.
++// Export PNG: exports the selected layers as PNG files at 1x, 2x or 3x. The main thread renders
++// the bytes with exportAsync; the UI turns each file into a Blob and starts its download, because
++// Blob and downloads exist only in the iframe (docs/pitfalls.md#15-blob-exists-only-in-the-ui).
+ installKitWindow({ mode: 'fit-content' });
+-// The demo UI's count field accepts the same range; this clamp is the backstop, so a typo like
+-// 1000 can never freeze the file.
+-const MAX_SHAPES = 50;
+-// Messages arrive untyped from another window: check the shape before trusting it.
+-function messageType(msg) {
+-    return typeof msg === 'object' && msg !== null ? msg.type : undefined;
++/** The most layers one export takes, so a stray select-all can't start hundreds of downloads. */
++const PNG_MAX_LAYERS = 100;
++/** figma.clientStorage key for the last scale the person picked. */
++const PNG_SCALE_KEY = 'export-png:scale';
++function postToUi(message) {
++    figma.ui.postMessage(message);
+ }
+-function isCreateShapesMessage(msg) {
+-    if (messageType(msg) !== 'create-shapes')
++// Messages arrive untyped from another window: check every field before trusting one.
++function isPngScale(value) {
++    return value === 1 || value === 2 || value === 3;
++}
++function isPngExportMessage(msg) {
++    if (typeof msg !== 'object' || msg === null)
++        return false;
++    const { type, ids, scale } = msg;
++    return (type === 'png-export' &&
++        isPngScale(scale) &&
++        Array.isArray(ids) &&
++        ids.length > 0 &&
++        ids.length <= PNG_MAX_LAYERS &&
++        ids.every((id) => typeof id === 'string'));
++}
++function isPngSaveScaleMessage(msg) {
++    if (typeof msg !== 'object' || msg === null)
+         return false;
+-    const { count } = msg;
+-    return typeof count === 'number' && Number.isFinite(count);
++    const { type, scale } = msg;
++    return type === 'png-save-scale' && isPngScale(scale);
+ }
+-function postSelectionCount() {
+-    // Under "documentAccess": "dynamic-page" the current page is always loaded, so reading its
+-    // selection synchronously is allowed (other pages need loadAsync first).
+-    figma.ui.postMessage({ type: 'selection', count: figma.currentPage.selection.length });
++function pngLayer(node) {
++    // Render bounds include shadows and thick strokes, like the export; null means nothing is drawn.
++    let box = null;
++    if ('absoluteRenderBounds' in node)
++        box = node.absoluteRenderBounds;
++    else if ('absoluteBoundingBox' in node)
++        box = node.absoluteBoundingBox;
++    else if ('width' in node)
++        box = node;
++    return { id: node.id, name: node.name, width: box ? box.width : 0, height: box ? box.height : 0 };
++}
++function postPngSelection() {
++    // Under dynamic-page the current page is always loaded, so its selection can be read directly.
++    const selection = figma.currentPage.selection;
++    const layers = selection.length <= PNG_MAX_LAYERS ? selection.map(pngLayer) : [];
++    postToUi({ type: 'png-selection', count: selection.length, max: PNG_MAX_LAYERS, layers });
++}
++/**
++ * The download name for a layer: its name without the characters file systems refuse, then
++ * "@2x" or "@3x". Names already used in this export get " 2", " 3" ... so no file replaces
++ * another (compared without case, as macOS and Windows do).
++ */
++function pngFileName(layerName, scale, used) {
++    const base = layerName
++        .replace(/[\\/:*?"<>|\u0000-\u001f\u007f]+/g, '-')
++        .replace(/\s+/g, ' ')
++        .slice(0, 100)
++        .replace(/^[\s.]+|[\s.]+$/g, '') || 'Layer';
++    let name = base;
++    for (let n = 2; used.has(name.toLowerCase()); n++)
++        name = base + ' ' + n;
++    used.add(name.toLowerCase());
++    return name + (scale === 1 ? '' : '@' + scale + 'x') + '.png';
+ }
+-function createShapes(count, shape) {
+-    const nodes = [];
+-    const { x, y } = figma.viewport.center;
++async function exportPng(ids, scale) {
++    const used = new Set();
++    const failed = [];
++    let exported = 0;
+     try {
+-        for (let i = 0; i < count; i++) {
+-            const node = shape === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
+-            node.x = Math.round(x) + i * 150;
+-            node.y = Math.round(y);
+-            node.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
+-            nodes.push(node);
++        for (const id of ids) {
++            let label = 'a deleted layer';
++            try {
++                const node = await figma.getNodeByIdAsync(id);
++                if (node)
++                    label = node.name;
++                if (!node || !('exportAsync' in node)) {
++                    failed.push(label);
++                    continue;
++                }
++                const bytes = await node.exportAsync({ format: 'PNG', constraint: { type: 'SCALE', value: scale } });
++                // One message per file, so the UI can start each download (and drop its bytes) at once.
++                postToUi({ type: 'png-file', name: pngFileName(node.name, scale, used), bytes });
++                exported++;
++            }
++            catch (error) {
++                // A hidden or empty layer, or one too large to render: skip it and say so at the end.
++                console.warn('Export PNG: could not export "' + label + '"', error);
++                failed.push(label);
++            }
++        }
++    }
++    finally {
++        // Always answer first, so the UI's busy Export button never gets stuck.
++        postToUi({ type: 'png-done', exported, failed });
++        if (failed.length > 0) {
++            figma.notify('Could not export ' + failed.length + ' layer' + (failed.length === 1 ? '' : 's'), { error: true });
+         }
+-        figma.currentPage.selection = nodes;
+-        figma.viewport.scrollAndZoomIntoView(nodes);
++    }
++}
++async function loadPngScale() {
++    try {
++        const saved = await figma.clientStorage.getAsync(PNG_SCALE_KEY);
++        if (isPngScale(saved))
++            postToUi({ type: 'png-settings', scale: saved });
+     }
+     catch (error) {
+-        // Dev Mode is read-only and not every editor can create every node: say so instead of
+-        // failing silently in the console.
+-        figma.notify('Could not create shapes: ' + (error instanceof Error ? error.message : String(error)), { error: true });
++        console.warn('Export PNG: could not read the saved scale', error); // 2x stays selected
+     }
+-    // Always answer, so a UI waiting on this reply (a busy button) never gets stuck.
+-    figma.ui.postMessage({ type: 'created', count: nodes.length });
+ }
+-figma.ui.on('message', (msg) => {
+-    // Sent by the demo UI's Close button. closePlugin does not stop this function: return at once.
+-    if (messageType(msg) === 'close') {
+-        figma.closePlugin();
+-        return;
++async function savePngScale(scale) {
++    try {
++        await figma.clientStorage.setAsync(PNG_SCALE_KEY, scale);
++    }
++    catch (error) {
++        console.warn('Export PNG: could not save the scale', error);
++    }
++}
++function handlePngMessage(msg) {
++    if (msg.type === 'png-export') {
++        exportPng(msg.ids, msg.scale).catch((error) => console.warn('Export PNG failed', error));
+     }
+-    if (!isCreateShapesMessage(msg))
+-        return; // kit:* and anything else falls through
+-    const count = Math.min(MAX_SHAPES, Math.max(1, Math.round(msg.count)));
+-    createShapes(count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle');
++    else {
++        void savePngScale(msg.scale);
++    }
++}
++figma.ui.on('message', (msg) => {
++    // kit:* messages and anything else fall through.
++    if (isPngExportMessage(msg) || isPngSaveScaleMessage(msg))
++        handlePngMessage(msg);
+ });
+-figma.on('selectionchange', postSelectionCount);
+-postSelectionCount();
++figma.on('selectionchange', postPngSelection);
++figma.on('currentpagechange', postPngSelection);
++postPngSelection();
++void loadPngScale();
+diff --git a/code.ts b/code.ts
+index 0d0a932..9457b06 100644
+--- a/code.ts
++++ b/code.ts
+@@ -422,71 +422,202 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
+ // ==== kit:window:end ====
+ 
+ // ---- Your plugin starts here ----
+-// Everything below is a demo: replace it with your plugin. Keep installKitWindow() first so the
+-// window exists before anything posts to it, and name your message types without the kit: prefix.
++// Export PNG: exports the selected layers as PNG files at 1x, 2x or 3x. The main thread renders
++// the bytes with exportAsync; the UI turns each file into a Blob and starts its download, because
++// Blob and downloads exist only in the iframe (docs/pitfalls.md#15-blob-exists-only-in-the-ui).
+ 
+ installKitWindow({ mode: 'fit-content' });
+ 
+-// The demo UI's count field accepts the same range; this clamp is the backstop, so a typo like
+-// 1000 can never freeze the file.
+-const MAX_SHAPES = 50;
++type PngScale = 1 | 2 | 3;
+ 
+-/** Sent by the demo UI when the person presses Create. */
+-interface CreateShapesMessage {
+-  type: 'create-shapes';
++/** The most layers one export takes, so a stray select-all can't start hundreds of downloads. */
++const PNG_MAX_LAYERS = 100;
++/** figma.clientStorage key for the last scale the person picked. */
++const PNG_SCALE_KEY = 'export-png:scale';
++
++// ---- UI -> main ----
++
++/** Export these layers (ids from the last png-selection) at this scale. */
++interface PngExportMessage {
++  type: 'png-export';
++  ids: string[];
++  scale: PngScale;
++}
++
++/** Remember the scale the person picked, for the next run. */
++interface PngSaveScaleMessage {
++  type: 'png-save-scale';
++  scale: PngScale;
++}
++
++type PngUiToMain = PngExportMessage | PngSaveScaleMessage;
++
++// ---- main -> UI ----
++
++/** One selected layer. width and height are its rendered size at 1x; 0 when nothing is drawn. */
++interface PngLayer {
++  id: string;
++  name: string;
++  width: number;
++  height: number;
++}
++
++/** The selection, at startup and on every change. layers is empty when count > PNG_MAX_LAYERS. */
++interface PngSelectionMessage {
++  type: 'png-selection';
+   count: number;
+-  shape: 'rectangle' | 'ellipse';
++  max: number;
++  layers: PngLayer[];
++}
++
++/** The saved scale, sent once at startup if there is one. */
++interface PngSettingsMessage {
++  type: 'png-settings';
++  scale: PngScale;
++}
++
++/** One exported file, ready for the UI to download. */
++interface PngFileMessage {
++  type: 'png-file';
++  name: string;
++  bytes: Uint8Array;
++}
++
++/** Sent after every png-export, also when every layer failed. failed holds layer names. */
++interface PngDoneMessage {
++  type: 'png-done';
++  exported: number;
++  failed: string[];
++}
++
++type PngMainToUi = PngSelectionMessage | PngSettingsMessage | PngFileMessage | PngDoneMessage;
++
++function postToUi(message: PngMainToUi): void {
++  figma.ui.postMessage(message);
++}
++
++// Messages arrive untyped from another window: check every field before trusting one.
++function isPngScale(value: unknown): value is PngScale {
++  return value === 1 || value === 2 || value === 3;
++}
++
++function isPngExportMessage(msg: unknown): msg is PngExportMessage {
++  if (typeof msg !== 'object' || msg === null) return false;
++  const { type, ids, scale } = msg as Record<string, unknown>;
++  return (
++    type === 'png-export' &&
++    isPngScale(scale) &&
++    Array.isArray(ids) &&
++    ids.length > 0 &&
++    ids.length <= PNG_MAX_LAYERS &&
++    ids.every((id) => typeof id === 'string')
++  );
++}
++
++function isPngSaveScaleMessage(msg: unknown): msg is PngSaveScaleMessage {
++  if (typeof msg !== 'object' || msg === null) return false;
++  const { type, scale } = msg as Record<string, unknown>;
++  return type === 'png-save-scale' && isPngScale(scale);
+ }
+ 
+-// Messages arrive untyped from another window: check the shape before trusting it.
+-function messageType(msg: unknown): unknown {
+-  return typeof msg === 'object' && msg !== null ? (msg as { type?: unknown }).type : undefined;
++function pngLayer(node: SceneNode): PngLayer {
++  // Render bounds include shadows and thick strokes, like the export; null means nothing is drawn.
++  let box: { width: number; height: number } | null = null;
++  if ('absoluteRenderBounds' in node) box = node.absoluteRenderBounds;
++  else if ('absoluteBoundingBox' in node) box = node.absoluteBoundingBox;
++  else if ('width' in node) box = node;
++  return { id: node.id, name: node.name, width: box ? box.width : 0, height: box ? box.height : 0 };
+ }
+ 
+-function isCreateShapesMessage(msg: unknown): msg is CreateShapesMessage {
+-  if (messageType(msg) !== 'create-shapes') return false;
+-  const { count } = msg as Record<string, unknown>;
+-  return typeof count === 'number' && Number.isFinite(count);
++function postPngSelection(): void {
++  // Under dynamic-page the current page is always loaded, so its selection can be read directly.
++  const selection = figma.currentPage.selection;
++  const layers = selection.length <= PNG_MAX_LAYERS ? selection.map(pngLayer) : [];
++  postToUi({ type: 'png-selection', count: selection.length, max: PNG_MAX_LAYERS, layers });
+ }
+ 
+-function postSelectionCount(): void {
+-  // Under "documentAccess": "dynamic-page" the current page is always loaded, so reading its
+-  // selection synchronously is allowed (other pages need loadAsync first).
+-  figma.ui.postMessage({ type: 'selection', count: figma.currentPage.selection.length });
++/**
++ * The download name for a layer: its name without the characters file systems refuse, then
++ * "@2x" or "@3x". Names already used in this export get " 2", " 3" ... so no file replaces
++ * another (compared without case, as macOS and Windows do).
++ */
++function pngFileName(layerName: string, scale: PngScale, used: Set<string>): string {
++  const base =
++    layerName
++      .replace(/[\\/:*?"<>|\u0000-\u001f\u007f]+/g, '-')
++      .replace(/\s+/g, ' ')
++      .slice(0, 100)
++      .replace(/^[\s.]+|[\s.]+$/g, '') || 'Layer';
++  let name = base;
++  for (let n = 2; used.has(name.toLowerCase()); n++) name = base + ' ' + n;
++  used.add(name.toLowerCase());
++  return name + (scale === 1 ? '' : '@' + scale + 'x') + '.png';
+ }
+ 
+-function createShapes(count: number, shape: 'rectangle' | 'ellipse'): void {
+-  const nodes: SceneNode[] = [];
+-  const { x, y } = figma.viewport.center;
++async function exportPng(ids: string[], scale: PngScale): Promise<void> {
++  const used = new Set<string>();
++  const failed: string[] = [];
++  let exported = 0;
+   try {
+-    for (let i = 0; i < count; i++) {
+-      const node = shape === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
+-      node.x = Math.round(x) + i * 150;
+-      node.y = Math.round(y);
+-      node.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
+-      nodes.push(node);
++    for (const id of ids) {
++      let label = 'a deleted layer';
++      try {
++        const node = await figma.getNodeByIdAsync(id);
++        if (node) label = node.name;
++        if (!node || !('exportAsync' in node)) {
++          failed.push(label);
++          continue;
++        }
++        const bytes = await node.exportAsync({ format: 'PNG', constraint: { type: 'SCALE', value: scale } });
++        // One message per file, so the UI can start each download (and drop its bytes) at once.
++        postToUi({ type: 'png-file', name: pngFileName(node.name, scale, used), bytes });
++        exported++;
++      } catch (error) {
++        // A hidden or empty layer, or one too large to render: skip it and say so at the end.
++        console.warn('Export PNG: could not export "' + label + '"', error);
++        failed.push(label);
++      }
++    }
++  } finally {
++    // Always answer first, so the UI's busy Export button never gets stuck.
++    postToUi({ type: 'png-done', exported, failed });
++    if (failed.length > 0) {
++      figma.notify('Could not export ' + failed.length + ' layer' + (failed.length === 1 ? '' : 's'), { error: true });
+     }
+-    figma.currentPage.selection = nodes;
+-    figma.viewport.scrollAndZoomIntoView(nodes);
++  }
++}
++
++async function loadPngScale(): Promise<void> {
++  try {
++    const saved: unknown = await figma.clientStorage.getAsync(PNG_SCALE_KEY);
++    if (isPngScale(saved)) postToUi({ type: 'png-settings', scale: saved });
+   } catch (error) {
+-    // Dev Mode is read-only and not every editor can create every node: say so instead of
+-    // failing silently in the console.
+-    figma.notify('Could not create shapes: ' + (error instanceof Error ? error.message : String(error)), { error: true });
++    console.warn('Export PNG: could not read the saved scale', error); // 2x stays selected
+   }
+-  // Always answer, so a UI waiting on this reply (a busy button) never gets stuck.
+-  figma.ui.postMessage({ type: 'created', count: nodes.length });
+ }
+ 
+-figma.ui.on('message', (msg: unknown) => {
+-  // Sent by the demo UI's Close button. closePlugin does not stop this function: return at once.
+-  if (messageType(msg) === 'close') {
+-    figma.closePlugin();
+-    return;
++async function savePngScale(scale: PngScale): Promise<void> {
++  try {
++    await figma.clientStorage.setAsync(PNG_SCALE_KEY, scale);
++  } catch (error) {
++    console.warn('Export PNG: could not save the scale', error);
+   }
+-  if (!isCreateShapesMessage(msg)) return; // kit:* and anything else falls through
+-  const count = Math.min(MAX_SHAPES, Math.max(1, Math.round(msg.count)));
+-  createShapes(count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle');
++}
++
++function handlePngMessage(msg: PngUiToMain): void {
++  if (msg.type === 'png-export') {
++    exportPng(msg.ids, msg.scale).catch((error) => console.warn('Export PNG failed', error));
++  } else {
++    void savePngScale(msg.scale);
++  }
++}
++
++figma.ui.on('message', (msg: unknown) => {
++  // kit:* messages and anything else fall through.
++  if (isPngExportMessage(msg) || isPngSaveScaleMessage(msg)) handlePngMessage(msg);
+ });
+ 
+-figma.on('selectionchange', postSelectionCount);
+-postSelectionCount();
++figma.on('selectionchange', postPngSelection);
++figma.on('currentpagechange', postPngSelection);
++postPngSelection();
++void loadPngScale();
+diff --git a/manifest.json b/manifest.json
+index bceae08..b6da5ee 100644
+--- a/manifest.json
++++ b/manifest.json
+@@ -1,6 +1,6 @@
+ {
+-  "name": "Kit starter",
+-  "id": "kit-starter-change-this-id",
++  "name": "Export PNG",
++  "id": "export-png-selection-4f8a2c71",
+   "api": "1.0.0",
+   "main": "code.js",
+   "ui": "ui.html",
+diff --git a/ui.html b/ui.html
+index 6470d31..debcee8 100644
+--- a/ui.html
++++ b/ui.html
+@@ -3,7 +3,7 @@
+ <head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+-<title>Kit starter</title>
++<title>Export PNG</title>
+ <meta name="kit" content="kit v0.3.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+ <style data-kit="tokens">
+ /* kit tokens v0.3.0 · protocol 1 · MIT · https://github.com/alekseikipin/Figplug-ui-kit · issues: https://github.com/alekseikipin/Figplug-ui-kit/issues · re-paste all three data-kit blocks to upgrade */
+@@ -912,105 +912,181 @@ else boot();
+ </script>
+ <style>
+ /* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
+-.demo-status { flex: 1 1 0; min-width: 0; }
++.scales { column-gap: var(--kit-spacer-3); }
++/* Insets the rows by 8px, so their text lines up with the section header's title, as in UI3. */
++.layers { padding: 0 var(--kit-spacer-2) var(--kit-spacer-2); }
+ </style>
+ </head>
+ <body>
+ <main class="kit-app" data-kit-root>
+-  <div class="kit-section kit-stack">
+-    <h1 class="kit-heading">Create shapes</h1>
+-    <div class="kit-field">
+-      <label class="kit-label" for="count">Count</label>
+-      <input class="kit-input" id="count" type="text" inputmode="numeric" autocomplete="off" value="5" aria-describedby="count-help">
+-      <p class="kit-help" id="count-help">From 1 to 50, placed in a row.</p>
+-    </div>
+-    <div class="kit-field">
+-      <label class="kit-label" for="shape">Shape</label>
+-      <div class="kit-select">
+-        <select id="shape">
+-          <option value="rectangle">Rectangle</option>
+-          <option value="ellipse">Ellipse</option>
+-        </select>
++  <h1 class="kit-visually-hidden">Export PNG</h1>
++  <div class="kit-section">
++    <div class="kit-field" role="radiogroup" aria-labelledby="scale-label" aria-describedby="scale-help">
++      <span class="kit-label" id="scale-label">Scale</span>
++      <div class="kit-row scales">
++        <label class="kit-radio"><input type="radio" name="scale" value="1">1x</label>
++        <label class="kit-radio"><input type="radio" name="scale" value="2" checked>2x</label>
++        <label class="kit-radio"><input type="radio" name="scale" value="3">3x</label>
+       </div>
++      <p class="kit-help" id="scale-help">One PNG per layer, named after it: Button@2x.png</p>
+     </div>
+   </div>
+   <hr class="kit-divider">
+-  <div class="kit-section kit-row">
+-    <p class="kit-text-secondary demo-status" id="status" role="status">Nothing selected</p>
+-    <button class="kit-button kit-button-secondary" id="close" type="button">Close</button>
+-    <button class="kit-button kit-button-primary" id="create" type="button">Create</button>
++  <header class="kit-section-header"><h2 id="layers-title">Layers</h2></header>
++  <div class="layers">
++    <div class="kit-scroll" id="region" tabindex="0" role="region" aria-labelledby="layers-title" hidden>
++      <ul class="kit-list" id="list" aria-labelledby="layers-title"></ul>
++    </div>
++    <div class="kit-empty" id="empty">
++      <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5v8m-3.5-3.5 3.5 3.5 3.5-3.5M7 17.5h10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
++      <p class="kit-empty-title" id="empty-title">No layers selected</p>
++      <p class="kit-empty-text" id="empty-text">Select the layers you want to export on the canvas.</p>
++    </div>
+   </div>
++  <footer class="kit-footer">
++    <p class="kit-text-secondary" id="status" role="status">Nothing selected</p>
++    <button class="kit-button kit-button-primary" id="export" type="button" disabled>Export</button>
++  </footer>
+ </main>
+ <button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+ <script>
+ 'use strict';
+-// The demo: replace this script and <main>'s markup with your plugin (keep data-kit-root and the handle;
+-// no HTML comments). It sends 'create-shapes' and 'close'; code.ts answers 'selection' and 'created'.
++// Export PNG. Sends png-export and png-save-scale; code.ts answers png-selection, png-settings,
++// png-file (one per exported layer, bytes as a Uint8Array) and png-done.
+ (() => {
+-const MIN = 1;
+-const MAX = 50; // code.ts clamps to the same range
+-const count = /** @type {HTMLInputElement} */ (document.getElementById('count'));
+-const shape = /** @type {HTMLSelectElement} */ (document.getElementById('shape'));
+-const help = document.getElementById('count-help');
+-const create = document.getElementById('create');
+-const status = document.getElementById('status');
+-let selected = 0;
++const byId = (id) => document.getElementById(id);
++const exportButton = /** @type {HTMLButtonElement} */ (byId('export'));
++const radios = /** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll('input[name="scale"]'));
++const status = byId('status');
++/** @type {{ id: string, name: string, width: number, height: number }[]} */
++let layers = [];
++let count = 0;
++let max = 100;
+ let result = '';
+-let made = 'rectangle';
++let touched = false;
++// Files waiting for their download, downloads started in this export, and png-done's failures.
++/** @type {{ name: string, bytes: Uint8Array }[]} */
++const queue = [];
++let pumping = false;
++let started = 0;
++/** @type {string[] | null} */
++let failed = null;
+ 
+ /** @param {{ type: string } & Record<string, unknown>} message */
+ const post = (message) => parent.postMessage({ pluginMessage: message }, '*');
++/** @param {number} n @param {string} word */
++const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+ 
+-function readCount() {
+-  const text = count.value.trim();
+-  const n = Number(text);
+-  return /^\d+$/.test(text) && n >= MIN && n <= MAX ? n : null;
++function scale() {
++  const checked = Array.from(radios).find((radio) => radio.checked);
++  return checked ? Number(checked.value) : 2;
+ }
+ 
+-// The error state is aria-invalid: the kit recolours the ring and the help text it points at.
+-function validate() {
+-  const ok = readCount() !== null;
+-  if (ok) count.removeAttribute('aria-invalid');
+-  else count.setAttribute('aria-invalid', 'true');
+-  help.textContent = ok ? `From ${MIN} to ${MAX}, placed in a row.` : `Enter a whole number from ${MIN} to ${MAX}.`;
++/** @param {{ name: string, width: number, height: number }} layer @param {number} s */
++function row(layer, s) {
++  const item = document.createElement('li');
++  const label = document.createElement('span');
++  const meta = document.createElement('span');
++  item.className = 'kit-list-row';
++  label.className = 'kit-list-row-label';
++  label.textContent = layer.name;
++  label.title = layer.name;
++  meta.className = 'kit-list-row-meta';
++  meta.textContent = layer.width && layer.height ? `${Math.round(layer.width * s)} × ${Math.round(layer.height * s)}` : 'Nothing visible';
++  item.append(label, meta);
++  return item;
+ }
+ 
+ function render() {
+-  const selection = selected === 0 ? 'Nothing selected' : `${selected} layer${selected === 1 ? '' : 's'} selected`;
+-  status.replaceChildren(selection, ...(result ? [document.createElement('br'), result] : []));
++  const s = scale();
++  const tooMany = count > max;
++  byId('scale-help').textContent = `One PNG per layer, named after it: Button${s === 1 ? '' : `@${s}x`}.png`;
++  byId('region').hidden = layers.length === 0;
++  byId('empty').hidden = layers.length > 0;
++  byId('empty-title').textContent = tooMany ? 'Too many layers selected' : 'No layers selected';
++  byId('empty-text').textContent = tooMany ? `Export takes up to ${max} layers at a time.` : 'Select the layers you want to export on the canvas.';
++  byId('list').replaceChildren(...layers.map((layer) => row(layer, s)));
++  exportButton.disabled = layers.length === 0;
++  const text = result || (count === 0 ? 'Nothing selected' : `${plural(count, 'layer')} selected`);
++  if (status.textContent !== text) status.textContent = text; // announce changes only
++}
++
++function download(file) {
++  const url = URL.createObjectURL(new Blob([file.bytes], { type: 'image/png' }));
++  const link = document.createElement('a');
++  link.href = url;
++  link.download = file.name;
++  document.body.append(link);
++  link.click();
++  link.remove();
++  setTimeout(() => URL.revokeObjectURL(url), 60000);
++  started++;
++}
++
++function finish() {
++  const names = failed || [];
++  failed = null;
++  exportButton.removeAttribute('aria-busy');
++  const which = names.length > 3 ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more` : names.join(', ');
++  // A page can't tell whether the browser saved a file, so say what was started.
++  const parts = [];
++  if (started > 0) parts.push(`Started ${plural(started, 'download')}`);
++  if (names.length > 0) parts.push(`Couldn't export ${which}`);
++  result = parts.join('. ') || 'No downloads started';
++  render();
+ }
+ 
+-function createShapes() {
+-  if (create.getAttribute('aria-busy') === 'true') return; // aria-busy stops the mouse, not Enter or Space
+-  const n = readCount();
+-  if (n === null) {
+-    validate();
+-    count.focus();
++// One download every 200 ms: a browser may drop downloads that start in the same instant.
++function pump() {
++  const file = queue.shift();
++  if (file) {
++    download(file);
++    setTimeout(pump, 200);
+     return;
+   }
+-  made = shape.value;
+-  create.setAttribute('aria-busy', 'true');
+-  post({ type: 'create-shapes', count: n, shape: made });
+-}
+-
+-count.addEventListener('input', validate);
+-create.addEventListener('click', createShapes);
+-// Enter creates too. No <form>: a sandboxed iframe may block its submit (docs/pitfalls.md#17-smaller-traps).
+-count.addEventListener('keydown', (event) => {
+-  if (event.key !== 'Enter' || event.isComposing) return;
+-  event.preventDefault();
+-  createShapes();
++  pumping = false;
++  if (failed) finish();
++}
++
++exportButton.addEventListener('click', () => {
++  if (exportButton.getAttribute('aria-busy') === 'true' || layers.length === 0) return; // aria-busy stops the mouse, not Enter
++  exportButton.setAttribute('aria-busy', 'true');
++  started = 0;
++  result = `Exporting ${plural(layers.length, 'layer')}…`;
++  render();
++  post({ type: 'png-export', ids: layers.map((layer) => layer.id), scale: scale() });
+ });
+-document.getElementById('close').addEventListener('click', () => post({ type: 'close' }));
++
++radios.forEach((radio) => radio.addEventListener('change', () => {
++  touched = true;
++  post({ type: 'png-save-scale', scale: scale() });
++  render();
++}));
+ 
+ // Added at once: Figma delivers what code.ts posted at startup as soon as the page has loaded.
+ window.addEventListener('message', (event) => {
+   const msg = event.data && event.data.pluginMessage;
+-  if (!msg || typeof msg !== 'object' || typeof msg.count !== 'number') return;
+-  if (msg.type === 'selection') selected = msg.count;
+-  else if (msg.type === 'created') {
+-    create.removeAttribute('aria-busy'); // code.ts always answers, with 0 when it failed
+-    result = msg.count > 0 ? `Created ${msg.count} ${made}${msg.count === 1 ? '' : 's'}` : 'Nothing created';
++  if (!msg || typeof msg !== 'object') return;
++  if (msg.type === 'png-selection' && Array.isArray(msg.layers)) {
++    layers = msg.layers;
++    count = msg.count;
++    max = msg.max;
++    if (exportButton.getAttribute('aria-busy') !== 'true') result = '';
++  } else if (msg.type === 'png-settings') {
++    const saved = Array.from(radios).find((radio) => radio.value === String(msg.scale));
++    if (touched || !saved) return;
++    saved.checked = true;
++  } else if (msg.type === 'png-file' && msg.bytes instanceof Uint8Array && typeof msg.name === 'string') {
++    queue.push(msg);
++    if (!pumping) {
++      pumping = true;
++      pump();
++    }
++    return;
++  } else if (msg.type === 'png-done' && Array.isArray(msg.failed)) {
++    failed = msg.failed;
++    if (!pumping) finish();
++    return;
+   } else return;
+   render();
+ });

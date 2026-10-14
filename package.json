@@ -18,12 +18,13 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch",
+    "build:examples": "node scripts/build-examples.mjs",
     "audit": "node scripts/audit.mjs",
     "check:ui": "node scripts/check-ui.mjs",
-    "test": "node --test \"test/*.test.mjs\"",
+    "test": "node --test \"test/*.test.mjs\" \"examples/*/*.test.mjs\"",
     "test:e2e": "playwright test",
     "preview": "node scripts/serve.mjs",
-    "check": "npm run build && npm run audit && npm run check:ui && npm test"
+    "check": "npm run build && npm run build:examples && npm run audit && npm run check:ui && npm test"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

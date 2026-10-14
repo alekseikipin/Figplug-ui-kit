@@ -249,6 +249,73 @@ figma.ui.on('message', async (msg) => {
   expect(await page.evaluate(() => window.kitPreviewHost.nodes().at(-1))).toEqual({ type: 'RECTANGLE', name: msg.name });
 });
 
+test('the figma stub: the sample scene, fonts before text edits, exportAsync, figma.mixed and figma.variables', async ({ page }) => {
+  await useKitFixture(page);
+  // What the examples/ plugins lean on, and the rules the stub keeps from Figma.
+  await patchFile(page, 'code.js', [["installKitWindow({ mode: 'fit-content' });", `installKitWindow({ mode: 'fit-content' });
+figma.ui.on('message', async (msg) => {
+  if (!msg || msg.type !== 'stub-probe') return;
+  const [card, label] = figma.currentPage.selection;
+  const texts = card.findAllWithCriteria({ types: ['TEXT'] });
+  const title = texts[0];
+  let unloaded = null;
+  try { title.characters = 'Too early'; } catch (error) { unloaded = String(error.message); }
+  await figma.loadFontAsync(title.fontName);
+  title.insertCharacters(0, 'Q3 ');
+  title.deleteCharacters(3, 6);
+  const bytes = await label.exportAsync({ format: 'PNG', constraint: { type: 'SCALE', value: 2 } });
+  const found = await figma.getNodeByIdAsync(title.id);
+  const v = figma.variables;
+  const [collection] = await v.getLocalVariableCollectionsAsync();
+  const colors = await v.getLocalVariablesAsync('COLOR');
+  colors[0].setValueForMode(collection.modes[1].modeId, { r: 1, g: 0, b: 0, a: 1 });
+  figma.ui.postMessage({
+    type: 'stub-report', unloaded, characters: title.characters, same: found === title,
+    parents: [title.parent.id, card.parent === figma.currentPage, label.parent.type],
+    boxes: [title.absoluteBoundingBox, label.absoluteRenderBounds, title.absoluteTransform],
+    segments: title.getStyledTextSegments(['fontSize', 'fills']).map((s) => ({ characters: s.characters, fontSize: s.fontSize, fills: s.fills.length })),
+    png: Array.from(bytes.slice(0, 8)), mixed: typeof figma.mixed, fontName: title.fontName,
+    variables: { collection: collection.name, modes: collection.modes.map((m) => m.name), ids: collection.variableIds.length, colors: colors.map((c) => c.name), floats: (await v.getLocalVariablesAsync('FLOAT')).length },
+  });
+});`]]);
+  await openPreview(page);
+  await page.evaluate(() => window.kitPreviewHost.select('sample'));
+  await page.waitForTimeout(50);
+  await pluginFrame(page).evaluate(() => parent.postMessage({ pluginMessage: { type: 'stub-probe' } }, '*'));
+  await expect.poll(() => page.evaluate(() => window.kitPreviewHost.messages().some((m) => m.msg.type === 'stub-report'))).toBe(true);
+  const msg = await page.evaluate(() => window.kitPreviewHost.messages().find((m) => m.msg.type === 'stub-report').msg);
+  expect(msg).toEqual({
+    type: 'stub-report',
+    unloaded: expect.stringContaining('figma.loadFontAsync'),
+    characters: 'Q3 rterly report', same: true,
+    parents: ['2:1', true, 'PAGE'],
+    boxes: [{ x: 16, y: 16, width: 130, height: 19 }, { x: 264, y: 0, width: 42, height: 15 }, [[1, 0, 16], [0, 1, 16]]],
+    segments: [{ characters: 'Q3 rterly report', fontSize: 16, fills: 1 }],
+    png: [137, 80, 78, 71, 13, 10, 26, 10], mixed: 'symbol', fontName: { family: 'Inter', style: 'Bold' },
+    variables: { collection: 'Colors', modes: ['Light', 'Dark'], ids: 3, colors: ['color/text', 'color/brand', 'color/link'], floats: 0 },
+  });
+  expect((await page.evaluate(() => window.kitPreviewHost.variables()))[0].values['3:1']).toEqual({ r: 1, g: 0, b: 0, a: 1 });
+  const calls = await page.evaluate(() => window.kitPreviewHost.calls().map((c) => c.name));
+  expect(calls).toEqual(expect.arrayContaining(['loadFontAsync', 'text.characters', 'node.exportAsync', 'variable.setValueForMode']));
+
+  // Slides has no variables, and Dev Mode reads them but cannot write.
+  await patchFile(page, 'code.js', [["installKitWindow({ mode: 'fit-content' });", `installKitWindow({ mode: 'fit-content' });
+(async () => {
+  let write = 'none';
+  if (figma.variables) {
+    const [variable] = await figma.variables.getLocalVariablesAsync();
+    try { variable.setValueForMode('3:0', { r: 0, g: 0, b: 0, a: 1 }); write = 'ok'; } catch (error) { write = String(error.message); }
+  }
+  figma.ui.postMessage({ type: 'stub-editor', editor: figma.editorType, variables: typeof figma.variables, write });
+})();`]]);
+  for (const editor of ['slides', 'dev', 'figjam']) {
+    await openPreview(page, { editor });
+    await expect.poll(() => page.evaluate(() => window.kitPreviewHost.messages().filter((m) => m.run === window.kitPreviewHost.runId()).some((m) => m.msg.type === 'stub-editor'))).toBe(true);
+    const report = await page.evaluate(() => window.kitPreviewHost.messages().filter((m) => m.run === window.kitPreviewHost.runId()).find((m) => m.msg.type === 'stub-editor').msg);
+    expect(report).toEqual({ type: 'stub-editor', editor, variables: editor === 'dev' ? 'object' : 'undefined', write: editor === 'dev' ? expect.stringContaining('read-only') : 'none' });
+  }
+});
+
 test('opened as a file, the gallery renders and the live panel explains how to run it', async ({ page }) => {
   await page.goto(new URL('../preview.html', import.meta.url).href);
   await expect(page.locator('#live-note')).toBeVisible();
