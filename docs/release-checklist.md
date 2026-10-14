@@ -7,13 +7,14 @@ Status words used below:
 - **Done**: in the repo and checked by running it (the evidence column says how).
 - **Pending (human or Figma app)**: needs a person, a designer session or a run in the real Figma desktop app. Nothing here may be marked done from a browser or a test stub.
 - **Pending (outward action)**: needs the owner to act outside the repo (npm, GitHub settings, Figma Community, tags).
-- **Not met**: a Phase 1 target the repo does not reach; the row says why and what is proposed.
+- **Not done**: repo work the roadmap asks for that is not in the repo yet; the row says what is missing.
+- **Not met**: a target the repo does not reach on purpose; the row says why and what is proposed.
 
 ## Manual surface matrix
 
-Run once per release in the Figma desktop app, on a file you can edit. Fill each cell with **pass**, **fail** (with a note below the table) or **n/a**. Record the Figma version (About Figma), the date and who ran it.
+Run once per release in the Figma desktop app, on a file you can edit. Fill each cell with **pass**, **fail** (with a note below the table) or **n/a**. Record the Figma version (About Figma), the date and who ran it. The starter comes first, then [the examples](#the-examples), the [Phase 2 components](#phase-2-components-in-the-figma-app) that need a look in Figma, and a [screen-reader pass](#screen-readers).
 
-Release: `0.2.0` · Figma version: · Date: · Tester:
+Release: `0.3.0` · Figma version: · Date: · Tester:
 
 | Surface | Imports from manifest | Opens hidden, then fits | Theme correct | Drag / Escape / keys | Reopen restores | Host demo works |
 |---|---|---|---|---|---|---|
@@ -33,25 +34,88 @@ What each check means:
 - **Imports from manifest**: Plugins > Development > Import plugin from manifest... accepts `manifest.json` with no error and the plugin appears in that editor's plugin list. Dev Mode needs its own manifest, which the starter does not ship: make a folder with the Dev Mode manifest from [surfaces.md](surfaces.md#the-dev-mode-manifest) plus copies of `code.js` and `ui.html`, import that, and run it from the Inspect panel.
 - **Opens hidden, then fits**: the window appears once, already at its content height. No flash of an empty or 320 × 360 window that then jumps.
 - **Theme correct**: colours match the editor (no light panel in dark mode, no unreadable text); switching Figma's theme while the plugin is open recolours it at once; in FigJam the primary button is purple. In Slides, Dev Mode and Buzz, write down what the theme looks like: it is UNVERIFIED ([surfaces.md](surfaces.md)).
-- **Drag / Escape / keys**: dragging the corner grip changes the width (the height keeps following the content); Escape during a drag snaps back; right-click does nothing; double-click snaps 320 → 480 → 640 → 320; with the handle focused (Tab), Left/Right move 8 px, Shift+Left/Right 32 px, Enter and Space snap, Home returns to 320. Where the chrome is off (Dev Mode, Buzz) the handle must be hidden: that is the pass.
+- **Drag / Escape / keys**: dragging the corner grip changes the width (the height keeps following the content); Escape during a drag snaps back; right-click does nothing; double-click snaps 320 → 480 → 640 → 320; with the handle focused (Tab), Left/Right move 8 px, Shift+Left/Right 32 px, Enter and Space snap, Home returns to 320, End goes to 640. Where the chrome is off (Dev Mode, Buzz) the handle must be hidden: that is the pass.
 - **Reopen restores**: drag to a new width, close, rerun with Cmd+Opt+P: the window opens at that width, with no jump. In another editor it opens at the default width (sizes are per editor). In Dev Mode and Buzz, note whether the panel honours the size at all.
 - **Host demo works**: with a count of 3, Create adds 3 shapes in a row at the centre of the view, selects them and zooms to them, and the status line updates; selecting layers updates the "n layers selected" line; a count of 0 or 51 shows the error text and red ring; Close closes the plugin. In Dev Mode, Create shows Figma's error toast and "Nothing created" (Dev Mode is read-only: that is the pass). In Slides and Buzz, note where the shapes land.
 
-**Required for 0.2.0: the probe runs.** On the same surfaces, run `tools/probe` ([steps](surfaces.md#measure-it-yourself)) and fill its two result tables and the raw reports in surfaces.md. Item 3's done-when ("pasted next to a host's own handler, both work") and the Dev Mode and Buzz rows depend on what it measures: whether assigning `figma.ui.onmessage` removes `figma.ui.on('message')` listeners, whether early messages are queued, and whether `figma.ui.resize` applies in docked panels (PLAN.md sections 9 and 10).
+**Required before the first release tag: the probe runs.** On the same surfaces, run `tools/probe` ([steps](surfaces.md#measure-it-yourself)) and fill its two result tables and the raw reports in surfaces.md. Phase 1 item 3's done-when ("pasted next to a host's own handler, both work") and the Dev Mode and Buzz rows depend on what it measures: whether assigning `figma.ui.onmessage` removes `figma.ui.on('message')` listeners, whether early messages are queued, and whether `figma.ui.resize` applies in docked panels (PLAN.md sections 9 and 10). Its environment report also says whether the plugin window supports `popover`, which the [menu](#phase-2-components-in-the-figma-app) needs.
+
+### The examples
+
+Each [examples/](../examples/) folder is its own plugin: import its `manifest.json` the same way ([install.md](install.md#the-examples)) and run it in every editor its manifest lists, and only those ([surfaces.md](surfaces.md#the-examples) says why each lists what it does). In Figma Design, check light and dark. Same cell words as above.
+
+| Example · editor | Window mode | Imports | Opens at its size | Theme correct | Does its task | Window behaves | Notes |
+|---|---|---|---|---|---|---|---|
+| `rename-layers` · Figma Design (light, dark) | `fit-content` | | | | | | |
+| `rename-layers` · Slides | `fit-content` | | | | | | |
+| `export-selection` · Figma Design (light, dark) | `resizable` | | | | | | |
+| `export-selection` · FigJam | `resizable` | | | | | | |
+| `export-selection` · Slides | `resizable` | | | | | | |
+| `export-selection` · Buzz | `resizable` (no handle) | | | | | n/a | |
+| `content-fill` · Figma Design (light, dark) | `fixed` | | | | | | |
+| `content-fill` · FigJam | `fixed` | | | | | | |
+| `content-fill` · Slides | `fixed` | | | | | | |
+| `content-fill` · Buzz | `fixed` | | | | | | |
+| `variables-sync` · Figma Design (light, dark) | `resizable` | | | | | | |
+| `a11y-contrast` · Figma Design (light, dark) | `fit-content` | | | | | | |
+| `a11y-contrast` · FigJam | `fit-content` | | | | | | |
+| `a11y-contrast` · Slides | `fit-content` | | | | | | |
+| `a11y-contrast` · Buzz | `fit-content` (no handle) | | | | | n/a | |
+
+What each check means for the examples (the import and theme checks are the starter's):
+
+- **Opens at its size**: the window appears once, with no jump, at its mode's size: the content height for `fit-content`, the saved or default size for `resizable` (`variables-sync` defaults to 360 × 540), 320 × 249 for `content-fill`.
+- **Does its task**, per example:
+  - `rename-layers`: select three layers, type a prefix: the list previews every new name as you type; Rename renames exactly the previewed layers, and one Cmd+Z undoes it. In Slides, note whether the preview follows the selection (its page watch is guarded, because Slides' plugin surface is unverified).
+  - `export-selection`: select two layers, pick 2x, press Export: one PNG per layer starts downloading, named like `Frame 1@2x.png`, and the status says "Started 2 downloads". Where the files land and whether Figma asks per file go in the [downloads row](#phase-2-components-in-the-figma-app) below.
+  - `content-fill`: select some text layers, pick a kind, press Fill: each layer gets a value of that kind, and one Cmd+Z undoes it. A layer with mixed fonts takes its first character's style. In FigJam, stickies and shapes with text are filled too.
+  - `variables-sync`: in a file with local colour variables, pick a collection and a mode, click a variable, type a hex code and press Apply: the variable changes in that mode only, one Cmd+Z undoes it, and Apply on an alias without typing keeps the alias.
+  - `a11y-contrast`: select text layers, or a frame holding some: each gets a ratio and a pass or fail against AA; **Select failing** selects the failing ones; clicking a row selects that layer. In FigJam, text on stickies and shapes is not checked (it is not a text layer).
+- **Window behaves**: `fit-content` (`rename-layers`, `a11y-contrast`): the height follows the content (ticking "Add numbers", a longer result) and the list scrolls inside its 240px region, so the footer stays in view; dragging changes the width, and reopening restores it. `resizable` (`export-selection`, `variables-sync`): dragging changes both sides, content changes never move the window, and reopening restores both; in `variables-sync` a taller window shows more list rows with Apply still in view. `fixed` (`content-fill`): no handle anywhere, and the window never changes size, also when a result line appears. In Buzz the handle is off on every example: note whether the panel honours the plugin's size.
+
+Notes on failures:
+
+-
+
+### Phase 2 components in the Figma app
+
+Kit 0.3.0 components whose behaviour the browser preview can't vouch for inside Figma's plugin iframe. Each row says where to find one.
+
+| Component | Where | What to check | Result | Figma version, date |
+|---|---|---|---|---|
+| Native colour picker | `variables-sync`: the swatch next to the hex field | Clicking the swatch opens the system colour picker from the plugin window (UNVERIFIED); picking a colour writes its code into the hex field; Escape or cancel leaves the field as it was. | | |
+| Popover menu | No example uses one: paste the [menu markup](components.md#menu) into the starter's `<main>` for the test, rerun with Cmd+Opt+P, and undo the edit afterwards | It opens above the plugin's content, under its button and inside the window (above it near the bottom edge), and isn't cut off by the window's edge; ArrowDown, ArrowUp, Home and End move between items; Escape closes the menu and returns focus to the button, and does not close the plugin; clicking an item runs it and closes the menu; in light, dark and FigJam the menu is readable. | | |
+| Tooltips | `a11y-contrast`: "Check again" in the header; `variables-sync`: "Reload variables" | The tooltip appears about 400 ms after the pointer rests on the button and at once when the button is reached with Tab; it is not cut off at the window's right edge (both use `kit-tooltip-end`); it hides when the pointer and focus leave; it is readable in each theme. | | |
+| Downloads | `export-selection` with three layers selected | Whether the desktop app saves all three files, asks once per file, or blocks some without a message (UNVERIFIED: no event tells the page); where the files land; the file names; whether each PNG's pixel size matches the size the list showed. | | |
+
+### Screen readers
+
+Run with VoiceOver on macOS and, if available, NVDA on Windows, inside the Figma desktop app on the starter and the examples. Tabs and the menu are in no example: check those on `preview.html`'s gallery in Chrome (`npm run preview`), which is real assistive technology but not Figma. Write what the screen reader says, briefly.
+
+| Item | Where | Expected | VoiceOver | NVDA |
+|---|---|---|---|---|
+| Resize handle | Starter, Tab to the grip | "Resize window", a button, then the hint ("Drag, or use the arrow keys...") | | |
+| Resize announcement | Starter, Right three times quickly | One "Window 344 by …" after a short pause, not three | | |
+| Live result | `rename-layers`: rename three layers | "Renamed 3 layers" (or similar) without focus moving; nothing while typing | | |
+| Tooltip as description | `a11y-contrast`: Tab to "Check again" | The name, then "Measure the selection again" | | |
+| Checkbox and radio | `content-fill` checkbox; `export-selection` scale radios | Checked state; arrow keys move the radio choice | | |
+| Tabs | Gallery, Tabs row | Heard as a radio group ("PNG, radio button, 1 of 3"), arrow keys switch | | |
+| Menu | Gallery, the live menu | A menu with menu items; Escape returns to its button | | |
+| Danger notice | Gallery, or a failed action that shows one | Read at once (`role="alert"`) | | |
 
 ## Phase 1 status
 
-Phase 1 is PLAN.md section 3 (the fix-first list), section 4 items 1-7, the P1 rows of section 7 and section 10 (the first-week checklist). Last updated 2026-10-13. The table follows section 4; sections 3, 7 and 10 are checked [below it](#fix-first-list-inventory-and-first-week-plan-sections-3-7-and-10).
+Phase 1 is PLAN.md section 3 (the fix-first list), section 4 items 1-7, the P1 rows of section 7 and section 10 (the first-week checklist). Last updated 2026-10-14, at kit 0.3.0 (commit `9a8c948`). The table follows section 4; sections 3, 7 and 10 are checked [below it](#fix-first-list-inventory-and-first-week-plan-sections-3-7-and-10). Phase 2 is in [its own table](#phase-2-status).
 
 | # | Item | In the repo (evidence) | Done when (PLAN.md) | Status |
 |---|---|---|---|---|
-| 1 | Repo basics and a runnable folder | `LICENSE` (MIT), `package.json`, `manifest.json` (`"main": "code.js"`, `dynamic-page`, `allowedDomains: ["none"]`), the built `code.js` kept in the repo; CI rebuilds it and fails on any diff (simulated locally: clean tree passes, an edit to `code.ts` without a rebuild fails). `CHANGELOG.md` lists the public surface and every rename from 2025. README brand line says "not rsms/figplug" and "Fallback name: TBD". | The zip imports from manifest and runs with no terminal. | Repo work: **Done**. Zip import run: **Pending (human or Figma app)**. `npm deprecate` and reserving the fallback name: **Pending (outward action)**. |
-| 2 | Resize script rewrite and modes | `ui.html` runtime: one `requestSize`, a per-drag `AbortController`, the `button`/`isPrimary` guard, `lostpointercapture`, the three modes, the 500 ms fallback, the first fit after `document.fonts.ready`, the grip corner reserved only while the chrome is on. `clampSize`, `nextSnap`, `sameSize` under `node:test` (`test/pure.test.mjs`). `e2e/chrome.spec.mjs` drives the real `ui.html` and `code.js` in `preview.html`'s fake host: drag, Escape mid-drag, right- and middle-click, plain click, double-click, Shift+arrows, Home, reopen with a saved size, `resizable` mode, `fixed` mode, `ui.html` opened with no host, a host that applies resizes late, a main thread that answers after the 500 ms fallback, web fonts that never settle, a bad `data-kit-config`, replaced markup, counting the listeners before and after each gesture; every e2e test fails on any console error or uncaught exception (where a `'use strict'` slip would show). | Drag, Escape mid-drag, right-click, double-click, Shift+arrows and reopen leak zero listeners under `'use strict'`; replacing the demo markup still fits. | Fake frame: **Done** (`npm run test:e2e`: 50 passed, 4 screenshot tests skipped, Chromium 151, 2026-10-13). Replaced markup: **Done** (`e2e/chrome.spec.mjs`, "replacing the markup, or the root itself, still fits": taller and shorter markup, a new `[data-kit-root]` element and no root at all, each fitted with no window error and nothing saved). Same sequences in Figma: **Pending (human or Figma app)** (surface matrix). |
+| 1 | Repo basics and a runnable folder | `LICENSE` (MIT), `package.json`, `manifest.json` (`"main": "code.js"`, `dynamic-page`, `allowedDomains: ["none"]`), the built `code.js` kept in the repo; CI rebuilds it (and, since 0.3.0, every example's) and fails on any changed or added file (simulated on a clean export of commit `9a8c948` on 2026-10-14: `npm run build` and `npm run build:examples` leave the tree unchanged). `CHANGELOG.md` lists the public surface and every rename from 2025. README brand line says "not rsms/figplug" and "Fallback name: TBD". | The zip imports from manifest and runs with no terminal. | Repo work: **Done**. Zip import run: **Pending (human or Figma app)**. `npm deprecate` and reserving the fallback name: **Pending (outward action)**. |
+| 2 | Resize script rewrite and modes | `ui.html` runtime: one `requestSize`, a per-drag `AbortController`, the `button`/`isPrimary` guard, `lostpointercapture`, the three modes, the 500 ms fallback, the first fit after `document.fonts.ready`, the grip corner reserved only while the chrome is on. `clampSize`, `nextSnap`, `sameSize` under `node:test` (`test/pure.test.mjs`). `e2e/chrome.spec.mjs` drives the real `ui.html` and `code.js` in `preview.html`'s fake host: drag, Escape mid-drag, right- and middle-click, plain click, double-click, Shift+arrows, Home, reopen with a saved size, `resizable` mode, `fixed` mode, `ui.html` opened with no host, a host that applies resizes late, a main thread that answers after the 500 ms fallback, web fonts that never settle, a bad `data-kit-config`, replaced markup, counting the listeners before and after each gesture; every e2e test fails on any console error or uncaught exception (where a `'use strict'` slip would show). | Drag, Escape mid-drag, right-click, double-click, Shift+arrows and reopen leak zero listeners under `'use strict'`; replacing the demo markup still fits. | Fake frame: **Done** (`npm run test:e2e`: 50 passed and 4 screenshot tests skipped at 0.2.0 on 2026-10-13; 119 passed and 4 skipped at 0.3.0 on 2026-10-14, Chromium 151.0.7922.34). Replaced markup: **Done** (`e2e/chrome.spec.mjs`, "replacing the markup, or the root itself, still fits": taller and shorter markup, a new `[data-kit-root]` element and no root at all, each fitted with no window error and nothing saved). Same sequences in Figma: **Pending (human or Figma app)** (surface matrix). |
 | 3 | Installable `code.ts` | `kit:window` block with `installKitWindow({ bounds, persist, mode, size, title, html })`, `figma.ui.on('message')`, `kitIsSizeRecord`, `KIT_PROTOCOL` sent in `kit:ready` and echoed in `kit:init`, hidden until the first fit (500 ms cap), chrome gated on `editorType`, record `{ v: 1, editorType, width, height }`, Dev Mode min width 300. `kit.d.ts` export-free; `npm run check:ui` checks the runtime's JSDoc mirror. `test/code.test.mjs` runs `code.js` against a `figma` stub, including the kit listener and the demo's host listener side by side. | Pasted next to a host's own handler, both work; Dev Mode and Buzz runs recorded. | Stub test: **Done**. Real Figma run next to a host handler ([paste steps](messages.md#adding-the-kit-to-an-existing-plugin)), and the Dev Mode and Buzz runs: **Pending (human or Figma app)**. The `tools/probe` runs in Design, FigJam, Slides, Dev Mode and Buzz (`onmessage` coexistence, early messages, resize), which this done-when depends on: **Pending (human or Figma app)** ([steps](surfaces.md#measure-it-yourself); the result tables are empty). |
 | 4 | README first screen and Community listing | `README.md` first screen: "Is this for you?", brand line, light/dark screenshots, 60-second start, the one prompt, "Your loop", the plain limits. `docs/install.md` (import gotchas), `docs/loop.md`, `docs/community-listing.md` (listing copy). | Two designers with only Figma desktop and Claude Code reach a running plugin; record where each stops. | Copy: **Done**. Designer gate: **Pending (human or Figma app)** (table below). Screenshot side by side with Figma's own panel: **Pending (human or Figma app)** ([capture (a)](#a-side-by-side-with-figmas-own-panel-item-4)). Listing republish: **Pending (outward action)**. |
-| 5 | Agent context and a first audit | `AGENTS.md` (under 150 lines), `CLAUDE.md` (`@AGENTS.md` + Claude notes), `.claude/skills/kit-ui/SKILL.md` with `references/` → `docs/`; `scripts/audit.mjs` (zero dependencies; rules `color-literal`, `control-height`, `manifest-fields`, `manifest-document-access`, `manifest-network-access`, `protocol-mismatch`; tests in `test/audit.test.mjs`); the CI workflow runs it; `docs/prompts.md` pins the harness. | One archetype prompt in a fresh clone passes the audit. | Repo work: **Done**. The one-shot run: **Pending (human or Figma app)** (the log in prompts.md is empty). |
-| 6 | Native fidelity pass | Tokens and component values measured from Figma's production CSS and two UI3 replicas, with sources and confidence ([tokens.md](tokens.md#measured-metrics)); tokens isolated in `<style data-kit="tokens">`; marked sections; version header with the issues URL; `Inter, system-ui` and the opt-in `scripts/make-fonts-css.mjs`. `preview.html` shows every Phase 1 component in six states (`e2e/preview.spec.mjs` checks it; `docs/img/gallery-light.png`, `gallery-dark.png`). | Every component shows all six states and matches the measured values. | Six-state gallery in the browser: **Done**. Measuring the official UI3 kit file through the Figma MCP ([capture (b)](#b-the-official-ui3-kit-through-the-figma-mcp-item-6)) and a designer's comparison with Figma's own panels ([capture (c)](#c-a-designers-comparison-with-figmas-panels-item-6)): **Pending (human or Figma app)**. |
-| 7 | `preview.html`, fallback palette, tests | `tokens.figma-fallback.css`: all 174 tokens for Design light, dark and FigJam, provisional values from create-figma-plugin's MIT transcription (`test/fallback.test.mjs`). `preview.html`: gallery, theme switch, "Simulate no Inter", and a fake frame running `code.js` against a `figma` stub (`npm run preview`, `scripts/serve.mjs`). `scripts/check-ui.mjs`. Playwright: `e2e/*.spec.mjs` with axe-core per theme (all WCAG 2.0/2.1 A and AA rules except `color-contrast`, replaced by a token-pair contrast report). CI and the Pages workflow (its staging step was run locally: the staged site redirects to `preview.html` and the live frame boots with no errors). This checklist. | Both themes render in Chrome, the resizer works on the fake frame, CI is green. | Both themes and the resizer on the fake frame: **Done** (local e2e run above). Live palette capture from a running plugin: **Pending (human or Figma app)**. CI green on GitHub, Pages enabled, tag `v0.2.0`: **Pending (outward action)**. |
+| 5 | Agent context and a first audit | `AGENTS.md` (under 150 lines), `CLAUDE.md` (`@AGENTS.md` + Claude notes), `.claude/skills/kit-ui/SKILL.md` with `references/` → `docs/`; `scripts/audit.mjs` (zero dependencies; 6 rules in its Phase 1 version, 19 in 0.3.0, each with a fixture that triggers it in `test/audit.test.mjs`); the CI workflow runs it; `docs/prompts.md` pins the harness and logs the runs. | One archetype prompt in a fresh clone passes the audit. | Repo work: **Done**. The one-shot run: **Done** as agent-only runs: all five archetype prompts passed build, audit and check:ui in a fresh clone at 0.2.0 and again at 0.3.0 ([one-shot log](prompts.md#one-shot-log)). A run by a person, and importing the results into Figma (the log's check 4): **Pending (human or Figma app)**. |
+| 6 | Native fidelity pass | Tokens and component values measured from Figma's production CSS and two UI3 replicas, with sources and confidence ([tokens.md](tokens.md#measured-metrics)); tokens isolated in `<style data-kit="tokens">`; marked sections; version header with the issues URL; `Inter, system-ui` and the opt-in `scripts/make-fonts-css.mjs`. `preview.html` shows every component, Phase 1 and Phase 2, in six states (25 gallery rows; `e2e/preview.spec.mjs` checks them; `docs/img/gallery-light.png`, `gallery-dark.png`). | Every component shows all six states and matches the measured values. | Six-state gallery in the browser: **Done**. Measuring the official UI3 kit file through the Figma MCP ([capture (b)](#b-the-official-ui3-kit-through-the-figma-mcp-item-6)) and a designer's comparison with Figma's own panels ([capture (c)](#c-a-designers-comparison-with-figmas-panels-item-6)): **Pending (human or Figma app)**. |
+| 7 | `preview.html`, fallback palette, tests | `tokens.figma-fallback.css`: all 174 tokens for Design light, dark and FigJam, provisional values from create-figma-plugin's MIT transcription (`test/fallback.test.mjs`). `preview.html`: gallery, theme switch, "Simulate no Inter", and a fake frame running `code.js` against a `figma` stub (`npm run preview`, `scripts/serve.mjs`). `scripts/check-ui.mjs`. Playwright: `e2e/*.spec.mjs` with axe-core per theme (all WCAG 2.0/2.1 A and AA rules except `color-contrast`, replaced by a token-pair contrast report). CI and the Pages workflow (its staging step was run locally: the staged site redirects to `preview.html` and the live frame boots with no errors). This checklist. | Both themes render in Chrome, the resizer works on the fake frame, CI is green. | Both themes and the resizer on the fake frame: **Done** (local e2e runs above). Live palette capture from a running plugin: **Pending (human or Figma app)**. CI green on GitHub, Pages enabled, tag `v0.2.0`: **Pending (outward action)**. |
 
 ### Designer gate (item 4)
 
@@ -64,7 +128,7 @@ Two designers with only the Figma desktop app and Claude Code, a fresh clone, th
 
 ### Fix-first list, inventory and first-week plan (sections 3, 7 and 10)
 
-**Section 3, the fix-first list.** Every bullet is fixed by items 1, 2, 3, 6 and 7 and listed under Fixed and Changed in [CHANGELOG.md](../CHANGELOG.md), with one exception the roadmap itself moves: the resizer's missing live feedback (an `aria-live` size announcement) is a Phase 2 row in section 7 ([accessibility.md](accessibility.md#known-gaps-for-phase-2)). Status: **Done** in the browser and the `figma` stub; the same behaviour in Figma is the surface matrix.
+**Section 3, the fix-first list.** Every bullet is fixed by items 1, 2, 3, 6 and 7 and listed under Fixed and Changed in [CHANGELOG.md](../CHANGELOG.md), with one exception the roadmap itself moved to Phase 2: the resizer's live feedback, the `aria-live` size announcement, which kit 0.3.0 added ([accessibility.md](accessibility.md#the-resize-hint-and-the-announcement)). Status: **Done** in the browser and the `figma` stub; the same behaviour in Figma is the surface matrix.
 
 **Section 7, the P1 rows of the inventory.**
 
@@ -75,24 +139,92 @@ Two designers with only the Figma desktop app and Claude Code, a fresh clone, th
 | Dropdown (`<select>`) | + disabled, error; stays native, documented | `kit-select` disabled and `aria-invalid` rules on the native `<select>`; the native popup is in [components.md](components.md#select) and the README's limits | **Done** (same) |
 | Resize handle | modes, 24px, 3:1 grip | three modes; a 24px `<button>`; grip `icon-secondary` on `bg`, 3.98:1 light, 7.65:1 dark ([accessibility.md](accessibility.md#measured-ratios)) | **Done** on the fallback palette; the ratio on a captured palette waits for the palette capture |
 | Layout primitives | real elements and classes | `<main>`, `<section>`, `<hr>`, `<h1>`, `<label>` with the `kit-*` layout classes | **Done** |
-| Figma tokens referenced | 60+ of 174 | 58 distinct `--figma-color-*` names in `ui.html` in 0.3.0 (34 in 0.2.0, 15 in the 2025 file). Count: `grep -o -E -- '--figma-color-[a-z0-9-]+' ui.html \| sort -u \| wc -l`. The cheat sheet in [tokens.md](tokens.md#role--token-cheat-sheet) names more for host CSS. | **Not met (58).** The Phase 2 components brought the tone families (tint, ring, icon for brand, success, warning and danger), the checkbox set, the on-selected set and the inverse surface; the kit does not add unused aliases to raise the count: they would be dead tokens. The Phase 3 dialog and toast are expected to close the gap ([tokens.md](tokens.md)). Owner decision on the target: pending. |
+| Figma tokens referenced | 60+ of 174 | 58 distinct `--figma-color-*` names in `ui.html` at 0.3.0, counted on commit `9a8c948` on 2026-10-14 (34 in 0.2.0, 15 in the 2025 file). Count: `grep -o -E -- '--figma-color-[a-z0-9-]+' ui.html \| sort -u \| wc -l`. The cheat sheet in [tokens.md](tokens.md#role--token-cheat-sheet) names more for host CSS. | **Not met (58).** The Phase 2 components brought the tone families (tint, ring, icon for brand, success, warning and danger), the checkbox set, the on-selected set and the inverse surface; the kit does not add unused aliases to raise the count: they would be dead tokens. The Phase 3 dialog and toast are expected to close the gap ([tokens.md](tokens.md)). Owner decision on the target: pending. |
 | Fallback palette | all 174 captured | `tokens.figma-fallback.css` has all 174 names for Design light, dark and FigJam, provisional values from create-figma-plugin's MIT transcription (`test/fallback.test.mjs`) | All 174 names: **Done**. Capturing them from a running plugin: **Pending (human or Figma app)** (monthly step 2) |
 | Kit tokens | measured radii, line-heights, durations, shadow and scrim; density removed | `--kit-radius-*`, `--kit-line-height-*`, `--kit-duration-*`, `--kit-shadow-*`, `--kit-scrim` ([tokens.md](tokens.md#measured-metrics)); density presets removed | **Done**; the MCP measurement of the UI3 kit file is item 6 |
+
+The P2 rows of section 7 (the handle's `<button>`, `aria-live` and Home/End; the first eight components; the six stretch components) are items 4 and 5 of the [Phase 2 table](#phase-2-status).
 
 **Section 10, the first-week checklist.**
 
 | Step | In the repo | Status |
 |---|---|---|
 | Confirm `npm login`; decide the name (brand in README and listing, neutral `kit` namespace elsewhere, fallback name reserved); `npm deprecate` both packages | "Figplug UI Kit" in the README and [community-listing.md](community-listing.md) with the "not rsms/figplug" line; `kit-*`, `--kit-*`, `kit:*` and `data-kit-*` everywhere else | Namespace: **Done**. `npm login`, `npm deprecate` and the fallback name: **Pending (outward action)** (actions 1 and 6) |
-| `LICENSE`, `package.json`, the corrected `manifest.json`; `tsc`; commit `code.js`; Import plugin from manifest with no terminal | All files present; `npm run build` regenerates `code.js` and CI's diff check guards it (item 1) | Files: **Done**. Committing and pushing the Phase 1 work: **Pending (outward action)**. The import run: **Pending (human or Figma app)** (item 1) |
-| `ui.html`: declare `activePointerId`, the `e.button !== 0 \|\| !e.isPrimary` guard, an `AbortController` per drag, remove the `aria-label`, add `lang` | The rewritten runtime runs under `'use strict'` (item 2); `<html lang="en">`; fields named by their visible `<label>` | **Done** (item 2's e2e run) |
+| `LICENSE`, `package.json`, the corrected `manifest.json`; `tsc`; commit `code.js`; Import plugin from manifest with no terminal | All files present; `npm run build` regenerates `code.js` and CI's diff check guards it (item 1) | Files and the local commits: **Done**. Pushing them to GitHub: **Pending (outward action)** (this copy has no git remote). The import run: **Pending (human or Figma app)** (item 1) |
+| `ui.html`: declare `activePointerId`, the `e.button !== 0 \|\| !e.isPrimary` guard, an `AbortController` per drag, remove the `aria-label`, add `lang` | The rewritten runtime runs under `'use strict'` (item 2); `<html lang="en">`; fields named by their visible `<label>` | **Done** (item 2's e2e runs) |
 | `code.ts`: `isSizeRecord`, `figma.ui.on('message')`, check whether a host `onmessage =` clears it | `kitIsSizeRecord` and `figma.ui.on('message', ...)` in the `kit:window` block (item 3) | Guard and listener: **Done**. The `onmessage =` check: **Pending (human or Figma app)** (the probe runs, above) |
 | README first screen; docs link, `.gitignore`, screenshots | Item 4; the screenshots are browser renders in `docs/img/` | **Done**. The Figma side by side: capture (a) |
-| Draft `AGENTS.md`; run the entry prompt once in a fresh clone and log each failure as a future audit rule; tag `v0.2.0-alpha`; open `CHANGELOG.md` | `AGENTS.md`, `CHANGELOG.md` | `AGENTS.md` and `CHANGELOG.md`: **Done**. The entry-prompt run: **Pending (human or Figma app)** (item 5; the one-shot log in prompts.md is empty). Tag `v0.2.0-alpha`: **Pending (outward action)** (action 4) |
+| Draft `AGENTS.md`; run the entry prompt once in a fresh clone and log each failure as a future audit rule; tag `v0.2.0-alpha`; open `CHANGELOG.md` | `AGENTS.md`, `CHANGELOG.md`; the [one-shot log](prompts.md#one-shot-log) with a row per run, the 0.2.0 failures turned into audit rules (`orphan-help`, `js-color-literal`) and AGENTS.md guidance, and the 0.3.0 runs' rule candidates | `AGENTS.md`, `CHANGELOG.md` and the entry-prompt runs (agent-only): **Done**. A run by a person and the Figma import: **Pending (human or Figma app)** (item 5). Tag `v0.2.0-alpha`: **Pending (outward action)** (action 4) |
+
+## Phase 2 status
+
+Phase 2 is PLAN.md section 5, items 1-5. The plan calls the phase done "at items 1-3 plus whichever of the first eight components the archetypes pulled in; the rest is stretch". Last updated 2026-10-14, at kit 0.3.0 (commit `9a8c948`). **Phase 2 is not done yet:** item 3 lacks four of its pages (first plugin, UI3 mapping, publishing, upgrading) and both of its repo files, and every item has steps that wait for a person, the Figma app or the owner.
+
+Evidence numbers come from runs on 2026-10-14 on a clean export of commit `9a8c948` (Node 24.13.0, macOS):
+
+- `npm run check`: exit 0. `build-examples: 5 of 5 example(s) compiled`; `audit: no problems in 6 plugin folders` (the root and the five examples); `check-ui: no type errors in 6 plugin folders`; `npm test`: 450 tests, 450 passed, 0 failed, 0 skipped (352 in `test/`, of them 228 in `test/audit.test.mjs`; 98 golden tests in the examples: `a11y-contrast` 34, `content-fill` 20, `export-selection` 11, `rename-layers` 17, `variables-sync` 16).
+- `npm run test:e2e` (Playwright 1.62.1, Chromium 151.0.7922.34): 119 passed, 4 skipped (the screenshot specs, which run only with `UPDATE_SCREENSHOTS=1`). Of them, `e2e/examples.spec.mjs` 25, `e2e/chrome-v2.spec.mjs` 14, `e2e/menu.spec.mjs` 11, `e2e/a11y.spec.mjs` 11, and 27 axe runs across the specs.
+- The CI workflow runs the same commands, but it has never run on GitHub: this copy of the repo has no git remote.
+
+| # | Clause (PLAN.md section 5) | In the repo (evidence) | Status |
+|---|---|---|---|
+| 1 | Archetypes: `examples/rename-layers`, `export-selection`, `content-fill` first | All three folders, in commit `9a8c948` | **Done** |
+| 1 | `variables-sync` and `a11y-contrast` wait for the number and colour fields | `kit-number` and `kit-color` shipped in commit `74a834a`, before the examples; `variables-sync` uses the colour field | **Done** |
+| 1 | Each ships the three files | `manifest.json`, `code.ts` with its compiled `code.js` committed, `ui.html` in each folder, plus `kit.d.ts` and `tsconfig.json` | **Done** |
+| 1 | Using only kit classes | Every control and component in the five `ui.html` files is a kit class. Their own CSS styles a few extras (a contrast chip, a variable swatch, a result line, list spacing) under their own class names (`contrast-*`, `vars-*`, `rename-*`, `cf-result`, `scales`, `layers`), tokens only (`npm run audit`: no problems) | **Done** |
+| 1 | A different chrome mode | The first three differ: `rename-layers` `fit-content`, `export-selection` `resizable`, `content-fill` `fixed`; the other two repeat (`variables-sync` `resizable`, `a11y-contrast` `fit-content`). `e2e/examples.spec.mjs`, "the examples cover every window mode, and the preview offers each of them" | **Done** |
+| 1 | A README with its entry-prompt variant | "The prompt" in each `examples/<name>/README.md` | **Done** |
+| 1 | And the agent's diff | `agent.diff` in each folder, summarised under "What the agent built" and "What curation changed, and why" in its README | **Done** |
+| 1 | The audit byte-compares marked sections across root, preview and examples | Audit rule `section-drift` (the `section-drift` fixture and six section-drift cases in `test/audit.test.mjs`, one of them for `preview.html`); `e2e/preview.spec.mjs`, "the three kit blocks are byte-identical to ui.html" | **Done** |
+| 1 | Cap at two examples until it does | `section-drift` landed in commit `74a834a`, before any example (`9a8c948`), so the cap never applied | **Done** |
+| 1 | *Done when:* two pass `tsc` and the audit in CI | All five pass locally: `build-examples: 5 of 5 example(s) compiled`, `audit: no problems in 6 plugin folders`. The CI workflow runs `npm run build:examples` and the audit | Locally: **Done**. In CI on GitHub: **Pending (outward action)** (push the repo; CI has never run) |
+| 1 | *Done when:* the one-shot rate is logged | [prompts.md](prompts.md#one-shot-log): automated one-shot 5 of 5 at 0.3.0 (and 5 of 5 at 0.2.0), agent-only runs in fresh clones; each example README repeats its row | Logged: **Done**. Check 4 of every run (import into the Figma desktop app): **Pending (human or Figma app)** |
+| 2 | Audit v2: missing `:disabled` | Rule `missing-disabled` (fixture `missing-disabled`) | **Done** |
+| 2 | Sync getters | Rule `sync-getter` (fixture `sync-getter`) | **Done** |
+| 2 | `aria-label` overriding a visible label | Rule `aria-label-override` (fixture `aria-label-override`) | **Done** |
+| 2 | Missing `lang` | Rule `missing-lang` (fixture `missing-lang`) | **Done** |
+| 2 | Tooltip or `[aria-invalid]` without `aria-describedby` | Rule `missing-describedby` (fixtures `missing-describedby` and `missing-describedby-tooltip`) | **Done** |
+| 2 | Section drift | Rule `section-drift` (item 1 above) | **Done** |
+| 2 | A budget warning (shell under 1,600 lines / 64 KB) | Rule `budget`: a warning for a ui file of 1,600 lines or more, or 64 KB or more, fonts in `data:` URLs not counted (fixture `budget`). The largest example `ui.html` is `variables-sync`'s, 65,338 bytes, under the 65,536-byte line | **Done** |
+| 2 | *Done when:* it catches every failure logged in Phase 1 | The five Phase 1 one-shot plugins are kept verbatim as `test/fixtures/oneshot-*`, and `test/audit.test.mjs` pins what the audit says about each ("… (a Phase 1 one-shot plugin): N orphan-help warning(s), nothing else"). The Phase 1 failures a static check can see became `orphan-help` and `js-color-literal`; the rest (a status line rewritten per keystroke, "Downloaded N", untyped messages, the demo-coupled tests, the stub's gaps, the contrast maths) are behaviour no static rule sees and went to AGENTS.md guidance, tests and the preview stub ([prompts.md](prompts.md#one-shot-log), the 0.2.0 rows). "every rule has a fixture that triggers it, and docs/pitfalls.md documents it" covers all 19 rules | **Done** for every failure a static check can catch |
+| 3 | README as docs: Install | [install.md](install.md), linked from the README's Docs line | **Done** |
+| 3 | First plugin | [docs/first-plugin.md](first-plugin.md); its markup, messages and script were run through build, audit, check:ui, the unit tests and e2e in a copy of the 0.3.0 repo | Done in the repo. Importing it into Figma: **Pending (human or Figma app)** |
+| 3 | Your loop | [loop.md](loop.md) | **Done** |
+| 3 | Tokens | [tokens.md](tokens.md) | **Done** |
+| 3 | Components | [components.md](components.md) | **Done** |
+| 3 | Window chrome | [window-chrome.md](window-chrome.md) | **Done** |
+| 3 | Messages | [messages.md](messages.md) | **Done** |
+| 3 | Accessibility | [accessibility.md](accessibility.md), with the Phase 2 notes per component | **Done** |
+| 3 | Surfaces | [surfaces.md](surfaces.md), with the editors of each example | **Done** |
+| 3 | A UI3 mapping table (official kit component to kit class, CC BY attribution) that a frame-to-markup skill consumes via MCP `get_design_context` | [docs/ui3-mapping.md](ui3-mapping.md) (CC BY 4.0 attribution) and `.claude/skills/kit-frame-to-markup/`. The UI3 component names are UNVERIFIED until the Community file is read through the MCP: [capture (b)](#b-the-official-ui3-kit-through-the-figma-mcp-item-6) | Page and skill: Done. Verifying the names: **Pending (human or Figma app)** |
+| 3 | Publishing checklist (icon 128, thumbnail 1920x1080, support contact, network label, privacy policy, AI-overlap rule, 10-day to 6-week reviews) | [docs/publishing.md](publishing.md) for plugin authors; [community-listing.md](community-listing.md) for the kit's own listing | Done |
+| 3 | Upgrade by re-pasting the three marked sections | [docs/upgrade.md](upgrade.md), step by step, with a section-drift check against a release clone | Done |
+| 3 | Ten-line `CONTRIBUTING.md` | [CONTRIBUTING.md](../CONTRIBUTING.md) | Done |
+| 3 | `bug_report.yml` asking `editorType`, theme, kit header | `.github/ISSUE_TEMPLATE/bug_report.yml` and `config.yml` (YAML parses; not yet rendered on GitHub) | Done |
+| 3 | *Done when:* two new volunteers reach a running plugin in under 30 minutes | [Volunteer gate](#volunteer-gate-item-3) below, empty | **Pending (human or Figma app)** |
+| 4 | Components the archetypes pull in, the first eight: empty state, list row, sticky footer, inline notice, checkbox, textarea, section header, icon button | All eight in 0.3.0's components block and [components.md](components.md). Pulled in by the examples: sticky footer (all five), empty state, list row and section header (four each), checkbox (`content-fill`, `rename-layers`), icon button (`a11y-contrast`, `variables-sync`), inline notice (`a11y-contrast`); textarea by none, shipped anyway | **Done** |
+| 4 | Stretch: number field, colour swatch + hex field, radio, tooltip (`aria-describedby`, `:focus-visible`), tabs, menu (first stateful) | All six in 0.3.0. Used by the examples: number field (`rename-layers`), colour field (`variables-sync`), radio (`export-selection`), tooltip (`a11y-contrast`, `variables-sync`); tabs and menu only in the gallery and the e2e fixture | **Done** |
+| 4 | *Done when:* each appears in `preview.html` in all states | `e2e/preview.spec.mjs`, "every gallery component is present in all six states": 25 gallery rows, 14 of them Phase 2 components | In the browser: **Done**. A look inside Figma: **Pending (human or Figma app)** ([components table](#phase-2-components-in-the-figma-app)) |
+| 5 | Chrome v2: the handle becomes a `<button>` | A `<button type="button">` since 0.2.0 | **Done** |
+| 5 | With an `aria-describedby` hint | `#kit-resize-hint`, added to the handle's `aria-describedby` at startup; `e2e/chrome-v2.spec.mjs`, "aria-describedby points at #kit-resize-hint; one polite [data-kit-announce]; both visually hidden and outside the fit" | **Done** |
+| 5 | One `aria-live` announcement debounced 150 ms after the last keystroke | `[data-kit-announce]`, `aria-live="polite"`; `e2e/chrome-v2.spec.mjs`, "a burst of keys is announced once, 150 ms after the last key, with the size it ends at" and three more | **Done** in the browser. Heard with a screen reader: **Pending (human or Figma app)** ([screen readers](#screen-readers)) |
+| 5 | Home/End | Home since 0.2.0, End in 0.3.0; `e2e/chrome-v2.spec.mjs`, "End takes the widest snap, keeps the height in resizable, and does not repeat" | **Done** |
+| 5 | A `kit:fit` request | `KitWindow.fit()` in `code.ts`, `kit.fit()` in the UI ([window-chrome.md](window-chrome.md#fit-on-request-kitfit-and-kitwindowfit)); the five "kit:fit from the main thread" tests in `e2e/chrome-v2.spec.mjs` | **Done** |
+| 5 | *Done when:* axe is clean | 27 axe runs pass with the handle, its hint and its live region in the page (the kit fixture's and your `ui.html`'s windows in three themes, each example in its themes) | In Chromium: **Done**. Real assistive technology: **Pending (human or Figma app)** |
+| 5 | *Done when:* every mode has a demo | `fit-content`: the starter, `rename-layers`, `a11y-contrast`; `resizable`: `export-selection`, `variables-sync`; `fixed`: `content-fill`; the preview's mode switch forces any mode on any plugin | In the browser: **Done**. The same in Figma: **Pending (human or Figma app)** ([examples matrix](#the-examples)) |
+
+### Volunteer gate (item 3)
+
+Two new volunteers, not the people from the designer gate, with the Figma desktop app and an agent, a fresh clone, the README as the only instructions. The target is a running plugin in under 30 minutes. Record where each one stops, even if they finish.
+
+| Date | Volunteer (initials) | Tools and versions | Reached a running plugin? | Time (target: under 30 min) | Where they stopped or got stuck |
+|---|---|---|---|---|---|
+| | | | | | |
+| | | | | | |
 
 ## Pending captures
 
-Steps for the Phase 1 checks that need the Figma desktop app or a designer. None has been run; each ends in a table to fill.
+Steps for the checks that need the Figma desktop app or a designer. None has been run; each ends in a table to fill.
 
 ### (a) Side by side with Figma's own panel (item 4)
 
@@ -149,7 +281,7 @@ Steps for the Phase 1 checks that need the Figma desktop app or a designer. None
 
 ## Outward actions waiting for the owner
 
-None of these has been done. Each needs the owner's accounts.
+None of these has been done. Each needs the owner's accounts. This copy of the repo has no git remote configured (checked 2026-10-14), so CI and Pages have never run: push the Phase 1 and Phase 2 commits to the GitHub repo first; actions 3 to 5 depend on it.
 
 1. **Deprecate both npm packages.** Signed in with `npm login` (add `--otp <code>` to each command if the account uses two-factor authentication):
 
@@ -163,7 +295,7 @@ None of these has been done. Each needs the owner's accounts.
    The two `npm view` lines should print the messages back.
 2. **Republish the Community listing** with the copy and steps in [community-listing.md](community-listing.md#republish-steps-owner-action). Make the icon and thumbnail first ([capture (d)](#d-listing-icon-and-thumbnail-before-outward-action-2)). Record the submission date and the review outcome here.
 3. **Enable GitHub Pages.** On GitHub: the repo's **Settings > Pages > Build and deployment > Source: GitHub Actions**. Then **Actions > Pages > Run workflow** on `main` (or push to `main` and wait: Pages deploys only after the CI run for that push has passed) and open the URL the deploy job prints; for this repo it should be https://alekseikipin.github.io/Figplug-ui-kit/ (redirects to `preview.html`).
-4. **Push the tag `v0.2.0-alpha`** (PLAN.md section 10), once the Phase 1 work is committed and pushed to `main` and CI is green there. It marks the first runnable version before the surface matrix is filled; the files inside still say 0.2.0.
+4. **Push the tag `v0.2.0-alpha`** (PLAN.md section 10), once the Phase 1 work is committed and pushed to `main` and CI is green there. It marks the first runnable version before the surface matrix is filled. The files at the tip of `main` now say 0.3.0; to tag the 0.2.0 state, tag the Phase 1 commit instead of `main`, or write "skipped" and the reason here.
 
    ```sh
    git switch main && git pull
@@ -182,7 +314,7 @@ None of these has been done. Each needs the owner's accounts.
    gh release create v0.2.0 --verify-tag --title "Figplug UI Kit 0.2.0" --notes "See CHANGELOG.md"
    ```
 
-   GitHub attaches the source zip to the release; that zip is what "imports with no terminal" refers to.
+   GitHub attaches the source zip to the release; that zip is what "imports with no terminal" refers to. Kit 0.3.0 (Phase 2) is tagged the same way, `v0.3.0`, once its CHANGELOG section has a date and the matrix above, the examples included, is filled. If 0.2.0 is never tagged on its own, write "skipped" and the reason here.
 6. **Reserve the fallback name.** Fallback name: TBD. Pick a name without "Fig" in it (Figma's trademark guidelines), check it is free (`npm view <name>` should answer 404; check `https://github.com/<name>` and a Community search), then write it into the README brand line and the marked spot in [community-listing.md](community-listing.md#name), and reserve it where it will be used first (for example a GitHub organisation or repository). Don't publish a placeholder npm package: npm discourages name squatting, and PLAN.md only plans an npm package under the fallback name if three issues ask for one.
 
 ## Monthly maintenance
@@ -198,12 +330,7 @@ Once a month, and before each release:
 
    New `@deprecated` APIs (struck through in the editor) that throw under `dynamic-page` go into [pitfalls.md](pitfalls.md#5-sync-getters-under-dynamic-page). Keep `typescript` on `~6.0.x` unless a release deliberately moves to 7 ([pitfalls.md](pitfalls.md#12-typescript-6-turned-types-off-by-default)).
 2. **Recapture the palette with `tools/probe`.** Import `tools/probe/manifest.json`, run **kit probe** in Figma Design (switch light and dark while it is open) and in FigJam, press **Copy report** ([surfaces.md](surfaces.md#measure-it-yourself)). Paste the reports under Raw reports in surfaces.md, then update `tokens.figma-fallback.css` from the captured `figma-style` text (and its provenance header) and the drift notes in [tokens.md](tokens.md). Until a first capture is recorded, the fallback values stay provisional.
-3. **Run `tsc` on every example.** `npm run build` covers the root. The `examples/` folders arrive in Phase 2; once they exist:
-
-   ```sh
-   for d in examples/*/; do npx tsc -p "${d}tsconfig.json" || echo "FAIL: $d"; done
-   npm run audit && npm run check:ui
-   ```
+3. **Run `tsc` on every example.** `npm run check` (step 1) already does: it runs `npm run build` for the root and `npm run build:examples` for every `examples/` folder, then the audit and `check:ui` over the root and each example. A failing example names its folder.
 4. **Run the browser tests** (`npm run test:e2e`) after the Playwright cache or version changes, and keep `@playwright/test` pinned to an exact version.
 5. **Skim Figma's plugin docs and release notes** for changes to `themeColors`, the manifest, `editorType` values and PropsKit for classic plugins; record anything that touches the kit as an issue. A new `editorType` gets the handle off and the default bounds until a kit release adds it: update `kitSurface()` in the `kit:window` block of `code.ts` and the [At a glance](surfaces.md#at-a-glance) table in surfaces.md.
 6. If anything changed, add it to CHANGELOG.md and release.

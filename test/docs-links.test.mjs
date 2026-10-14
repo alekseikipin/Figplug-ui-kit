@@ -11,6 +11,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 // PLAN.md is the owner's product plan and is never edited here; node_modules and test output are not ours.
 const SKIP_DIRS = new Set(['node_modules', 'test-results', 'playwright-report', '.git']);
 const SKIP_FILES = new Set(['PLAN.md']);
+const EXAMPLES = join(ROOT, 'examples');
 
 function markdownFiles(dir = ROOT) {
   const out = [];
@@ -74,6 +75,11 @@ test('relative links and #anchors in the Markdown files resolve', () => {
       const [path, hash] = link.split('#');
       const target = path ? resolve(dirname(file), decodeURIComponent(path)) : file;
       const where = `${relative(ROOT, file)}: ${link}`;
+      // examples/ is optional: a designer may delete it, or any one example, when starting their
+      // own plugin, so a link into a deleted example folder is not broken.
+      const inExamples = relative(EXAMPLES, target).split(/[\\/]/);
+      if (!existsSync(target) && inExamples[0] !== '..' && !existsSync(join(EXAMPLES, inExamples[0] || ''))) continue;
+      if (!existsSync(target) && target === EXAMPLES) continue;
       if (!existsSync(target)) { broken.push(`${where} (no such file)`); continue; }
       if (hash && statSync(target).isFile() && target.endsWith('.md') && !anchors(target).has(decodeURIComponent(hash))) {
         broken.push(`${where} (no heading with that id)`);

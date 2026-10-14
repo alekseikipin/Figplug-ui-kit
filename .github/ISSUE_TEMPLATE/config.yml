@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Kit docs
+    url: https://github.com/alekseikipin/Figplug-ui-kit/blob/main/docs/index.md
+    about: Install, your loop, components, tokens, window chrome, messages, surfaces, pitfalls and every audit rule. Questions and ideas are welcome as blank issues.

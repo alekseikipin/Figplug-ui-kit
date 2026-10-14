@@ -2,7 +2,7 @@
 
 One plugin can run in several Figma editors, and each one hosts the UI differently. This page says where the UI appears in each editor, what the kit does there, and which of these facts are documented, measured or still assumptions. Branch on `figma.editorType` in `code.ts` when your plugin needs to behave differently; `installKitWindow()` returns it, and `kit:init` carries it to the UI ([messages.md](messages.md)).
 
-The starter `manifest.json` lists `"editorType": ["figma", "figjam", "slides", "buzz"]`. Dev Mode needs a manifest of its own; see [Dev Mode](#dev-mode).
+The starter `manifest.json` lists `"editorType": ["figma", "figjam", "slides", "buzz"]`. Dev Mode needs a manifest of its own; see [Dev Mode](#dev-mode). Each example has its own manifest and its own list ([The examples](#the-examples)).
 
 ## At a glance
 
@@ -88,6 +88,22 @@ Buzz is Figma's editor for producing marketing assets at scale. ([working in Buz
 - Not available: `createPage`, `createConnector`, `createCodeBlock`, `createTable`, `createSticky`, `createSlide`, `createSlideRow`, `createPageDivider`, `createLinkPreviewAsync`, `setFileThumbnailNodeAsync`.
 - **The kit:** `chrome: false` (no handle; the panel has its own sizing). Whether `showUI`'s size and `figma.ui.resize` apply in the panel or the pop-out modal is UNVERIFIED.
 - **The demo:** "Create shapes" adds loose shapes to the canvas outside the asset grid. A real Buzz plugin uses `figma.buzz.createFrame`.
+
+## The examples
+
+Each plugin in [examples/](../examples/) has its own `manifest.json`, and each lists the editors chosen for its task (the starter lists Design, FigJam, Slides and Buzz). The kit treats them like any plugin: the handle is on in Design, FigJam and Slides and off in Buzz, and `content-fill`'s `fixed` window never shows it.
+
+| Example | Window mode | `editorType` | Why these editors |
+|---|---|---|---|
+| [`rename-layers`](../examples/rename-layers/README.md) | `fit-content` | `figma`, `slides` | The one-shot agent chose these two and curation kept them; FigJam and Buzz stay out until someone checks the plugin there. It writes layer names, so not Dev Mode. Its page watch (`nodechange`) is wrapped in `try`, because Slides' plugin surface is largely unverified. |
+| [`export-selection`](../examples/export-selection/README.md) | `resizable` | `figma`, `figjam`, `slides`, `buzz` | `exportAsync` works in each of them. Exporting is read-only, so it would work in Dev Mode too, but only as a second plugin: `dev` can't share a manifest with `figjam` ([the Dev Mode manifest](#the-dev-mode-manifest)). |
+| [`content-fill`](../examples/content-fill/README.md) | `fixed` | `figma`, `figjam`, `slides`, `buzz` | All four have text layers; in FigJam it also fills stickies and shapes with text. It writes text, which Dev Mode forbids. |
+| [`variables-sync`](../examples/variables-sync/README.md) | `resizable` | `figma` | Slides has no variables; Dev Mode is read-only and this plugin writes; whether `figma.variables` is available in FigJam is UNVERIFIED, and Buzz has not been checked either. Where the API is missing, the plugin says "this editor has no variables" instead of throwing. |
+| [`a11y-contrast`](../examples/a11y-contrast/README.md) | `fit-content` | `figma`, `figjam`, `slides`, `buzz` | All four have text layers. It never edits the document (it only changes the selection and scrolls the view), so a Dev Mode build is possible as a second plugin, as for `export-selection`; whether its selecting and scrolling work there is UNVERIFIED (Dev Mode selects one layer at a time). In FigJam, text on stickies and shapes is not a text layer and isn't checked. |
+
+- **No example lists `dev`.** Three of them write to the document, which Dev Mode forbids, and the two read-only ones also list FigJam. A Dev Mode build of `export-selection` or `a11y-contrast` would be a copy of the folder with the [Dev Mode manifest](#the-dev-mode-manifest) and its own `id`; none is in the repo.
+- **What has been run:** `e2e/examples.spec.mjs` boots each example in every editor its manifest lists, in `preview.html`'s fake host (the stub's `editorType`, not Figma), with no console error or warning. Runs in the real editors are the examples rows of the [release checklist](release-checklist.md#the-examples); none has been done yet.
+- **Adding an editor to an example:** check the editor's section above for the APIs the plugin calls, add the value to its `editorType`, and add a row to the release checklist.
 
 ## What is known and what is not
 

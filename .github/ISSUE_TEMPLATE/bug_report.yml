@@ -1,0 +1,132 @@
+name: Bug report
+description: Something in the kit (window chrome, components, tokens, messages, audit, check:ui, preview) does not work as the docs say.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Before you start: [docs/pitfalls.md](https://github.com/alekseikipin/Figplug-ui-kit/blob/main/docs/pitfalls.md) covers the usual failures, and `npm run audit` names most of them. If your plugin edits a kit block (`data-kit` in `ui.html`, `kit:window` in `code.ts`), re-paste it from the release first: the kit only supports unchanged blocks.
+
+  - type: dropdown
+    id: editor-type
+    attributes:
+      label: Editor (figma.editorType)
+      description: Where the plugin was running. Pick every editor where you saw the bug.
+      multiple: true
+      options:
+        - figma (Figma Design)
+        - figjam (FigJam)
+        - slides (Figma Slides)
+        - dev (Dev Mode)
+        - buzz (Figma Buzz)
+        - none (preview.html, a test, or the browser without Figma)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Theme
+      description: Figma's theme at the time (FigJam is light only).
+      multiple: true
+      options:
+        - light
+        - dark
+    validations:
+      required: true
+
+  - type: input
+    id: kit-header
+    attributes:
+      label: Kit header
+      description: The `kit vX.Y.Z · protocol N` part of `<meta name="kit">` in your `ui.html`, or of the first comment in `<style data-kit="tokens">`. If `code.ts`'s `kit:window:start` line says something else, give both.
+      placeholder: kit v0.3.0 · protocol 1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: window-mode
+    attributes:
+      label: Window mode
+      description: The `mode` your `installKitWindow({ ... })` call passes (none means the default, fit-content).
+      options:
+        - fit-content
+        - resizable
+        - fixed
+        - not sure, or not about the window
+    validations:
+      required: false
+
+  - type: dropdown
+    id: client
+    attributes:
+      label: Figma client
+      options:
+        - Desktop app
+        - Browser
+        - Not in Figma (preview.html or a test)
+    validations:
+      required: true
+
+  - type: input
+    id: client-version
+    attributes:
+      label: Figma version
+      description: The desktop app's version from About Figma, or the browser and its version (also for preview.html).
+      placeholder: The number in About Figma, or the browser name and version
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: macOS or Windows, with its version
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: From importing or running the plugin. The smallest `ui.html` / `code.ts` that shows it helps most; link a repo or paste the relevant part.
+      placeholder: |
+        1. Import manifest.json, run the plugin in Figma Design (dark).
+        2. Focus the resize grip, press Shift+Right three times.
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: Screenshots or a screen recording are welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: Plugins > Development > Show/Hide console in Figma (the browser console for preview.html). Paste every line from the first error on, and any `[kit]` warning. For audit or check:ui bugs, paste their output.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The kit's marked blocks in my plugin are unchanged from the release named above.
+          required: false
+        - label: "`npm run audit` and `npm run check:ui` are clean on my plugin, or their output is pasted above."
+          required: false

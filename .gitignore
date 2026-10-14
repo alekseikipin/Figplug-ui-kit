@@ -1,4 +1,5 @@
-node_modules/
+# No trailing slash, so a node_modules symlink (a worktree sharing one install) is ignored too
+node_modules
 # Playwright output
 test-results/
 playwright-report/
