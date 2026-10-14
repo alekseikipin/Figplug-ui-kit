@@ -30,6 +30,8 @@ Graded in the agent's clone as it left it, before any curation.
 
 Automated one-shot: **yes** (build, audit, check:ui, unit tests and e2e all pass; the kit's marked blocks and `kit:window` block are byte-identical to the release). The defects below are ones no check could catch.
 
+**In Figma (2026-10-14).** The curated plugin in this folder, not the one-shot output above, ran once in Figma Design (dark theme, Figma desktop 126.9.13) through the starter's imported manifest, with its `ui.html` and `code.js` swapped in for the run: in its `fixed` window it loaded the fonts and filled 3 text layers with names (Cmd+Z and mixed fonts not tried). Its own `manifest.json` has not been imported, and the light theme and its other editors have not been run ([release checklist](../../docs/release-checklist.md#the-examples)).
+
 ## What the agent built
 
 `code.js`, `code.ts`, `manifest.json` and `ui.html` changed: 773 insertions, 157 deletions ([agent.diff](agent.diff)).

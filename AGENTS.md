@@ -26,7 +26,7 @@ Adding the kit to a plugin that already exists (Figma's own template, for exampl
 | | Send | Receive |
 |---|---|---|
 | UI | `parent.postMessage({ pluginMessage: msg }, '*')` | `window.addEventListener('message', (e) => { const msg = e.data && e.data.pluginMessage; })` |
-| Main | `figma.ui.postMessage(msg)` | `figma.ui.on('message', (msg) => { ... })`, never `figma.ui.onmessage = ...` |
+| Main | `figma.ui.postMessage(msg)` | `figma.ui.on('message', (msg) => { ... })`. Not `figma.ui.onmessage = ...`: it keeps the kit's listener, but holds one handler, so a second assignment silently replaces the first |
 
 - The kit's own messages are `kit:ready`, `kit:init`, `kit:resize` and `kit:fit` (types in `kit.d.ts`). Give yours any other `type` (never `kit:...`), check the `type` first, ignore what you don't know.
 - Type your messages like `kit.d.ts` types the kit's: one `interface` per message type in `code.ts` (`interface RenameMessage { type: 'rename'; prefix: string }`), a union per direction (`type UiToMain = RenameMessage | CloseMessage`), and a type guard that checks `type` and every field before the handler trusts it (the demo's `isCreateShapesMessage`). Prefix the names if they could collide (pitfall 9 below).

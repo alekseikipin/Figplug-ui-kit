@@ -1,6 +1,7 @@
 // Regenerates the four documentation screenshots (docs/img/*.png) at 2x. Skipped unless asked:
 //   UPDATE_SCREENSHOTS=1 npx playwright test --grep @screenshots
-// The README and docs link to exactly these four paths.
+// docs/release-checklist.md refers to these browser renders; the README shows the Figma captures
+// (docs/img/figma-*.png) instead, which no test makes.
 
 import { fileURLToPath } from 'node:url';
 import { test, expect, openPreview, pluginFrame, frameSize, contentHeight, HAS_DEMO, NO_DEMO } from './helpers.mjs';

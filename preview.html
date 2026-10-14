@@ -292,8 +292,8 @@ html[data-kit-chrome="on"] .kit-app:has(> .kit-footer:last-child) { padding-bott
 :root:has(.kit-footer) .kit-toast-region { bottom: calc(var(--kit-spacer-6) + var(--kit-spacer-2)); }
 .kit-toast { display: flex; align-items: center; gap: var(--kit-spacer-1); min-height: var(--kit-control-height-large); padding: 0 var(--kit-spacer-2); }
 .kit-toast > .kit-icon { color: var(--figma-color-icon-oninverse); }
-.kit-toast[data-kit-tone="success"] > .kit-icon { color: var(--figma-color-icon-success); }
-.kit-toast[data-kit-tone="danger"] > .kit-icon { color: var(--figma-color-icon-danger); }
+.kit-toast[data-kit-tone="success"] > .kit-icon { color: var(--figma-color-bg-success); }
+.kit-toast[data-kit-tone="danger"] > .kit-icon { color: var(--figma-color-bg-danger); }
 .kit-toast :is(.kit-button, .kit-icon-button) { --kit-button-text: var(--figma-color-text-oninverse); --kit-button-bg-hover: color-mix(in srgb, currentColor 16%, transparent); --kit-button-bg-pressed: var(--kit-button-bg-hover); }
 html[data-kit-chrome="on"] .kit-toast-region { max-width: calc(100vw - 2 * var(--kit-spacer-5)); }
 @media (prefers-reduced-motion: no-preference) { .kit-toast { animation: kit-toast-in var(--kit-duration-medium) var(--kit-easing); } }
@@ -1596,7 +1596,7 @@ Card 2</textarea></div>
     <div class="preview-states preview-states-wide" data-preview-extra="toast" role="group" aria-labelledby="g-toast g-toast-tones">
       <h4 class="preview-row-title" id="g-toast-tones">Tones</h4>
       <div class="preview-cell"><span class="preview-caption">info (icon-oninverse)</span><div class="kit-toast" data-kit-tone="info" inert data-kit-demo-open><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0M12 11.5v3m0-5.5v.01"/></svg><p class="kit-toast-text">Selection has 12 layers</p><button class="kit-icon-button" type="button" aria-label="Dismiss"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round"><path d="m8 8 8 8m0-8-8 8"/></svg></button></div></div>
-      <div class="preview-cell"><span class="preview-caption">success (icon-success)</span><div class="kit-toast" data-kit-tone="success" inert data-kit-demo-open><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0M9.5 12.5l1.75 1.75 3.25-3.75"/></svg><p class="kit-toast-text">Renamed 3 layers</p><button class="kit-icon-button" type="button" aria-label="Dismiss"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round"><path d="m8 8 8 8m0-8-8 8"/></svg></button></div></div>
+      <div class="preview-cell"><span class="preview-caption">success (bg-success)</span><div class="kit-toast" data-kit-tone="success" inert data-kit-demo-open><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0M9.5 12.5l1.75 1.75 3.25-3.75"/></svg><p class="kit-toast-text">Renamed 3 layers</p><button class="kit-icon-button" type="button" aria-label="Dismiss"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round"><path d="m8 8 8 8m0-8-8 8"/></svg></button></div></div>
       <div class="preview-cell"><span class="preview-caption">warning (icon-oninverse)</span><div class="kit-toast" data-kit-tone="warning" inert data-kit-demo-open><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M12 6.5 18 17H6zM12 10.5v3m0 2v.01"/></svg><p class="kit-toast-text">2 layers have no fill</p><button class="kit-icon-button" type="button" aria-label="Dismiss"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round"><path d="m8 8 8 8m0-8-8 8"/></svg></button></div></div>
     </div>
     <hr class="kit-divider">
@@ -1829,7 +1829,7 @@ Card 2</textarea></div>
     $('live-window').dataset.state = state;
     const r = run;
     $('live-status').textContent = state === 'closed' ? 'The plugin is closed. Press Reload plugin to run it again.'
-      : state === 'hidden' ? 'Window hidden (showUI visible: false) until the first kit:resize, or 500 ms.'
+      : state === 'hidden' ? 'Window hidden (showUI visible: false) until the UI is ready: its first kit:resize, its kit:init reply in fixed mode, 800 ms after kit:ready, or 3 s.'
       : r ? `editorType ${r.editor} · mode ${modeLabel(r)}` : '';
   }
 
@@ -2082,6 +2082,10 @@ Card 2</textarea></div>
       },
       on(/** @type {string} */ type, /** @type {Function} */ cb) { if (type === 'message') r.handlers.push({ cb, once: false }); },
       once(/** @type {string} */ type, /** @type {Function} */ cb) { if (type === 'message') r.handlers.push({ cb, once: true }); },
+      // One assigned handler, next to the on() listeners: assigning keeps them, and a later
+      // assignment replaces the handler (measured in Figma 126.9.13; docs/messages.md).
+      get onmessage() { return r.assigned; },
+      set onmessage(/** @type {Function | undefined} */ cb) { r.assigned = typeof cb === 'function' ? cb : undefined; },
       off(/** @type {string} */ type, /** @type {Function} */ cb) {
         const i = r.handlers.findIndex((h) => h.cb === cb);
         if (type === 'message' && i >= 0) r.handlers.splice(i, 1);
@@ -2089,6 +2093,8 @@ Card 2</textarea></div>
       resize(/** @type {number} */ width, /** @type {number} */ height) {
         if (!alive() || !r.frame) return;
         if (!Number.isFinite(width) || !Number.isFinite(height)) throw new TypeError(`figma stub: ui.resize(${width}, ${height}) needs finite numbers`);
+        // Figma's own message for a fraction (tools/probe, 2026-10-14): sizes must be whole pixels.
+        if (!Number.isInteger(width) || !Number.isInteger(height)) throw new TypeError(`Property "resize ${Number.isInteger(width) ? 'height' : 'width'}" failed validation: Expected integer, received float`);
         call('ui.resize', width, height);
         const frame = r.frame;
         const apply = () => {
@@ -2208,7 +2214,7 @@ Card 2</textarea></div>
     const r = {
       id: ++runCount, started: performance.now(), editor: settings.editor, mode: settings.mode, initMode: /** @type {string | null} */ (null),
       dead: false, figma: /** @type {any} */ (null), frame: /** @type {HTMLIFrameElement | null} */ (null), loaded: false, queue: /** @type {unknown[]} */ ([]),
-      handlers: /** @type {{ cb: Function, once: boolean }[]} */ ([]), events: /** @type {Record<string, { cb: Function, once: boolean }[]>} */ ({}),
+      handlers: /** @type {{ cb: Function, once: boolean }[]} */ ([]), assigned: /** @type {Function | undefined} */ (undefined), events: /** @type {Record<string, { cb: Function, once: boolean }[]>} */ ({}),
       pageEvents: /** @type {Record<string, { cb: Function, once: boolean }[]>} */ ({}),
       timers: new Set(),
       setTimeout: (/** @type {Function} */ fn, /** @type {number} */ ms, /** @type {unknown[]} */ ...args) => {
@@ -2232,7 +2238,8 @@ Card 2</textarea></div>
     }
   }
 
-  // UI -> main: every message from the current iframe reaches every figma.ui.on('message') handler.
+  // UI -> main: every message from the current iframe reaches every figma.ui.on('message') handler,
+  // then the handler assigned to figma.ui.onmessage, if any: Figma's order in tools/probe.
   window.addEventListener('message', (event) => {
     const r = run;
     if (!r || !r.frame || event.source !== r.frame.contentWindow) return;
@@ -2243,6 +2250,9 @@ Card 2</textarea></div>
     for (const h of r.handlers.slice()) {
       if (h.once) r.handlers.splice(r.handlers.indexOf(h), 1);
       try { h.cb(clone(msg), { origin: event.origin }); } catch (error) { fail("figma.ui.on('message')", error); }
+    }
+    if (r.assigned) {
+      try { r.assigned(clone(msg), { origin: event.origin }); } catch (error) { fail('figma.ui.onmessage', error); }
     }
   });
 
@@ -2365,9 +2375,9 @@ Card 2</textarea></div>
     const r = run;
     if (!r || !r.frame) return;
     // What a main-thread figma.ui.resize(width, height) would do; in fit-content the kit refits the height.
-    const width = Number(widthInput.value);
+    const width = Math.round(Number(widthInput.value));
     log('host', `figma.ui.resize(${width}, …) from the host`);
-    r.figma.ui.resize(width, parseFloat(r.frame.style.height) || 0);
+    r.figma.ui.resize(width, Math.round(parseFloat(r.frame.style.height)) || 0);
   });
   $('live-reload').addEventListener('click', () => { if (sources.code) startRun(); });
   $('live-clear').addEventListener('click', () => { storage.remove('kit:window'); log('host', "cleared the saved size (clientStorage 'kit:window')"); if (sources.code) startRun(); });

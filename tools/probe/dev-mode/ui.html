@@ -38,7 +38,10 @@ const ui = {
 let finalReport = null;
 let loaded = false;
 
-function post(msg) { parent.postMessage({ pluginMessage: msg }, '*'); }
+// Every message gets its own seq: code.js de-duplicates by type + seq, because one message can
+// reach several of its listeners on purpose (the coexistence test).
+let seq = 0;
+function post(msg) { msg.seq = ++seq; parent.postMessage({ pluginMessage: msg }, '*'); }
 
 function capturePalette() {
   const el = document.getElementById('figma-style');

@@ -49,7 +49,7 @@ const CASES = [
   ['ses-forbidden', 'ses-forbidden', 'code.ts', "import('./words')"],
   ['ses-forbidden-ui', 'ses-forbidden', 'ui.html', '<!--', 'warning'],
   ['top-level-module', 'top-level-module', 'code.ts', 'export {}'],
-  ['onmessage-assign', 'onmessage-assign', 'code.ts', 'figma.ui.onmessage =', 'warning'],
+  ['onmessage-assign', 'onmessage-assign', 'code.ts', 'figma.ui.onmessage = (message', 'warning'],
   ['js-color-literal', 'js-color-literal', 'ui.html', "'#e5e5e5'"],
   ['orphan-help', 'orphan-help', 'ui.html', 'id="status"', 'warning'],
 ];
@@ -388,7 +388,49 @@ const VARIANTS = [
   ['export inside declare namespace is not a module', null,
     (d) => addMain(d, 'declare namespace HostTypes { export interface Row { id: string } }\nconst exportsCount = 0;\nvoid exportsCount;')],
   ['comparing figma.ui.onmessage is fine', null, (d) => addMain(d, 'if (figma.ui.onmessage === undefined) figma.ui.on("message", () => {});')],
-  ['figma.ui.onmessage = in a comment is fine', null, (d) => addMain(d, '// never: figma.ui.onmessage = (msg) => {}')],
+  ['figma.ui.onmessage = in a comment is fine', null, (d) => addMain(d, '// never: figma.ui.onmessage = (msg) => {}\nfigma.ui.onmessage = () => {};')],
+  // One assignment is Figma's template style and leaves figma.ui.on listeners in place (measured);
+  // each later one replaces the handler before it, so it warns. Clearing the property doesn't count.
+  ['one figma.ui.onmessage = next to figma.ui.on is fine', null,
+    (d) => addMain(d, 'figma.ui.on("message", () => {});\nfigma.ui.onmessage = (msg) => { void msg; };')],
+  ['figma.ui.onmessage = twice', ['onmessage-assign'], (d) => addMain(d, 'figma.ui.onmessage = () => {};\nfigma.ui.onmessage = () => {};')],
+  ['figma.ui.onmessage = three times warns at the second and the third', ['onmessage-assign', 'onmessage-assign'],
+    (d) => addMain(d, 'figma.ui.onmessage = () => {};\nfigma.ui.onmessage = () => {};\nfigma.ui.onmessage = () => {};')],
+  ['an assignment, then clearing with undefined, null or void 0, is fine', null, (d) => addMain(d, [
+    'figma.ui.onmessage = () => {};',
+    'figma.ui.onmessage = undefined;',
+    'if (Math.random()) { figma.ui.onmessage = null }',
+    'figma.ui.onmessage = void 0',
+  ].join('\n'))],
+  ['figma.ui.onmessage = undefinedHandler is a handler, not a clear', ['onmessage-assign'],
+    (d) => addMain(d, 'const undefinedHandler = () => {};\nfigma.ui.onmessage = () => {};\nfigma.ui.onmessage = undefinedHandler;')],
+  // A clear ends the pairing: only handlers with no clear between them replace one another.
+  ['a handler, a clear, then another handler is fine', null,
+    (d) => addMain(d, 'figma.ui.onmessage = () => {};\nfigma.ui.onmessage = undefined;\nfigma.ui.onmessage = () => {};')],
+  ['two handlers, a clear, then a third warns once, at the second', ['onmessage-assign'],
+    (d) => addMain(d, 'figma.ui.onmessage = () => {};\nfigma.ui.onmessage = () => {};\nfigma.ui.onmessage = null;\nfigma.ui.onmessage = () => {};')],
+  ['clearing in parentheses, with void(0) or through "as" is still a clear', null, (d) => addMain(d, [
+    'figma.ui.onmessage = () => {};',
+    'figma.ui.onmessage = (null);',
+    'figma.ui.onmessage = () => {};',
+    'figma.ui.onmessage = undefined as any;',
+    'figma.ui.onmessage = () => {};',
+    'figma.ui.onmessage = (undefined) as unknown as MessageEventHandler;',
+    'figma.ui.onmessage = () => {};',
+    'figma.ui.onmessage = void(0);',
+    'figma.ui.onmessage = () => {};',
+  ].join('\n'))],
+  ['figma.ui.onmessage = void0 (a name) is a handler, not a clear', ['onmessage-assign'],
+    (d) => addMain(d, 'const void0 = () => {};\nfigma.ui.onmessage = () => {};\nfigma.ui.onmessage = void0;')],
+  // Names for figma.ui: const ui = figma.ui, const { ui } = figma, const { ui: u } = figma.
+  ['figma.ui.onmessage = twice through const { ui } = figma', ['onmessage-assign'],
+    (d) => addMain(d, 'const { ui } = figma;\nui.onmessage = () => {};\nui.onmessage = () => {};')],
+  ['figma.ui.onmessage = twice through const ui = figma.ui', ['onmessage-assign'],
+    (d) => addMain(d, 'const ui = figma.ui;\nui.onmessage = () => {};\nui.onmessage = () => {};')],
+  ['figma.ui.onmessage = once, then again through const { ui: u } = figma', ['onmessage-assign'],
+    (d) => addMain(d, 'figma.ui.onmessage = () => {};\nconst { ui: u } = figma;\nu.onmessage = () => {};')],
+  ['figma.ui.onmessage = once through a name for figma.ui is fine', null,
+    (d) => addMain(d, 'const ui = figma.ui;\nui.onmessage = () => {};\nconst other = { ui: { onmessage: (m: unknown) => m } };\nother.ui.onmessage = () => {};')],
 
   // aria-label-override.
   ['an aria-label on a control wrapped in its label', 'aria-label-override',
@@ -519,7 +561,9 @@ const VARIANTS = [
   ['a nested &:disabled handles a nested &:hover', null,
     (d) => rowButton(d, '.row { &:hover { background: var(--figma-color-bg-hover); } &:disabled { background: none; } }')],
   ['a nested &.big height on .kit-button', 'control-height', (d) => addStyle(d, '.kit-button { &.big { height: 28px; } }')],
-  ['figma.ui.onmessage = through a name for figma', ['onmessage-assign'], (d) => addMain(d, 'const f = figma;\nf.ui.onmessage = () => {};')],
+  ['figma.ui.onmessage = once, then again through a name for figma', ['onmessage-assign'],
+    (d) => addMain(d, 'const f = figma;\nfigma.ui.onmessage = () => {};\nf.ui.onmessage = () => {};')],
+  ['figma.ui.onmessage = once through a name for figma is fine', null, (d) => addMain(d, 'const f = figma;\nf.ui.onmessage = () => {};')],
   ['colours from data, tokens, names and selectors are fine', null, (d) => addScript(d, [
     "const hex = '#' + 'ff8800';",
     'document.body.style.color = hex;',
@@ -549,6 +593,19 @@ test('budget: each warning says which cause it is, and where', () => {
   const [file] = auditVariant((d) => addMarkup(d, `<p>${'x'.repeat(128 * 1024)}</p>`));
   assert.deepEqual([file.rule, file.severity, file.line], ['budget', 'warning', 1]);
   assert.match(file.message, /^ui\.html is \d+ lines and 13\d\.\d KB, over 3,200 lines or 128\.0 KB; the kit blocks are \d+\.\d KB of it, your own code \d+\.\d KB\. A file this size no longer fits whole in an agent's context/);
+});
+
+test('onmessage-assign: each later assignment is reported at its own line, naming the first', () => {
+  const findings = auditVariant((d) => addMain(d, 'figma.ui.onmessage = () => {};\n\nfigma.ui.onmessage = () => {};\nfigma.ui.onmessage = () => {};'));
+  const code = readFileSync(join(FIXTURES, 'clean', 'code.ts'), 'utf8');
+  const first = code.split('\n').length + 1; // addMain appends a newline, then the added lines
+  assert.deepEqual(findings.map((f) => [f.rule, f.severity, f.line]),
+    [['onmessage-assign', 'warning', first + 2], ['onmessage-assign', 'warning', first + 3]]);
+  for (const f of findings) {
+    assert.ok(f.file.endsWith('code.ts'), f.file);
+    assert.match(f.message, new RegExp(`^figma\\.ui\\.onmessage is assigned again \\(first at line ${first}\\): the property holds one handler`));
+    assert.match(f.message, /figma\.ui\.on\('message', \(msg\) => \{ \.\.\. \}\)/);
+  }
 });
 
 test('a finding in a decoded attribute value points at its line in the file', () => {

@@ -57,7 +57,7 @@ Paste as is. The first paragraph is the same "Is this for you?" block as the top
 | Network access label | No access to network (from `"networkAccess": { "allowedDomains": ["none"] }`) |
 | Support contact | https://github.com/alekseikipin/Figplug-ui-kit/issues |
 | Icon | 128 x 128 px. Not made yet. |
-| Thumbnail | 1920 x 1080 px: the light and dark starter side by side. Not made yet; `docs/img/starter-light.png` and `starter-dark.png` are the source. |
+| Thumbnail | 1920 x 1080 px: the light and dark starter side by side. Not made yet; the source is the Figma captures `docs/img/figma-starter-light.png` and `figma-starter-dark.png` (Figma desktop 126.9.13, 2026-10-14), not the browser renders `starter-*.png`. |
 | Carousel | Optional, up to nine images: the window in Design light, Design dark and FigJam, the resize grip mid-drag. |
 | Data security form | Optional. Answers: no backend, no third-party requests, no authentication, no Figma data stored off the device (only the window size, in `figma.clientStorage`). Review can take up to two weeks. |
 | Privacy policy | Not needed while the plugin processes no user data; required if a future version does. |
@@ -183,7 +183,7 @@ Every claim is from the example's [README](../examples/a11y-contrast/README.md) 
 
 - **A crowded category.** Stark, A11y - Color Contrast Checker, Able and others already check contrast. That breaks no rule ("one listing per function" applies to your own listings), but the tagline and the second paragraph say what is different: the backdrop is worked out from the canvas, so nobody picks colours by hand.
 - **"Kit example" wording.** The repo's manifest name is "Contrast check (kit example)". The publish folder's manifest must say "Text Contrast Check".
-- **Measured on a stand-in.** The ratios are pinned by golden tests in `node:vm` against stub scenes, and the plugin has not run in the Figma app yet. Run it on real files before submitting. A wrong ratio in an accessibility tool costs more trust than a missing feature.
+- **Measured on a stand-in, run once in Figma.** The ratios are pinned by golden tests in `node:vm` against stub scenes. On 2026-10-14 the plugin ran once in Figma Design (dark, Figma desktop 126.9.13) through the starter's manifest and flagged `#B8B8B8` on white at 1.99:1 and black at 21:1, as expected; its own manifest, the light theme, its other editors, Select failing and row clicks have not been run ([release-checklist.md](release-checklist.md#the-examples)). Run it on real files before submitting. A wrong ratio in an accessibility tool costs more trust than a missing feature.
 
 ### Data security answers (both)
 

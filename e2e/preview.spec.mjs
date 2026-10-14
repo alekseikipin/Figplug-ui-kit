@@ -44,6 +44,7 @@ const COMPONENTS = {
   toast: ['default', 'hover', 'focus', 'active', 'disabled', 'danger'],
 };
 
+// --figma-color-bg and --figma-color-bg-brand as captured in Figma desktop 126.9.13 (tokens.figma-fallback.css).
 const BG = { light: 'rgb(255, 255, 255)', dark: 'rgb(44, 44, 44)', figjam: 'rgb(255, 255, 255)' };
 const BRAND = { light: 'rgb(13, 153, 255)', dark: 'rgb(12, 140, 233)', figjam: 'rgb(151, 71, 255)' };
 
@@ -102,9 +103,11 @@ test('every gallery component is present in all six states', async ({ page }) =>
       disabledText: get('button-secondary', 'disabled', 'color'),
     };
   });
-  // (The fallback's docs values give brand-hover and brand-pressed the same colour.)
+  // The palette captured in Figma gives brand-hover (#007be5) and brand-pressed (#0768cf) their own
+  // colours; the docs table, which the fallback held before, gave both #007be5.
   expect(paint.primary[1], 'hover differs from default').not.toBe(paint.primary[0]);
   expect(paint.primary[2], 'pressed differs from default').not.toBe(paint.primary[0]);
+  expect(paint.primary, 'default, hover and pressed: bg-brand, -hover, -pressed').toEqual(['rgb(13, 153, 255)', 'rgb(0, 123, 229)', 'rgb(7, 104, 207)']);
   expect(paint.focusRing).toBe(BRAND.light); // border-selected
   expect(paint.focusRing).not.toBe(paint.defaultRing);
   expect(paint.inputHover).not.toBe(paint.inputDefault);
@@ -314,6 +317,40 @@ figma.ui.on('message', async (msg) => {
   const calls = await page.evaluate(() => window.kitPreviewHost.calls().map((c) => c.name));
   expect(calls).toEqual(expect.arrayContaining(['createRectangle', 'getNodeByIdAsync', 'node.name', 'commitUndo']));
   expect(await page.evaluate(() => window.kitPreviewHost.nodes().at(-1))).toEqual({ type: 'RECTANGLE', name: msg.name });
+});
+
+test('the figma stub: an assigned figma.ui.onmessage fires after the on() listeners, and ui.resize refuses fractions, as in Figma', async ({ page }) => {
+  await useKitFixture(page);
+  // Figma's template style next to the kit (tools/probe, 2026-10-14: both fire, on() listeners
+  // first; = undefined removes only the assigned handler), and a host resize by fractions, which
+  // Figma refuses with "Expected integer, received float".
+  await patchFile(page, 'code.js', [["installKitWindow({ mode: 'fit-content' });", `installKitWindow({ mode: 'fit-content' });
+const fired = [];
+const record = (name) => (msg) => { if (msg && msg.type === 'stub-ping') fired.push(name + ':' + msg.n); };
+figma.ui.onmessage = record('assign:B');
+figma.ui.on('message', record('on:A'));
+figma.ui.on('message', (msg) => {
+  if (msg && msg.type === 'stub-assign') figma.ui.onmessage = msg.to === 'C' ? record('assign:C') : undefined;
+  if (!msg || msg.type !== 'stub-check') return;
+  let threw = null;
+  try { figma.ui.resize(321.5, 200.25); } catch (error) { threw = error.message; }
+  setTimeout(() => figma.ui.postMessage({ type: 'stub-report', fired: fired.slice(), assigned: typeof figma.ui.onmessage, threw }), 50);
+});`]]);
+  await openPreview(page);
+  const before = await page.evaluate(() => window.kitPreviewHost.calls().filter((c) => c.name === 'ui.resize').length);
+  const steps = [{ type: 'stub-ping', n: 1 }, { type: 'stub-assign', to: 'C' }, { type: 'stub-ping', n: 2 },
+    { type: 'stub-assign', to: null }, { type: 'stub-ping', n: 3 }, { type: 'stub-check' }];
+  for (const step of steps) await pluginFrame(page).evaluate((m) => parent.postMessage({ pluginMessage: m }, '*'), step);
+  await expect.poll(() => page.evaluate(() => window.kitPreviewHost.messages().some((m) => m.msg.type === 'stub-report'))).toBe(true);
+  const msg = await page.evaluate(() => window.kitPreviewHost.messages().find((m) => m.msg.type === 'stub-report').msg);
+  expect(msg).toEqual({
+    type: 'stub-report',
+    // Ping 1: B fires after A, though assigned before A was added. Ping 2: C replaced B. Ping 3: cleared.
+    fired: ['on:A:1', 'assign:B:1', 'on:A:2', 'assign:C:2', 'on:A:3'],
+    assigned: 'undefined',
+    threw: 'Property "resize width" failed validation: Expected integer, received float',
+  });
+  expect(await page.evaluate(() => window.kitPreviewHost.calls().filter((c) => c.name === 'ui.resize').length), 'the refused size never reached the window').toBe(before);
 });
 
 test('the figma stub: the sample scene, fonts before text edits, exportAsync, figma.mixed and figma.variables', async ({ page }) => {

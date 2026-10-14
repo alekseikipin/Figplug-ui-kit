@@ -322,7 +322,7 @@ test.describe('toast', () => {
     await expect(frame.locator('.kit-toast .kit-icon-button')).toHaveAccessibleName('Schließen');
   });
 
-  test('look: the inverse surface, radius 5px, at least 32px, the tooltip shadow; icons in icon-success and icon-danger, the others in icon-oninverse; buttons stay readable when hovered', async ({ page }) => {
+  test('look: the inverse surface, radius 5px, at least 32px, the tooltip shadow; icons in bg-success and bg-danger, the others in icon-oninverse; buttons stay readable when hovered', async ({ page }) => {
     for (const theme of ['light', 'dark']) {
       await openPreview(page, { theme });
       const frame = pluginFrame(page);
@@ -347,8 +347,10 @@ test.describe('toast', () => {
       const success = await iconColour('success');
       expect(success).toMatchObject({ bg: await token('--figma-color-bg-inverse'), color: await token('--figma-color-text-oninverse'), radius: '5px', shadow: true });
       expect(success.height).toBeGreaterThanOrEqual(32);
-      expect(success.icon).toBe(await token('--figma-color-icon-success'));
-      expect((await iconColour('danger')).icon).toBe(await token('--figma-color-icon-danger'));
+      // The solid fills, not icon-success / icon-danger: Figma's dark icon tints fall below 3:1 on the
+      // white toast (docs/accessibility.md, toast icons on the inverse surface).
+      expect(success.icon).toBe(await token('--figma-color-bg-success'));
+      expect((await iconColour('danger')).icon).toBe(await token('--figma-color-bg-danger'));
       expect((await iconColour('info')).icon).toBe(await token('--figma-color-icon-oninverse'));
       expect((await iconColour('warning')).icon).toBe(await token('--figma-color-icon-oninverse'));
       // The close button keeps the oninverse colour under the pointer (an icon button would turn icon-hover).

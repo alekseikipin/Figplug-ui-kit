@@ -30,15 +30,22 @@ Use `fit-content` for forms and short panels: the window is never taller than it
 
 The mode and the bounds are set in one place, `code.ts`. The runtime keeps no copy of them; it learns them from `kit:init`, so the two files cannot disagree about limits.
 
-1. `installKitWindow()` calls `figma.showUI(__html__, { width, height, themeColors: true, visible: false })` at the default size (320 x 360 unless `options.size` says otherwise). A `fixed` window is visible from the start.
+1. `installKitWindow()` calls `figma.showUI(__html__, { width, height, themeColors: true, visible: false })` at the default size (320 x 360 unless `options.size` says otherwise). Every mode opens hidden, `fixed` too ([When the window appears](#when-the-window-appears-and-the-fallbacks)).
 2. At the same time it reads the saved size from `figma.clientStorage` and applies it with `figma.ui.resize` while the window is still hidden. A read that takes longer than 300 ms is skipped: the window opens at the default size instead of jumping to the saved one later.
 3. The runtime posts `kit:ready { protocol: 1 }` on `DOMContentLoaded`.
 4. Once storage has answered (or the 300 ms are up), `code.ts` replies with `kit:init`: `mode`, `chrome`, `editorType`, `bounds`, the current `size`, the `defaultSize` and whether a saved size was `restored`.
-5. The runtime sets `html[data-kit-chrome]` and `html[data-kit-mode]`, shows the handle if the chrome is on, waits for `document.fonts.ready` (at most `CONFIG.initTimeoutMs`, so a font request that hangs cannot keep the window from fitting), then sends its first `kit:resize`: the width from `kit:init`'s `size`, with the measured content height in `fit-content` mode or `size`'s height unchanged in `resizable` mode. That first request is also the signal that the UI is ready, so `code.ts` resizes and shows the window in one step.
+5. The runtime sets `html[data-kit-chrome]` and `html[data-kit-mode]`, shows the handle if the chrome is on, waits for `document.fonts.ready` (at most `CONFIG.initTimeoutMs`, so a font request that hangs cannot keep the window from fitting), then sends its first `kit:resize`: the width from `kit:init`'s `size`, with the measured content height in `fit-content` mode or `size`'s height unchanged in `resizable` mode. That first request is also the signal that the UI is ready, so `code.ts` resizes and shows the window in one step. A `fixed` window asks for no size: `code.ts` shows it right after posting `kit:init`.
 
 The first request uses `kit:init`'s `size` rather than the iframe's current size because Figma resizes the iframe asynchronously: the restore's `figma.ui.resize` can land after `kit:init` has arrived, and asking for the old viewport size would undo the restore. Where the chrome is off (Dev Mode, Buzz), the docked panel sizes itself, so there the runtime uses the iframe's own width.
 
-The default bounds are 240-960 px wide and 120-900 px tall (Dev Mode: at least 300 wide). `options.bounds` is merged over them, then repaired: non-finite values fall back to the default, nothing goes below Figma's documented 70 x 0 minimum ([figma.showUI](https://developers.figma.com/docs/plugins/api/properties/figma-showui/)), and when a minimum is larger than its maximum the minimum wins, as in CSS. Figma documents no maximum window size. Before `kit:init` arrives the runtime clamps to a generous 70-4096 range.
+The default bounds are 240-960 px wide and 120-900 px tall (Dev Mode: at least 300 wide). `options.bounds` is merged over them, then repaired: non-finite values fall back to the default, everything is rounded to whole pixels, nothing goes below Figma's documented 70 x 0 minimum ([figma.showUI](https://developers.figma.com/docs/plugins/api/properties/figma-showui/)), and when a minimum is larger than its maximum the minimum wins, as in CSS. Figma documents no maximum window size. Before `kit:init` arrives the runtime clamps to a generous 70-4096 range.
+
+What Figma does with a size, measured on 2026-10-14 in Figma desktop 126.9.13 with [`tools/probe`](../tools/probe/) ([surfaces.md](surfaces.md#results-window-size)):
+
+- **Whole numbers only.** `figma.ui.resize(333.6, 401.4)` throws `Property "resize width" failed validation: Expected integer, received float`, and `NaN` throws `Expected number, received nan`, in all five editors. The kit rounds every size it passes on, whichever way it came in: `options.size` (the default size given to `showUI`), `options.bounds`, a restored record (which may hold a fraction from an older or hand-written record) and every `kit:resize`. `test/code.test.mjs` feeds fractions through each of these and checks that `figma.ui.resize` and `showUI` only ever get integers; its `figma` stub throws on a fraction, as Figma does.
+- **The 70 x 0 floor is real, and quiet.** In Design, FigJam and Slides `resize(10, 10)` gave a 70 x 10 window and `resize(70, 0)` a 70 x 0 one, without an error. The kit never asks for less than 70 x 0 anyway.
+- **The ceiling is Figma's own window.** `resize(4000, 4000)` gave 2508 x 1283 on the test machine: the size of the Figma window there. The kit's default 960 x 900 maximum stays well inside it.
+- **The docked panels ignore it** (Dev Mode, Buzz): see [Where the chrome is off](#where-the-chrome-is-off).
 
 ## Gestures and keys
 
@@ -123,14 +130,26 @@ A `KitWindow.fit()` called before the UI is ready (straight after `installKitWin
 - **Nothing is saved on close.** Figma cannot wait for an async write while the plugin closes, so the kit writes as soon as a gesture ends instead.
 - `persist: false` turns all of this off; `fixed` mode never saves.
 
-## Timing and the two 500 ms fallbacks
+## When the window appears, and the fallbacks
 
-Each side has its own half-second safety net, so a broken half never leaves a blank or invisible window:
+`installKitWindow()` opens every window hidden (`visible: false`), in every mode, and shows it with `figma.ui.show()` once its UI is ready, at the first of these:
 
-- **`code.ts`**: the window stays hidden until the first `kit:resize`, or 500 ms after `installKitWindow()`, whichever comes first. A UI whose runtime is missing or crashed still appears, at the default or restored size.
+| When | For |
+|---|---|
+| The first valid `kit:resize`, right after resizing to it | `fit-content` and `resizable`: the UI has measured its content, so the fit and the show are one step |
+| Right after main has posted its `kit:init` reply | `fixed`: the runtime never asks for a size in that mode, and its `kit:ready` means the page has loaded |
+| 800 ms after `kit:ready` arrives | A page that has loaded but asks for no size: its first fit never comes, or comes late (a larger `initTimeoutMs` with slow web fonts, below) |
+| 3 s after `installKitWindow()` | A page that never sends `kit:ready`: no kit runtime, or one that threw before it got there |
+
+A `kit:ready` replaces the 3 s fallback with its own 800 ms, so a page that loads slowly still gets the whole delay, and a UI that handshakes again while the window is still hidden starts the 800 ms over. A later `installKitWindow()` call drops the earlier one's timers, a `kit:resize` in `fixed` mode is ignored (it neither resizes nor shows), and a `figma.ui.show()` that throws (a plugin that closed first) is ignored. `test/code.test.mjs` pins each of these paths; `e2e/chrome.spec.mjs` ("when main shows the window", and the open and `fixed` tests) checks them in the fake host.
+
+**Why the window waits for the UI.** In the Figma desktop app (126.9.13, 2026-10-14) a window shown before its page has painted is visible, and blank. With the code at the `v0.4.0` tag, the cap counted 500 ms from `installKitWindow()`, and a `fixed` window was visible from `showUI` on. In that run the starter in FigJam and Slides first appeared at its starting size and fitted about 1 s later, and the heavier pages (the five examples and the one-shot plugins) showed a visible but blank window for up to about 1 s before their content painted, then fitted ([surfaces.md](surfaces.md#seen-in-the-run-a-window-visible-before-it-fitted)). A page can take longer than 500 ms to load in Figma, so the delay now starts when the page reports that it has loaded. Whether this removes the blank and unfitted flash in Figma is **UNVERIFIED** until the next Figma run; the timings above are verified only by the unit tests and the fake host.
+
+The runtime has its own half-second safety net, for a `kit:init` that never comes:
+
 - **The runtime**: if no `kit:init` arrives within `CONFIG.initTimeoutMs` (500 ms) of `kit:ready`, it carries on alone: `CONFIG.fallbackMode` (`fit-content`), chrome off (the handle stays hidden, since nothing could save a size), the generous bounds, and a content fit. This is what you see when `ui.html` is opened straight in a browser. If `kit:init` does arrive later (a main thread busy for longer than that), its mode, chrome and bounds take over. Main may apply the fallback's fit after it has sent `kit:init`, so the runtime then asks again: for `kit:init`'s `size` in `resizable` mode (when the chrome is on), or for a fresh content fit in `fit-content` mode. A `fixed` window needs nothing, because main ignores `kit:resize` in that mode (`e2e/chrome.spec.mjs`, "a main thread that answers late").
 
-The first fit waits for `document.fonts.ready`, so text measured in the fallback font does not set the height, but no longer than `CONFIG.initTimeoutMs`: a font request that never settles must not keep the window from fitting. In `fit-content` mode a late font swap is caught by the observer anyway.
+The first fit waits for `document.fonts.ready`, so text measured in the fallback font does not set the height, but no longer than `CONFIG.initTimeoutMs`: a font request that never settles must not keep the window from fitting. In `fit-content` mode a late font swap is caught by the observer anyway. The runtime's font wait starts when it sends `kit:ready` and main's 800 ms when that message arrives, so with the default `initTimeoutMs` of 500 ms the slowest first fit still lands about 300 ms before main would show the window on its own: the window appears once, already fitted. (With main's delay at 500 ms too, the two timers tied, and in the fake host with fonts that never settle the window showed at its starting size a moment before its fit in 2 of 8 runs; `e2e/chrome.spec.mjs` now checks that the fit comes first, and `test/code.test.mjs` that the delay stays at least 250 ms over the runtime's default.) A larger `initTimeoutMs` lets slow fonts hold the first fit back past main's 800 ms: the window then appears at its starting size and fits when the fonts arrive.
 
 If `code.ts` and `ui.html` come from different kit releases, each side warns once (two `console.warn` lines, one from main and one from the runtime), naming both protocol numbers, and both carry on. Re-paste the kit blocks of both files from the same release ([pitfalls.md](pitfalls.md)).
 
@@ -154,7 +173,7 @@ If there is no `[data-kit-root]`, `<body>` is measured instead. The root is look
 
 `kit:init` carries `chrome: false` in these cases. The runtime then hides the handle, sets `html[data-kit-chrome="off"]` (so the 24 px kept clear below the content for the grip are given back), and ignores every gesture:
 
-- **Dev Mode (`dev`)** and **Buzz (`buzz`)**. The UI lives in a docked panel there (the Inspect panel, or Buzz's left side panel), the panel's size belongs to the person, and Figma's guidance is a responsive layout, at least 300 px wide in Dev Mode ([Dev Mode](https://developers.figma.com/docs/plugins/working-in-dev-mode/), [Buzz](https://developers.figma.com/docs/plugins/working-in-buzz/)). In `fit-content` mode the runtime still sends content fits; whether a docked panel obeys them is not verified. See [surfaces.md](surfaces.md) for what is known per editor.
+- **Dev Mode (`dev`)** and **Buzz (`buzz`)**. The UI lives in a docked panel there (the Inspect panel, or Buzz's left side panel), the panel's size belongs to the person, and Figma's guidance is a responsive layout, at least 300 px wide in Dev Mode ([Dev Mode](https://developers.figma.com/docs/plugins/working-in-dev-mode/), [Buzz](https://developers.figma.com/docs/plugins/working-in-buzz/)). Measured on 2026-10-14 (Figma desktop 126.9.13): both panels ignore `showUI`'s size and every `figma.ui.resize`. The UI got the panel's size, 320 x 1179 in Dev Mode and 280 x 1324 in Buzz's side panel, and kept it whatever was asked for; only an invalid size (`NaN`, a fraction) still throws there. So a handle could never resize anything, and turning the chrome off is right. In `fit-content` mode the runtime still sends content fits; main passes them on and the panel ignores them, so lay the page out for whatever width the panel has (check it at 280 px). Buzz's pop-out modal was not tried: whether it honours a resize is UNVERIFIED. See [surfaces.md](surfaces.md) for what is known per editor.
 - **`fixed` mode**, in every editor. `code.ts` also ignores any `kit:resize` in this mode, so the window keeps `options.size`.
 - **No `kit:init` at all** (the fallback above).
 
@@ -194,7 +213,7 @@ The runtime reads it once, at `DOMContentLoaded`, before it labels the handle or
 | `snapWidths` | `[320, 480, 640]` | A non-empty array of positive numbers, in any order | The widths double-click, Enter and Space cycle through; End takes the widest. Widths outside the current bounds are skipped. |
 | `step` | `8` | A whole number, 1 or more | Pixels per arrow key. |
 | `bigStep` | `32` | A whole number, 1 or more | Pixels per Shift + arrow key. |
-| `initTimeoutMs` | `500` | Milliseconds, 0 or more (at most 2147483647, `setTimeout`'s limit) | How long the runtime waits for `kit:init`, and for web fonts, before it carries on alone. It does not change when `code.ts` shows the window; that cap is its own 500 ms. |
+| `initTimeoutMs` | `500` | Milliseconds, 0 or more (at most 2147483647, `setTimeout`'s limit) | How long the runtime waits for `kit:init`, and for web fonts, before it carries on alone. It does not change when `code.ts` shows the window: at the latest 800 ms after `kit:ready` ([When the window appears](#when-the-window-appears-and-the-fallbacks)), so a value above about 700 can let a window appear before its first fit. |
 | `fallbackMode` | `"fit-content"` | `"fit-content"`, `"resizable"` or `"fixed"` | The mode used only when `kit:init` never arrives, such as when previewing `ui.html` in a browser. In Figma the mode always comes from `installKitWindow({ mode })`. |
 | `strings.resizeLabel` | `"Resize window"` | A string that is not blank | The handle's accessible name. The runtime writes it to the handle's `aria-label` at startup, so translate it here rather than in the markup. |
 | `strings.resizeHint` | `"Drag, or use the arrow keys. Shift for bigger steps, Enter to snap, Home to fit, End for the widest size."` | A string that is not blank | The handle's description, the text of `#kit-resize-hint` (kit 0.3.0, [Screen readers](#screen-readers-the-hint-and-the-announcement)). |
@@ -230,7 +249,7 @@ The table above says what each key does. The `@type` cast only tells `npm run ch
 
 - **The window grows but never shrinks.** Something ties the root's height to the window: `height: 100%`, `min-height: 100vh` (on the root or on `body`), or a flex column stretched to the viewport.
 - **The bottom of the content is cut off.** The content sits outside `[data-kit-root]`, or it hangs out of the root through absolute positioning or a negative margin.
-- **The window appears after half a second, at the wrong size.** The UI never sent its first `kit:resize`: the runtime block is missing or threw (check the plugin console), or `kit:init` never arrived (a protocol warning, or `installKitWindow()` was not called). In `fixed` mode the window is visible at once by design.
+- **The window appears late, at its starting size.** About 3 s after the plugin starts: the page never sent `kit:ready`, so the runtime block is missing or threw before it ran (check the plugin console). About 0.8 s after the page loaded: the UI sent `kit:ready` but no size, because `kit:init` never reached it (a protocol warning in the console) or a larger `initTimeoutMs` let slow web fonts hold its first fit back. In `fixed` mode the window appears as soon as `kit:init` is posted, at `options.size`, by design.
 - **There is no handle.** The chrome is off (Dev Mode, Buzz, `fixed` mode, or no `kit:init`), or the button lacks `data-kit-resize`.
 - **The size is not remembered.** `persist: false`, `fixed` mode, a different editor, a storage error (the main thread warns once), or a storage read slower than 300 ms (skipped for that run). In `fit-content` mode only the width is remembered, by design.
 - **A `resizable` window keeps its height after new content arrives.** By design: only the person, Home, `kit.fit()` and `KitWindow.fit()` change it ([Fit on request](#fit-on-request-kitfit-and-kitwindowfit)).
@@ -256,10 +275,10 @@ The runtime block keeps only its JSDoc types and a few pointers into these docs,
 
 **Startup**
 
-- The first `kit:resize` doubles as "ready to show": `code.ts` keeps the window hidden until then (or until its own 500 ms cap), so the runtime waits for the fonts and for the real mode before it sends it.
+- The first `kit:resize` doubles as "ready to show": `code.ts` keeps the window hidden until then (or until 800 ms after `kit:ready`, or 3 s without one), so the runtime waits for the fonts and for the real mode before it sends it.
 - With the chrome on, the first request uses `kit:init`'s `size`, not the viewport's: the restore's `figma.ui.resize` may not have reached the iframe yet, and asking for the old viewport size would undo it ([How the mode and bounds reach the UI](#how-the-mode-and-bounds-reach-the-ui)).
 - `kit:init` is checked field by field, so a malformed one falls back to defaults instead of throwing. The protocol warning quotes a string protocol, so `"1"` and `1` read differently.
-- A `kit:fit` that arrives before the first request is kept and applied to it. A `kit:init` that arrives after the fallback has started is covered in [Timing](#timing-and-the-two-500-ms-fallbacks).
+- A `kit:fit` that arrives before the first request is kept and applied to it. A `kit:init` that arrives after the fallback has started is covered in [When the window appears](#when-the-window-appears-and-the-fallbacks).
 - `CONFIG.fallbackMode` is always a valid mode: the default is one, and `data-kit-config` only replaces it with another (`fallbackMode` in the table above).
 
 **Watching the root (`fit-content`)**
@@ -296,7 +315,7 @@ The runtime block keeps only its JSDoc types and a few pointers into these docs,
 
 **The pure block**
 
-- Figma documents a 70 x 0 floor for `showUI` and `figma.ui.resize`, and no ceiling. The 4096 px ceiling of the generous bounds is the kit's own, so a runaway number can't ask for an absurd window before `kit:init` arrives.
+- Figma documents a 70 x 0 floor for `showUI` and `figma.ui.resize`, and no ceiling. Measured in Figma 126.9: a narrower width becomes 70, a 0 height stays 0, a size larger than the Figma window is capped to the window, and a fraction throws ([How the mode and bounds reach the UI](#how-the-mode-and-bounds-reach-the-ui)). The 4096 px ceiling of the generous bounds is the kit's own, so a runaway number can't ask for an absurd window before `kit:init` arrives.
 - `sanitizeBounds` repairs any bounds-like value: finite whole numbers, never under 70 x 0, and when a minimum is larger than its maximum the minimum wins, as in CSS and in `code.ts`. Missing or junk fields take the generous default, so the result is always safe to clamp against.
 - `clampSize` rounds to whole pixels and never returns NaN or Infinity: NaN, a non-number and -Infinity land on the minimum, +Infinity on the maximum.
 - `nextSnap` and `widestSnap` ignore the order of the snaps and skip non-finite and non-positive ones. With no usable snap the width comes back unchanged (0 if it isn't finite), so the result can always go to `clampSize`.

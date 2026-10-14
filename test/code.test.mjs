@@ -1,8 +1,8 @@
 // Tests for the main-thread kit block (code.ts -> code.js).
 // They run the COMPILED code.js, because that is the file Figma loads: the kit block is cut out
 // between its fence lines and evaluated in a node:vm context against a hand-written figma stub
-// and a fake clock, so timing rules (500 ms show cap, 400 ms save debounce, 300 ms storage read
-// timeout) are exact.
+// and a fake clock, so timing rules (show 800 ms after kit:ready or 3 s after install, 400 ms save
+// debounce, 300 ms storage read timeout) are exact.
 // Run: npm run build && node --test "test/code.test.mjs"
 
 import { test } from 'node:test';
@@ -69,7 +69,8 @@ function makeClock() {
  */
 function makeFigma({ editorType = 'figma', stored, failGet = false, failSet = false, holdGet = false, failResize = false } = {}) {
   const log = [];
-  const calls = { showUI: [], resize: [], show: 0, posted: [], set: [], get: 0, warn: [], log: [], notify: [] };
+  // resizeArgs: every figma.ui.resize call as made, before the stub validates it (resize: the applied ones).
+  const calls = { showUI: [], resize: [], resizeArgs: [], show: 0, posted: [], set: [], get: 0, warn: [], log: [], notify: [] };
   const listeners = [];
   const store = new Map();
   if (stored !== undefined) store.set('kit:window', stored);
@@ -95,8 +96,11 @@ function makeFigma({ editorType = 'figma', stored, failGet = false, failSet = fa
         calls.posted.push(plain(msg));
       },
       resize(width, height) {
-        // Figma throws on non-finite sizes; so does the stub, so a leak fails loudly.
+        calls.resizeArgs.push([width, height]);
+        // Figma throws on non-finite and on fractional sizes (measured in Figma 126.9: "Expected
+        // integer, received float"); so does the stub, so a leak fails loudly.
         if (!Number.isFinite(width) || !Number.isFinite(height)) throw new Error('resize: not a finite number');
+        if (!Number.isInteger(width) || !Number.isInteger(height)) throw new Error('resize: Expected integer, received float');
         if (failResize) throw new Error('resize not supported here');
         log.push(`resize:${width}x${height}`);
         calls.resize.push([width, height]);
@@ -210,7 +214,7 @@ test('showUI: themeColors on, hidden until fitted, default size, html and title'
   assert.deepEqual(kit.log.slice(0, 2), ['showUI', 'get'], 'storage is read right after showUI');
 });
 
-test('showUI: custom html, title, clamped size; fixed mode is visible at once', () => {
+test('showUI: custom html, title, clamped size; every mode opens hidden, fixed too', () => {
   const kit = boot();
   kit.install({ html: '<b>x</b>', title: 'Hello', mode: 'resizable', size: { width: 10, height: 5000 } });
   assert.deepEqual(kit.calls.showUI[0], {
@@ -218,11 +222,12 @@ test('showUI: custom html, title, clamped size; fixed mode is visible at once', 
     options: { width: 240, height: 900, themeColors: true, visible: false, title: 'Hello' },
   });
 
+  // Figma showed a window before its page had painted: blank for up to ~1 s (docs/window-chrome.md).
   const fixed = boot();
   fixed.install({ mode: 'fixed', size: { width: 400 } });
-  assert.deepEqual(fixed.calls.showUI[0].options, { width: 400, height: 360, themeColors: true, visible: true });
+  assert.deepEqual(fixed.calls.showUI[0].options, { width: 400, height: 360, themeColors: true, visible: false });
   fixed.clock.tick(1000);
-  assert.equal(fixed.calls.show, 0, 'a visible window is never shown again');
+  assert.equal(fixed.calls.show, 0, 'not shown before its UI has loaded');
 });
 
 test('unknown mode and junk options fall back to the defaults, with one warning naming them', () => {
@@ -466,7 +471,7 @@ test('a storage read that never settles still sends kit:init after 300 ms; a lat
   assert.equal(kit.calls.posted.length, 1);
   assert.equal(kit.calls.posted[0].restored, false);
   assert.deepEqual(kit.calls.posted[0].size, { width: 320, height: 360 });
-  assert.deepEqual(kit.log.slice(0, 3), ['showUI', 'get', 'post:kit:init'], 'kit:init goes out before the 500 ms show cap');
+  assert.deepEqual(kit.log.slice(0, 3), ['showUI', 'get', 'post:kit:init'], 'kit:init goes out before the window is shown');
 
   kit.releaseGet();
   await flush();
@@ -577,27 +582,157 @@ test('kit:resize is clamped and rounded', () => {
   assert.deepEqual(kit.calls.resize, [[240, 900], [960, 120], [334, 401], [401, 301]]);
 });
 
-test('the first kit:resize shows the window, after resizing it', () => {
-  const kit = boot();
-  kit.install();
-  assert.equal(kit.calls.show, 0);
-  kit.emit(resize(320, 200));
-  assert.deepEqual(kit.log.slice(-2), ['resize:320x200', 'show']);
-  kit.emit(resize(320, 250));
-  kit.clock.tick(1000);
-  assert.equal(kit.calls.show, 1, 'shown once; the 500 ms timer was cancelled');
-  assert.equal(kit.clock.pending, 0);
+test('figma.ui.resize and showUI only ever get whole pixels, never under 70 x 0', async () => {
+  // Fractions on every way in: options.size and options.bounds (defaultSize), a stored record (an
+  // older or hand-written one; restore), and kit:resize from the UI. Figma throws on a fractional
+  // size ("Expected integer, received float"), and so does the stub.
+  const cases = [
+    [{}, { mode: 'resizable', size: { width: 333.3, height: 222.7 }, bounds: { minWidth: 250.6, maxWidth: 700.4, minHeight: 100.5, maxHeight: 800.2 } }, record(500.4, 600.6)],
+    [{}, { size: { width: 320.5, height: 360.5 } }, record(480.5, 99.5)],
+    [{ editorType: 'dev' }, { size: { width: 299.5 } }, record(300.5, 400.5, 'dev')],
+    [{ editorType: 'figjam' }, { mode: 'resizable', bounds: { minWidth: 0.4, minHeight: -0.4, maxWidth: 900.5, maxHeight: 1e6 + 0.5 } }, undefined],
+    [{}, { mode: 'fixed', size: { width: 300.5, height: 200.5 } }, record(400, 400)],
+  ];
+  const fractions = [[333.5, 401.49], [0.4, 0.6], [10.5, 10000.5], [5000.25, -0], [289.999, 120.001], [70.5, 0.5]];
+  for (const [stub, options, stored] of cases) {
+    const label = JSON.stringify(options);
+    const kit = boot({ ...stub, stored });
+    kit.install(options);
+    const init = await kit.handshake();
+    for (const [w, h] of fractions) {
+      kit.emit(resize(w, h));
+      kit.emit(resize(w, h, { user: true }));
+      kit.emit(resize(w + 1, h + 1, { user: true, final: true }));
+    }
+    kit.clock.tick(1000);
+    await flush();
+    const sizes = [
+      ...kit.calls.showUI.map((c) => [c.options.width, c.options.height]),
+      ...kit.calls.resizeArgs,
+      [init.size.width, init.size.height], [init.defaultSize.width, init.defaultSize.height],
+      [init.bounds.minWidth, init.bounds.minHeight], [init.bounds.maxWidth, init.bounds.maxHeight],
+      ...kit.calls.set.map((c) => [c.value.width, c.value.height]),
+    ];
+    for (const [w, h] of sizes) {
+      assert.ok(Number.isInteger(w) && Number.isInteger(h), `${label}: ${w} x ${h} is whole pixels`);
+      assert.ok(w >= 70 && h >= 0, `${label}: ${w} x ${h} is at least 70 x 0`);
+    }
+    if (options.mode !== 'fixed') assert.ok(kit.calls.resizeArgs.length > fractions.length, `${label}: the resizes were made`);
+    assert.deepEqual(kit.calls.warn, [], `${label}: Figma never refused a size`);
+  }
+
+  // Figma's floor: a narrower width becomes 70 (measured: 10 x 10 gave 70 x 10, 70 x 0 stayed).
+  const floor = boot();
+  floor.install({ mode: 'resizable', bounds: { minWidth: 0, minHeight: 0 } });
+  floor.emit(resize(0, 0));
+  assert.deepEqual(floor.calls.resize, [[70, 0]]);
 });
 
-test('the window is shown after 500 ms even if the UI never asks for a size', () => {
+// ---- visibility: every mode opens hidden until its UI is ready ----
+// Figma showed a window before its page had painted (blank for up to ~1 s on a heavier page), so
+// the 800 ms delay counts from kit:ready, not from installKitWindow() (docs/window-chrome.md).
+
+test('visibility: the first kit:resize shows the window, after resizing it, before or after kit:ready', async () => {
+  for (const ready of [false, true]) {
+    const kit = boot();
+    kit.install();
+    if (ready) await kit.handshake();
+    kit.clock.tick(400);
+    assert.equal(kit.calls.show, 0, `kit:ready ${ready}`);
+    kit.emit(resize(320, 200));
+    assert.deepEqual(kit.log.slice(-2), ['resize:320x200', 'show']);
+    kit.emit(resize(320, 250));
+    kit.clock.tick(5000);
+    assert.equal(kit.calls.show, 1, 'shown once; its timer was cancelled');
+    assert.equal(kit.clock.pending, 0);
+  }
+});
+
+test('visibility: a UI that loads (kit:ready) but asks for no size is shown 800 ms after kit:ready', async () => {
   const kit = boot();
   kit.install();
-  kit.clock.tick(499);
+  kit.clock.tick(1200); // a slow page: kit:ready arrives 1.2 s after showUI
+  assert.equal(kit.calls.show, 0, 'still loading, so still hidden');
+  await kit.handshake();
+  kit.clock.tick(799);
   assert.equal(kit.calls.show, 0);
   kit.clock.tick(1);
   assert.equal(kit.calls.show, 1);
+  assert.deepEqual(kit.calls.resize, [], 'shown at the size it has');
   kit.emit(resize(320, 200));
+  kit.clock.tick(5000);
+  assert.equal(kit.calls.show, 1, 'a later fit resizes but never shows again');
+  assert.equal(kit.clock.pending, 0, 'the 3 s fallback was replaced, not added to');
+});
+
+test('visibility: kit:ready replaces the 3 s fallback, so a page that loads late still gets its 800 ms', async () => {
+  const kit = boot();
+  kit.install();
+  kit.clock.tick(2800);
+  await kit.handshake();
+  kit.clock.tick(799); // 3,599 ms after install, past the fallback
+  assert.equal(kit.calls.show, 0);
+  kit.clock.tick(1);
   assert.equal(kit.calls.show, 1);
+
+  // A UI that handshakes again while the window is still hidden starts the 800 ms over.
+  const again = boot();
+  again.install();
+  await again.handshake();
+  again.clock.tick(700);
+  await again.handshake();
+  again.clock.tick(799);
+  assert.equal(again.calls.show, 0);
+  again.clock.tick(1);
+  assert.equal(again.calls.show, 1);
+  assert.equal(again.clock.pending, 0);
+});
+
+test('visibility: the show delay after kit:ready leaves a margin over the runtime\'s default font and kit:init wait', () => {
+  // The runtime's first fit waits at most initTimeoutMs from sending kit:ready; main's delay counts
+  // from receiving it. Equal values race, and the window can show at its starting size a moment
+  // before it fits (seen in the fake host with fonts that never settle).
+  const delay = Number(/\bconst KIT_SHOW_DELAY_MS = (\d+);/.exec(CODE_JS)?.[1]);
+  const ui = readFileSync(new URL('../ui.html', import.meta.url), 'utf8');
+  const wait = Number(/\binitTimeoutMs: (\d+),/.exec(ui)?.[1]);
+  assert.ok(Number.isInteger(delay) && Number.isInteger(wait), `delay ${delay}, initTimeoutMs ${wait}`);
+  assert.ok(delay - wait >= 250, `KIT_SHOW_DELAY_MS (${delay}) must stay at least 250 ms over the runtime's initTimeoutMs (${wait})`);
+});
+
+test('visibility: a page that never sends kit:ready (no kit runtime) is shown 3 s after install, in every mode', () => {
+  for (const mode of ['fit-content', 'resizable', 'fixed']) {
+    const kit = boot();
+    kit.install({ mode });
+    kit.clock.tick(2999);
+    assert.equal(kit.calls.show, 0, mode);
+    kit.clock.tick(1);
+    assert.equal(kit.calls.show, 1, mode);
+    assert.equal(kit.clock.pending, 0, mode);
+  }
+});
+
+test('visibility: fixed mode is shown right after its kit:init reply, and only once', async () => {
+  const kit = boot();
+  kit.install({ mode: 'fixed', size: { width: 300, height: 200 } });
+  assert.equal(kit.calls.show, 0);
+  const init = await kit.handshake();
+  assert.equal(init.mode, 'fixed');
+  assert.deepEqual(kit.log, ['showUI', 'post:kit:init', 'show'], 'no storage read and no resize: the reply, then show');
+  await kit.handshake();
+  kit.emit(resize(320, 229)); // a runtime's fallback guess: ignored, and no second show
+  kit.clock.tick(5000);
+  assert.equal(kit.calls.show, 1);
+  assert.deepEqual(kit.calls.resize, []);
+  assert.equal(kit.clock.pending, 0);
+});
+
+test('visibility: a figma.ui.show that throws (a plugin closed before its window showed) is swallowed', () => {
+  const kit = boot();
+  kit.install();
+  kit.figma.ui.show = () => { throw new Error('The plugin is closed'); };
+  assert.doesNotThrow(() => kit.clock.tick(3000));
+  assert.deepEqual(kit.calls.warn, []);
+  assert.equal(kit.clock.pending, 0);
 });
 
 // ---- persistence ----
@@ -685,13 +820,14 @@ test('fixed mode ignores kit:resize, so a UI that fell back before kit:init cann
   // The runtime's fallback fit (no kit:init within 500 ms, e.g. a busy main thread), then a
   // late handshake, then anything else that claims to be from the person.
   kit.emit(resize(320, 229));
+  assert.equal(kit.calls.show, 0, 'an ignored kit:resize does not show a fixed window either');
   await kit.handshake();
   kit.emit(resize(400, 300, { user: true, final: true }));
   kit.emit(resize(410, 300, { user: true }));
   kit.clock.tick(1000);
   assert.deepEqual(kit.calls.resize, []);
   assert.equal(kit.calls.set.length, 0);
-  assert.equal(kit.calls.show, 0, 'visible from the start, never shown again');
+  assert.equal(kit.calls.show, 1, 'shown once, after kit:init');
 });
 
 test('a storage write failure is swallowed, warned once and retried on the next gesture', async () => {
@@ -728,14 +864,27 @@ test('host messages are ignored and the kit listens with ui.on, not onmessage', 
   assert.equal(kit.calls.set.length, 0);
 });
 
-test('a second install replaces the first listener and its timers', () => {
+test('a second install replaces the first listener and its timers', async () => {
   const kit = boot();
   kit.install();
   kit.install({ mode: 'resizable' });
   assert.equal(kit.listeners.length, 1);
   assert.equal(kit.calls.showUI.length, 2);
-  kit.clock.tick(500);
-  assert.equal(kit.calls.show, 1, 'only the second window\'s timer fires');
+  kit.clock.tick(2999);
+  assert.equal(kit.calls.show, 0);
+  kit.clock.tick(1);
+  assert.equal(kit.calls.show, 1, 'only the second window\'s 3 s fallback fires');
+
+  // The first UI's kit:ready started its 800 ms delay; the second install cancels it.
+  const ready = boot();
+  ready.install();
+  await ready.handshake();
+  ready.install({ mode: 'fixed' });
+  ready.clock.tick(900);
+  assert.equal(ready.calls.show, 0, 'the first window\'s 800 ms delay is gone');
+  await ready.handshake();
+  assert.equal(ready.calls.show, 1, 'the second window is shown after its own kit:init');
+  assert.equal(ready.clock.pending, 0);
 });
 
 test('a second install drops the first one\'s storage read and kit:init reply', async () => {
@@ -746,7 +895,7 @@ test('a second install drops the first one\'s storage read and kit:init reply', 
   await flush();
   assert.deepEqual(fixed.calls.showUI.map((c) => c.options), [
     { width: 320, height: 360, themeColors: true, visible: false },
-    { width: 400, height: 300, themeColors: true, visible: true },
+    { width: 400, height: 300, themeColors: true, visible: false },
   ]);
   assert.deepEqual(fixed.calls.resize, []);
   assert.deepEqual(fixed.calls.posted, []);
@@ -769,8 +918,12 @@ test('a second install drops the first one\'s storage read and kit:init reply', 
   stale.install({ mode: 'fixed', size: { width: 400, height: 300 } });
   stale.releaseGet();
   await flush();
-  stale.clock.tick(1000);
+  stale.clock.tick(900);
   await flush();
+  assert.equal(stale.calls.show, 0, 'the first install\'s 800 ms show delay went with it');
+  assert.equal(stale.clock.pending, 1, 'only the second install\'s 3 s fallback is left');
+  stale.clock.tick(2100);
+  assert.equal(stale.calls.show, 1);
   assert.deepEqual(stale.calls.posted, [], 'no stale kit:init (wrong mode, chrome on) reaches the new UI');
   assert.deepEqual(stale.calls.resize, []);
   assert.equal(stale.clock.pending, 0, 'no timer of the first install is left');

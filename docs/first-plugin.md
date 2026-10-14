@@ -107,7 +107,7 @@ figma.ui.on('message', (msg: unknown) => {
 
 - `installKitWindow()` comes first: it opens the window, so it must exist before anything posts to it. `fit-content` lets the height follow the UI ([window-chrome.md](window-chrome.md#pick-a-mode)).
 - The type names start with `Prefix` because `code.ts` shares one global namespace with Figma's typings (`Action`, `Rect`, `Paint` are taken), and names like `kitClampSize`, `KitSize` and `KIT_PROTOCOL` are reserved for the kit ([pitfall 17](pitfalls.md#17-smaller-traps)).
-- The guard checks the `type` and every field; anything else, including the kit's own `kit:*` messages, falls through. Register with `figma.ui.on('message', ...)`, never `figma.ui.onmessage =` ([messages.md](messages.md#your-own-messages-next-to-the-kits)).
+- The guard checks the `type` and every field; anything else, including the kit's own `kit:*` messages, falls through. Register with `figma.ui.on('message', ...)` rather than `figma.ui.onmessage =`, which holds one handler, so a second assignment replaces the first ([messages.md](messages.md#use-figmauionmessage-for-your-handlers)).
 - Renaming is synchronous. When you call an `*Async` API, `await` it inside `try`/`catch` and still answer on failure ([pitfall 4](pitfalls.md#4-await-every-async-call)).
 
 **UI.** Replace the demo's plain `<script>` at the end of `<body>` (after the resize handle) with:

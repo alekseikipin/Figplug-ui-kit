@@ -8,17 +8,24 @@
 
 const KIT_PROTOCOL = 1;
 const KIT_STORAGE_KEY = 'kit:window';
-// Figma's documented minimum window size is 70 x 0.
+// Figma's minimum window size is 70 x 0 (documented, and measured: a narrower width becomes 70).
 const KIT_MIN_WIDTH = 70;
 const KIT_DEFAULT_SIZE: KitSize = { width: 320, height: 360 };
 const KIT_DEFAULT_BOUNDS: KitBounds = { minWidth: 240, maxWidth: 960, minHeight: 120, maxHeight: 900 };
 // Mid-drag sizes are written at most this often; a finished gesture is written at once.
 const KIT_SAVE_DELAY_MS = 400;
-// A UI that never asks for a size (a broken page, a missing runtime) still becomes visible.
-const KIT_SHOW_DELAY_MS = 500;
+// A window shown before its page has painted is blank (seen in Figma for up to ~1 s), so every
+// window opens hidden until its UI is ready. A UI that has loaded (kit:ready) but asks for no size
+// is shown this long after kit:ready. The runtime's first fit waits at most its initTimeoutMs
+// (500 ms by default) from sending kit:ready, so this stays clearly longer: a tie would show the
+// window at its starting size just before it fits.
+const KIT_SHOW_DELAY_MS = 800;
+// A page that never sends kit:ready (no kit runtime, or one that threw) is shown this long after
+// installKitWindow().
+const KIT_SHOW_FALLBACK_MS = 3000;
 // A saved-size read slower than this stops holding kit:init back, and its answer is then ignored:
-// the window has started at its default size, and moving it later would be a jump. Shorter than
-// KIT_SHOW_DELAY_MS, so a restore lands before the show cap.
+// the window has started at its default size, and moving it later would be a jump. It counts from
+// installKitWindow() and the show delay from kit:ready, so a restore lands before the window shows.
 const KIT_READ_TIMEOUT_MS = 300;
 const KIT_MODES: ReadonlyArray<string> = ['fit-content', 'resizable', 'fixed'];
 
@@ -90,8 +97,8 @@ function kitSanitizeBounds(base: KitBounds, override: unknown): KitBounds {
   };
 }
 
-// Rounding after clamping stays inside integer bounds, and whole pixels keep sizes comparable
-// for the save dedupe.
+// Figma throws on a fractional size ("Expected integer"). Rounding after clamping stays inside
+// integer bounds, and whole pixels keep sizes comparable for the save dedupe.
 function kitClamp(value: number, min: number, max: number): number {
   return Math.round(Math.min(max, Math.max(min, value)));
 }
@@ -162,14 +169,17 @@ async function kitWriteSize(record: KitSizeRecord): Promise<boolean> {
  * Opens the plugin window and wires it to the kit runtime in ui.html. Call it before your own
  * figma.ui.on('message', ...) handler; kit messages (type 'kit:*') are handled here and every
  * other message is left for your handler. Register yours with figma.ui.on too: assigning
- * figma.ui.onmessage may or may not replace this listener (unmeasured, see docs/messages.md).
+ * figma.ui.onmessage keeps this listener (measured in Figma 126.9.13, see docs/messages.md), but
+ * that property holds one handler, so a second assignment replaces the first.
  *
  * What it does:
  * - Calls figma.showUI right away with themeColors on, so you can postMessage immediately (Figma
  *   queues messages until the page loads). Remove your own showUI call: a second one closes this
- *   window. The window starts hidden in 'fit-content' and 'resizable' modes and is shown on the
- *   first size the UI asks for, or after 500 ms at most.
- * - Clamps every size to the bounds, so a bad message can never reach figma.ui.resize.
+ *   window. The window starts hidden in every mode and is shown when the UI is ready: on the first
+ *   size it asks for ('fixed': right after the kit:init reply), or 800 ms after kit:ready, or 3 s
+ *   after this call for a page that never sends kit:ready.
+ * - Clamps every size to the bounds and rounds it to whole pixels, so a bad message can never
+ *   reach figma.ui.resize.
  * - Restores the size the person chose last time in this editor, and saves it when a resize
  *   gesture finishes (debounced while dragging). Nothing is written on close: Figma cannot await
  *   it. A storage read slower than 300 ms is skipped, so it never holds the UI back.
@@ -239,8 +249,7 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
   const persist = opts.persist !== false && mode !== 'fixed';
 
   let size: KitSize = { ...defaultSize };
-  // A fixed window has nothing to fit, so it can be visible from the start.
-  let shown = mode === 'fixed';
+  let shown = false;
   let restored = false;
   let userResized = false;
   // The last record known to be in storage, so an unchanged size is not written again.
@@ -254,7 +263,7 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
     width: size.width,
     height: size.height,
     themeColors: true,
-    visible: shown,
+    visible: false,
   };
   if (typeof opts.title === 'string') showOptions.title = opts.title;
   figma.showUI(typeof opts.html === 'string' ? opts.html : __html__, showOptions);
@@ -264,9 +273,14 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
     shown = true;
     kitClearTimer(showTimer);
     showTimer = undefined;
-    figma.ui.show();
+    try {
+      figma.ui.show();
+    } catch {
+      // The plugin closed before its window was shown: there is no window left to show.
+    }
   };
-  if (!shown) showTimer = setTimeout(show, KIT_SHOW_DELAY_MS);
+  // Replaced by the shorter delay when kit:ready arrives.
+  showTimer = setTimeout(show, KIT_SHOW_FALLBACK_MS);
 
   // False when Figma refused the size (a closed plugin, a surface without resize): the window keeps
   // its old size and the kit carries on, so a refusal never stops kit:init or a host listener.
@@ -347,6 +361,11 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
       warnOnce('protocol', 'ui.html speaks protocol ' + theirs + ' but code.ts speaks ' +
         KIT_PROTOCOL + '. Re-paste the kit blocks of both files from the same release.');
     }
+    // The page has loaded. Its first kit:resize shows the window; this covers a UI that sends none.
+    if (!shown) {
+      kitClearTimer(showTimer);
+      showTimer = setTimeout(show, KIT_SHOW_DELAY_MS);
+    }
     // Waiting for storage means kit:init carries the restored size, so the UI fits only once.
     void ready.then(() => {
       // A later installKitWindow() call owns the window now and answers its own UI.
@@ -366,7 +385,10 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
         figma.ui.postMessage(init);
       } catch {
         // The host closed the plugin while the saved size was being read: no UI is left to answer.
+        return;
       }
+      // A fixed window never asks for a size, and its UI has loaded: show it now.
+      if (mode === 'fixed') show();
     });
   };
 

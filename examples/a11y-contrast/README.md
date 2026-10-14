@@ -24,6 +24,8 @@ Graded in the agent's clone as it left it, before any curation.
 
 Automated one-shot: **yes** (build, audit, check:ui, unit tests and e2e all pass; the kit's three `ui.html` blocks, the `kit:window` block and `kit.d.ts` are byte-identical to the release). The defects below are ones no check could catch: they are in the contrast maths, which only golden scenes can pin.
 
+**In Figma (2026-10-14).** The curated plugin in this folder, not the one-shot output above, ran once in Figma Design (dark theme, Figma desktop 126.9.13) through the starter's imported manifest, with its `ui.html` and `code.js` swapped in for the run: it flagged `#B8B8B8` text on white at 1.99:1, below AA, passed black at 21:1 and showed the danger notice (Select failing and row clicks not tried). Its own `manifest.json` has not been imported, and the light theme and its other editors have not been run ([release checklist](../../docs/release-checklist.md#the-examples)).
+
 ## What the agent built
 
 `code.js`, `code.ts`, `manifest.json` and `ui.html` changed: 1,678 insertions, 171 deletions, plus a new 19-case test file ([agent.diff](agent.diff)).

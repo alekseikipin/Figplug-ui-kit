@@ -292,8 +292,8 @@ html[data-kit-chrome="on"] .kit-app:has(> .kit-footer:last-child) { padding-bott
 :root:has(.kit-footer) .kit-toast-region { bottom: calc(var(--kit-spacer-6) + var(--kit-spacer-2)); }
 .kit-toast { display: flex; align-items: center; gap: var(--kit-spacer-1); min-height: var(--kit-control-height-large); padding: 0 var(--kit-spacer-2); }
 .kit-toast > .kit-icon { color: var(--figma-color-icon-oninverse); }
-.kit-toast[data-kit-tone="success"] > .kit-icon { color: var(--figma-color-icon-success); }
-.kit-toast[data-kit-tone="danger"] > .kit-icon { color: var(--figma-color-icon-danger); }
+.kit-toast[data-kit-tone="success"] > .kit-icon { color: var(--figma-color-bg-success); }
+.kit-toast[data-kit-tone="danger"] > .kit-icon { color: var(--figma-color-bg-danger); }
 .kit-toast :is(.kit-button, .kit-icon-button) { --kit-button-text: var(--figma-color-text-oninverse); --kit-button-bg-hover: color-mix(in srgb, currentColor 16%, transparent); --kit-button-bg-pressed: var(--kit-button-bg-hover); }
 html[data-kit-chrome="on"] .kit-toast-region { max-width: calc(100vw - 2 * var(--kit-spacer-5)); }
 @media (prefers-reduced-motion: no-preference) { .kit-toast { animation: kit-toast-in var(--kit-duration-medium) var(--kit-easing); } }

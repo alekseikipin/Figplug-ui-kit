@@ -29,7 +29,10 @@ interface KitSizeRecord {
 
 // ---- UI -> main (sent as parent.postMessage({ pluginMessage: msg }, '*')) ----
 
-/** Sent once by the UI runtime when the page has loaded. */
+/**
+ * Sent once by the UI runtime when the page has loaded. Main then shows a window that is still
+ * hidden 800 ms later, unless a kit:resize shows it first; in 'fixed' mode, right after its reply.
+ */
 interface KitReadyMessage {
   type: 'kit:ready';
   protocol: number;
@@ -39,8 +42,9 @@ interface KitReadyMessage {
  * Ask the main thread to resize the window.
  * user:  the size came from the person (drag, keyboard, snap), not from fitting content.
  * final: the gesture is finished; persist now instead of debouncing.
- * The kit runtime always sends both; main treats a missing one as false. Main ignores this
- * message in 'fixed' mode.
+ * The kit runtime always sends both; main treats a missing one as false. Main clamps the size to
+ * the bounds and rounds it to whole pixels (Figma rejects a fractional size), and the first one
+ * shows the window. Main ignores this message in 'fixed' mode.
  */
 interface KitResizeMessage {
   type: 'kit:resize';

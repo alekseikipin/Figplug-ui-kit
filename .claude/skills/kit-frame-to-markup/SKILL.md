@@ -47,7 +47,7 @@ A procedure for agents working in this repo. The mapping itself lives in `refere
     npm run audit && npm run check:ui
     ```
 
-    A `color-literal` or `js-color-literal` finding usually means a hex came across from the design; `control-height` means a pixel height did. `references/pitfalls.md` explains every rule. Optionally run `npm run preview` and compare with the screenshot by eye (the preview's colours are a provisional fallback palette).
+    A `color-literal` or `js-color-literal` finding usually means a hex came across from the design; `control-height` means a pixel height did. `references/pitfalls.md` explains every rule. Optionally run `npm run preview` and compare with the screenshot by eye (the preview's colours are a fallback palette captured from Figma on 2026-10-14: a dated snapshot, so confirm colours in Figma).
 13. **Report** in plain words: what you built and which files changed; a "Didn't map" list with each layer's name and node id, what it was, and what you used instead (a component with no kit equivalent, a variant the kit lacks, a text style, spacing, radius or shadow off the kit's scale, a colour with no token, a height you dropped); every UI3 name that differed from the table's guess, so `references/ui3-mapping.md` can be verified; the two check results; and how to import the plugin (the last section of `AGENTS.md`).
 
 ## Examples

@@ -1,71 +1,86 @@
 # Accessibility
 
-What the kit does for keyboard, screen-reader and low-vision users, what it leaves as Figma has it on purpose, and what the automated checks cover. This page covers kit 0.4.0: the 20 components in [components.md](components.md) and the window chrome in [window-chrome.md](window-chrome.md). Phase 2 added the [notes per component](#components), the resize handle's [hint and announcement](#the-resize-hint-and-the-announcement) and a [forced-colours block](#forced-colours-windows-high-contrast); Phase 3 added the [dialog](#dialog)'s focus handling, the [toast](#toast)'s live region and tone icons, Escape for [tooltips](#tooltip), and contrast rows for every Phase 2 and 3 part ([Measured ratios](#measured-ratios)). Nothing here has been tried with a screen reader or inside the Figma app yet; [Known gaps](#known-gaps) lists what is still open.
+What the kit does for keyboard, screen-reader and low-vision users, what it leaves as Figma has it on purpose, and what the automated checks cover. This page covers kit 0.4.0: the 20 components in [components.md](components.md) and the window chrome in [window-chrome.md](window-chrome.md). Phase 2 added the [notes per component](#components), the resize handle's [hint and announcement](#the-resize-hint-and-the-announcement) and a [forced-colours block](#forced-colours-windows-high-contrast); Phase 3 added the [dialog](#dialog)'s focus handling, the [toast](#toast)'s live region and tone icons, Escape for [tooltips](#tooltip), and contrast rows for every Phase 2 and 3 part ([Measured ratios](#measured-ratios)). Since 2026-10-14 the ratios come from the palette Figma injected into a running plugin (Figma desktop 126.9.13). Nothing here has been tried with a screen reader yet, and of what this page describes, only the starter's look and its resize keys have been checked inside the Figma app; [Known gaps](#known-gaps) lists what is still open.
 
 ## The contrast decision
 
-The kit paints every colour with Figma's own `--figma-color-*` tokens ([tokens.md](tokens.md)) and never overrides them, so a plugin looks like Figma's panels in every theme and follows Figma when its palette changes. The cost: some of Figma's own pairings are below WCAG AA for 11px text. Secondary text on the panel is about 3.9:1 in the light theme, and white on the blue brand fill is 2.99:1. Figma's own UI uses these pairings.
+The kit paints every colour with Figma's own `--figma-color-*` tokens ([tokens.md](tokens.md)) and never overrides them, so a plugin looks like Figma's panels in every theme and follows Figma when its palette changes. The cost: some of Figma's own pairings are below WCAG AA for 11px text. Secondary text on the panel is 4.00:1 in the light theme (3.98:1 in FigJam), and white on the blue brand fill is 2.99:1. Figma's own UI uses these pairings.
 
 So the kit keeps native fidelity, and contrast is **reported, not enforced**:
 
 - The automated axe runs check every WCAG 2.0 and 2.1 level A and AA rule **except `color-contrast`** ([below](#what-the-automated-checks-cover)).
-- In its place, a contrast report computes the ratio of each token pair the kit paints, for each theme, from [`tokens.figma-fallback.css`](../tokens.figma-fallback.css). It runs as the `contrast report` test in [`e2e/a11y.spec.mjs`](../e2e/a11y.spec.mjs) (`npm run test:e2e` prints the table and attaches it to the Playwright report). It fails only if the table can't be produced, never on a low ratio.
+- In its place, a contrast report computes the ratio of each token pair the kit paints, for each theme, from [`tokens.figma-fallback.css`](../tokens.figma-fallback.css), which holds the palette captured in Figma. It runs as the `contrast report` test in [`e2e/a11y.spec.mjs`](../e2e/a11y.spec.mjs) (`npm run test:e2e` prints the table and attaches it to the Playwright report). It fails only if the table can't be produced, never on a low ratio.
 
 ### Measured ratios
 
-Computed from the fallback palette by the `contrast report` test, in the run on 2026-10-14 at kit 0.4.0 (`npx playwright test e2e/a11y.spec.mjs --grep contrast`). The first 14 rows and the last 4 are the 0.3.0 report, with the same values as the first run on 2026-10-13 (the palette has not changed); kit 0.4.0 added the rows from "Tab, hover" to "Toast icon, danger" for the Phase 2 and 3 parts. 11px text counts as normal text, so AA needs 4.5:1 for text and 3:1 for icons, focus rings and other non-text parts (WCAG 1.4.3 and 1.4.11). "(below)" marks a pair under its minimum.
+Computed by the `contrast report` test, in the run on 2026-10-14 at kit 0.4.0 (`npx playwright test e2e/a11y.spec.mjs --grep contrast`), from `tokens.figma-fallback.css` as captured with `tools/probe` the same day in Figma desktop 126.9.13: Design light and dark from a Design file, FigJam from a FigJam board ([tokens.md](tokens.md#browser-preview-fallback)). Until that capture the file held Figma's docs table, and this table was computed from it; the rows that moved are noted under the table. 11px text counts as normal text, so AA needs 4.5:1 for text and 3:1 for icons, focus rings and other non-text parts (WCAG 1.4.3 and 1.4.11). "(below)" marks a pair under its minimum.
 
 | Pair | Tokens | Light | Dark | FigJam | WCAG AA | Used by |
 |---|---|---|---|---|---|---|
-| Body text | `text` on `bg` | 17.49:1 | 13.97:1 | 17.49:1 | 4.5:1 | body, .kit-heading, input values |
-| Label and help text | `text-secondary` on `bg` | 3.98:1 (below) | 7.65:1 | 3.98:1 (below) | 4.5:1 | .kit-label, .kit-help |
-| Input text | `text` on `bg-secondary` | 16.21:1 | 11.73:1 | 16.21:1 | 4.5:1 | .kit-input |
-| Placeholder | `text-tertiary` on `bg-secondary` | 2.09:1 (below) | 3.29:1 (below) | 2.09:1 (below) | 4.5:1 | .kit-input::placeholder |
+| Body text | `text` on `bg` | 17.40:1 | 13.97:1 | 17.49:1 | 4.5:1 | body, .kit-heading, input values |
+| Label and help text | `text-secondary` on `bg` | 4.00:1 (below) | 7.62:1 | 3.98:1 (below) | 4.5:1 | .kit-label, .kit-help |
+| Input text | `text` on `bg-secondary` | 16.13:1 | 11.73:1 | 16.21:1 | 4.5:1 | .kit-input |
+| Placeholder | `text-tertiary` on `bg-secondary` | 2.11:1 (below) | 3.29:1 (below) | 2.09:1 (below) | 4.5:1 | .kit-input::placeholder |
 | Error help text | `text-danger` on `bg` | 4.62:1 | 7.20:1 | 4.62:1 | 4.5:1 | .kit-field:has([aria-invalid]) .kit-help |
 | Primary button label | `text-onbrand` on `bg-brand` | 2.99:1 (below) | 3.53:1 (below) | 4.51:1 | 4.5:1 | .kit-button-primary |
 | Primary button, hover | `text-onbrand` on `bg-brand-hover` | 4.23:1 (below) | 5.28:1 | 5.66:1 | 4.5:1 | .kit-button-primary:hover |
 | Danger button label | `text-ondanger` on `bg-danger` | 3.67:1 (below) | 4.31:1 (below) | 3.67:1 (below) | 4.5:1 | .kit-button-danger |
-| Selected toggle label | `text-brand` on `bg-selected` | 3.77:1 (below) | 3.76:1 (below) | 4.69:1 | 4.5:1 | .kit-button[aria-pressed="true"] |
-| Resize grip | `icon-secondary` on `bg` | 3.98:1 | 7.65:1 | 3.98:1 | 3:1 | .kit-resize-handle (non-text, 1.4.11) |
-| Resize grip, hover / drag | `icon` on `bg` | 17.49:1 | 13.97:1 | 17.49:1 | 3:1 | .kit-resize-handle:hover |
-| Select caret, input icon | `icon-secondary` on `bg` | 3.98:1 | 7.65:1 | 3.98:1 | 3:1 | .kit-select::after, .kit-input-icon |
+| Selected toggle label | `text-brand` on `bg-selected` | 3.77:1 (below) | 5.18:1 | 4.69:1 | 4.5:1 | .kit-button[aria-pressed="true"] |
+| Resize grip | `icon-secondary` on `bg` | 4.00:1 | 7.62:1 | 3.98:1 | 3:1 | .kit-resize-handle (non-text, 1.4.11) |
+| Resize grip, hover / drag | `icon` on `bg` | 17.40:1 | 13.97:1 | 17.49:1 | 3:1 | .kit-resize-handle:hover |
+| Select caret, input icon | `icon-secondary` on `bg` | 4.00:1 | 7.62:1 | 3.98:1 | 3:1 | .kit-select::after, .kit-input-icon |
 | Focus ring | `border-selected` on `bg` | 2.99:1 (below) | 3.95:1 | 4.51:1 | 3:1 | :focus-visible outlines (non-text) |
 | Error ring | `border-danger-strong` on `bg` | 4.62:1 | 7.20:1 | 4.62:1 | 3:1 | [aria-invalid="true"] outline |
-| Tab, hover | `text-secondary-hover` on `bg` | 17.49:1 | 13.97:1 | 17.49:1 | 4.5:1 | .kit-tab:hover |
-| Number prefix | `text-secondary` on `bg-secondary` | 3.91:1 (below) | 6.67:1 | 3.91:1 (below) | 4.5:1 | .kit-number-prefix |
-| Checkbox and radio border | `border-strong` on `bg` | 13.97:1 | 11.60:1 | 13.97:1 | 3:1 | :is(.kit-checkbox, .kit-radio) > input (non-text, 1.4.11) |
+| Tab, hover | `text-secondary-hover` on `bg` | 17.40:1 | 13.97:1 | 17.49:1 | 4.5:1 | .kit-tab:hover |
+| Number prefix | `text-secondary` on `bg-secondary` | 3.94:1 (below) | 6.65:1 | 3.91:1 (below) | 4.5:1 | .kit-number-prefix |
+| Checkbox and radio border | `border-strong` on `bg` | 13.97:1 | 11.55:1 | 13.97:1 | 3:1 | :is(.kit-checkbox, .kit-radio) > input (non-text, 1.4.11) |
 | Checked box against the panel | `bg-brand` on `bg` | 2.99:1 (below) | 3.95:1 | 4.51:1 | 3:1 | :is(.kit-checkbox, .kit-radio) > input:checked (non-text) |
 | Tick and radio dot | `icon-onbrand` on `bg-brand` | 2.99:1 (below) | 3.53:1 | 4.51:1 | 3:1 | :is(.kit-checkbox, .kit-radio) > input:checked mark (non-text) |
-| Selected icon button | `icon-brand` on `bg-selected` | 3.77:1 | 3.76:1 | 4.69:1 | 3:1 | .kit-icon-button[aria-pressed="true"], [aria-expanded="true"] |
-| Selected list row | `text-onselected` on `bg-selected` | 15.80:1 | 6.13:1 | 14.80:1 | 4.5:1 | .kit-list-row[aria-selected="true"], [aria-current="true"] |
-| Selected list row, meta | `text-onselected-secondary` on `bg-selected` | 3.89:1 (below) | 4.45:1 (below) | 3.83:1 (below) | 4.5:1 | .kit-list-row-meta in a selected row |
-| Selected list row, icon | `icon-onselected` on `bg-selected` | 15.80:1 | 7.10:1 | 14.80:1 | 3:1 | .kit-list-row-icon in a selected row |
-| Notice text, info | `text` on `bg-brand-tertiary` | 15.80:1 | 9.79:1 | 14.80:1 | 4.5:1 | .kit-notice[data-kit-tone="info"] |
-| Notice text, success | `text` on `bg-success-tertiary` | 15.19:1 | 10.07:1 | 15.19:1 | 4.5:1 | .kit-notice[data-kit-tone="success"] |
-| Notice text, warning | `text` on `bg-warning-tertiary` | 15.72:1 | 3.25:1 (below) | 15.72:1 | 4.5:1 | .kit-notice[data-kit-tone="warning"] |
-| Notice text, danger | `text` on `bg-danger-tertiary` | 14.66:1 | 9.73:1 | 14.66:1 | 4.5:1 | .kit-notice[data-kit-tone="danger"] |
+| Selected icon button | `icon-brand` on `bg-selected` | 3.77:1 | 5.18:1 | 4.69:1 | 3:1 | .kit-icon-button[aria-pressed="true"], [aria-expanded="true"] |
+| Selected list row | `text-onselected` on `bg-selected` | 15.73:1 | 8.27:1 | 14.80:1 | 4.5:1 | .kit-list-row[aria-selected="true"], [aria-current="true"] |
+| Selected list row, meta | `text-onselected-secondary` on `bg-selected` | 3.91:1 (below) | 5.74:1 | 3.83:1 (below) | 4.5:1 | .kit-list-row-meta in a selected row |
+| Selected list row, icon | `icon-onselected` on `bg-selected` | 15.73:1 | 9.79:1 | 14.80:1 | 3:1 | .kit-list-row-icon in a selected row |
+| Notice text, info | `text` on `bg-brand-tertiary` | 15.73:1 | 9.79:1 | 14.80:1 | 4.5:1 | .kit-notice[data-kit-tone="info"] |
+| Notice text, success | `text` on `bg-success-tertiary` | 15.55:1 | 9.94:1 | 15.19:1 | 4.5:1 | .kit-notice[data-kit-tone="success"] |
+| Notice text, warning | `text` on `bg-warning-tertiary` | 15.65:1 | 9.50:1 | 15.72:1 | 4.5:1 | .kit-notice[data-kit-tone="warning"] |
+| Notice text, danger | `text` on `bg-danger-tertiary` | 14.59:1 | 10.48:1 | 14.66:1 | 4.5:1 | .kit-notice[data-kit-tone="danger"] |
 | Notice icon, info | `icon-brand` on `bg-brand-tertiary` | 3.77:1 | 5.18:1 | 4.69:1 | 3:1 | .kit-notice[data-kit-tone="info"] > .kit-icon |
-| Notice icon, success | `icon-success` on `bg-success-tertiary` | 2.47:1 (below) | 2.44:1 (below) | 2.47:1 (below) | 3:1 | .kit-notice[data-kit-tone="success"] > .kit-icon |
-| Notice icon, warning | `icon-warning` on `bg-warning-tertiary` | 1.33:1 (below) | 1.93:1 (below) | 1.33:1 (below) | 3:1 | .kit-notice[data-kit-tone="warning"] > .kit-icon |
-| Notice icon, danger | `icon-danger` on `bg-danger-tertiary` | 3.01:1 | 2.26:1 (below) | 3.01:1 | 3:1 | .kit-notice[data-kit-tone="danger"] > .kit-icon |
-| Tooltip and toast text | `text-oninverse` on `bg-inverse` | 11.60:1 | 17.49:1 | 11.60:1 | 4.5:1 | .kit-tooltip, .kit-toast and its buttons |
-| Toast icon (no tone, info, warning) | `icon-oninverse` on `bg-inverse` | 11.60:1 | 17.49:1 | 11.60:1 | 3:1 | .kit-toast > .kit-icon |
-| Toast icon, success | `icon-success` on `bg-inverse` | 4.81:1 | 4.13:1 | 4.81:1 | 3:1 | .kit-toast[data-kit-tone="success"] > .kit-icon |
-| Toast icon, danger | `icon-danger` on `bg-inverse` | 3.81:1 | 4.31:1 | 3.81:1 | 3:1 | .kit-toast[data-kit-tone="danger"] > .kit-icon |
-| Disabled text | `text-disabled` on `bg` | 2.11:1 | 3.56:1 | 2.11:1 | not required | :disabled (exempt: inactive control) |
+| Notice icon, success | `icon-success` on `bg-success-tertiary` | 3.26:1 | 5.69:1 | 2.47:1 (below) | 3:1 | .kit-notice[data-kit-tone="success"] > .kit-icon |
+| Notice icon, warning | `icon-warning` on `bg-warning-tertiary` | 3.89:1 | 6.44:1 | 1.33:1 (below) | 3:1 | .kit-notice[data-kit-tone="warning"] > .kit-icon |
+| Notice icon, danger | `icon-danger` on `bg-danger-tertiary` | 3.79:1 | 5.40:1 | 3.01:1 | 3:1 | .kit-notice[data-kit-tone="danger"] > .kit-icon |
+| Tooltip and toast text | `text-oninverse` on `bg-inverse` | 11.55:1 | 17.40:1 | 11.60:1 | 4.5:1 | .kit-tooltip, .kit-toast and its buttons |
+| Toast icon (no tone, info, warning) | `icon-oninverse` on `bg-inverse` | 11.55:1 | 17.40:1 | 11.60:1 | 3:1 | .kit-toast > .kit-icon |
+| Toast icon, success | `bg-success` on `bg-inverse` | 4.81:1 | 4.13:1 | 4.81:1 | 3:1 | .kit-toast[data-kit-tone="success"] > .kit-icon |
+| Toast icon, danger | `bg-danger` on `bg-inverse` | 3.81:1 | 4.31:1 | 3.81:1 | 3:1 | .kit-toast[data-kit-tone="danger"] > .kit-icon |
+| Disabled text | `text-disabled` on `bg` | 2.12:1 | 3.56:1 | 2.11:1 | not required | :disabled (exempt: inactive control) |
 | Disabled filled button | `text-ondisabled` on `bg-disabled` | 1.41:1 | 3.03:1 | 1.41:1 | not required | primary/danger :disabled (exempt) |
 | Secondary button ring | `border` on `bg` | 1.25:1 | 1.43:1 | 1.25:1 | not required | .kit-button ring (decorative: the label identifies it) |
 | Input fill against the panel | `bg-secondary` on `bg` | 1.09:1 | 1.19:1 | 1.09:1 | not required | .kit-input fill (decorative) |
 
 How to read it:
 
-- **These are the fallback's values, not a capture.** The fallback is Figma's documented table, and Figma's live app CSS already differs from it on 26 light and 45 dark tokens ([tokens.md](tokens.md#browser-preview-fallback)). The ratios inside Figma may be a little different; re-run the report after the palette is recaptured with `tools/probe`.
-- Translucent tokens (for example light `text-secondary`, black at 50%) are composited over the panel colour before the ratio is taken, with unrounded channels. Browser tools that round the composite first can differ by about 0.05 (axe reported 3.94:1 for the label pair).
-- The resize grip meets 3:1 in every theme. The roadmap asked for exactly that: the old grip was about 1.4:1.
-- The focus ring is 2.99:1 against the light panel, a hair under 3:1. It is Figma's own focus colour (`border-selected`, the brand blue).
-- **Phase 2 parts under their minimum** are Figma's own pairings too: the number prefix (3.91:1 light), the meta text of a selected list row (3.89:1 light, 4.45:1 dark), and a checked checkbox or radio against the light panel and its tick on the fill (2.99:1, the brand blue again). The unchecked box's border is far above 3:1 in every theme.
-- **Notice icons fall short on their tints** (success 2.47:1 light, warning 1.33:1 light, danger 2.26:1 dark). A notice's words carry its meaning and the icon repeats it, so write the message so that it reads without the icon. The dark warning text at 3.25:1 is the fallback's strong orange tint, which live Figma does not use ([components.md](components.md#inline-notice)); check it again on a captured palette.
-- **The toast's tone icons were picked with these numbers** ([below](#toast-icons-on-the-inverse-surface)).
+- **These are Figma's injected values, from one capture.** Figma changes its palette without notice, so re-run the report after each monthly recapture ([tokens.md](tokens.md#browser-preview-fallback)). The FigJam column did not move: FigJam's injected palette matched the docs table exactly. Slides, Dev Mode and Buzz bring their own brand colours and are not in the table ([below](#other-editors-brand-colours)).
+- **What the capture changed** (Design only): light text tokens are hex with alpha (`#000000e5`, `#00000080`) instead of 0.9 and 0.5, which moves body text to 17.40:1 and the label pair to 4.00:1; dark `bg-selected` is darker (`#394360`), so the selected toggle label (5.18:1) and a selected row's meta text (5.74:1) now pass in dark; dark `bg-warning-tertiary` is a dim brown (`#5c4100`), not the docs' strong orange, so the dark warning notice's text is 9.50:1 instead of 3.25:1; the success, warning and danger icons are darker in light and lighter in dark, which lifts the notice icons above 3:1 in Design and dropped `icon-success` and `icon-danger` below it on the toast in dark, so the toast now paints those two with the solid fills ([below](#toast-icons-on-the-inverse-surface)).
+- Translucent tokens (for example light `text-secondary`, black at 50%, `#00000080`) are composited over the panel colour before the ratio is taken, with unrounded channels. Browser tools that round the composite first can differ by about 0.05 (on the docs-table palette axe reported 3.94:1 for the label pair, where this report had 3.98:1).
+- The resize grip meets 3:1 in every theme (4.00:1 light, 7.62:1 dark, 3.98:1 FigJam). The roadmap asked for exactly that: the old grip was about 1.4:1.
+- The focus ring is 2.99:1 against the light panel, a hair under 3:1. It is Figma's own focus colour (`border-selected`, the brand blue `#0d99ff`), the same in the capture as in the docs.
+- **Phase 2 parts under their minimum** are Figma's own pairings too: the number prefix (3.94:1 light, 3.91:1 FigJam), the meta text of a selected list row (3.91:1 light, 3.83:1 FigJam; 5.74:1 in dark), and a checked checkbox or radio against the light panel and its tick on the fill (2.99:1, the brand blue again). The unchecked box's border is far above 3:1 in every theme.
+- **Notice icons now meet 3:1 in Design** (light: success 3.26:1, warning 3.89:1, danger 3.79:1; dark from 5.18:1 up) **but not in FigJam** (success 2.47:1, warning 1.33:1). A notice's words carry its meaning and the icon repeats it, so write the message so that it reads without the icon.
+- **The toast's success and danger icons use `bg-success` and `bg-danger`** (at least 3.81:1 in every captured palette). The `icon-success` and `icon-danger` the kit first picked on the docs-table palette measure 1.75:1 and 1.94:1 on the white toast with Figma's dark values ([below](#toast-icons-on-the-inverse-surface)).
+
+### Other editors' brand colours
+
+Slides, Dev Mode and Buzz inject the Design palette with their own brand and selection colours (34 tokens; [tokens.md](tokens.md#browser-preview-fallback)). The fallback file doesn't carry them, so the report doesn't either. Computed for this page with the report's method from the same capture, **in Figma's dark theme only** (the light-theme values of these editors were not captured), the rows that change:
+
+| Pair | Tokens | Design dark | Slides | Dev Mode | Buzz | WCAG AA |
+|---|---|---|---|---|---|---|
+| Primary button label | `text-onbrand` on `bg-brand` | 3.53:1 (below) | 3.46:1 (below) | 4.13:1 (below) | 3.78:1 (below) | 4.5:1 |
+| Primary button, hover | `text-onbrand` on `bg-brand-hover` | 5.28:1 | 4.29:1 (below) | 4.83:1 | 4.86:1 | 4.5:1 |
+| Focus ring, checked box | `border-selected`, `bg-brand` on `bg` | 3.95:1 | 4.04:1 | 3.38:1 | 3.69:1 | 3:1 |
+| Selected toggle label | `text-brand` on `bg-selected` | 5.18:1 | 3.39:1 (below) | 3.03:1 (below) | 3.94:1 (below) | 4.5:1 |
+| Selected list row, meta | `text-onselected-secondary` on `bg-selected` | 5.74:1 | 4.17:1 (below) | 3.50:1 (below) | 4.63:1 | 4.5:1 |
+
+The selected icon button (`icon-brand` on `bg-selected`, 3:1 needed) is the toggle label's ratio, so it passes in all four. Run the starter in each editor before relying on these.
 
 ### Parts that share a row
 
@@ -74,7 +89,7 @@ Many parts paint a pair that already has a row, so that row's ratios apply to th
 | Part | Tokens | Same pair as the row |
 |---|---|---|
 | Highlighted menu item (hover or keyboard focus) | `text-onbrand` on `bg-brand` | Primary button label (2.99:1 light, below) |
-| Tab label, empty-state text, list row meta text | `text-secondary` on `bg` | Label and help text (3.98:1 light, below) |
+| Tab label, empty-state text, list row meta text | `text-secondary` on `bg` | Label and help text (4.00:1 light, 3.98:1 FigJam, below) |
 | Selected tab | `text` on `bg-secondary` | Input text |
 | Section header title, empty-state title, list row label, dialog title and text | `text` on `bg` | Body text |
 | List row icon | `icon-secondary` on `bg` | Select caret, input icon |
@@ -83,19 +98,21 @@ Many parts paint a pair that already has a row, so that row's ratios apply to th
 | Invalid checkbox or radio box | `border-danger-strong` on `bg` | Error ring |
 | A toast's action and close button labels | `text-oninverse` on `bg-inverse` | Tooltip and toast text |
 
-Two toast pairs have no row yet; computed for this page with the report's method from the same palette: the focus ring of a toast's buttons, `border-selected` on `bg-inverse`, is 4.67:1 light, 3.53:1 dark and 3.10:1 in FigJam (3:1 needed), and a hovered action's label on its mixed fill (`text-oninverse` at 16% over `bg-inverse`) is 7.52:1 light and 13.00:1 dark. The dialog's scrim and the line under its header (`border` on `bg`) are decorative.
+Two toast pairs have no row yet; computed for this page with the report's method from the same palette: the focus ring of a toast's buttons, `border-selected` on `bg-inverse`, is 4.67:1 light, 3.53:1 dark and 3.10:1 in FigJam (3:1 needed), and a hovered action's label on its mixed fill (`text-oninverse` at 16% over `bg-inverse`) is 7.50:1 light, 12.96:1 dark and 7.52:1 in FigJam. The dialog's scrim and the line under its header (`border` on `bg`) are decorative.
 
 ### Toast icons on the inverse surface
 
-A toast is `bg-inverse` (dark in the light theme, white in the dark theme), so the tone tokens drawn for the panel don't all work on it. With the fallback palette, `icon-brand` on `bg-inverse` is 3.30:1 light but 1.89:1 dark (2.47:1 in FigJam), and `icon-warning` is 9.32:1 light but 1.69:1 dark: each fails 3:1 in one theme. The kit paints neither on a toast. Instead:
+A toast is `bg-inverse` (dark in the light theme, white in the dark theme), so the tone tokens drawn for the panel don't all work on it. On the captured palette, `icon-brand` on `bg-inverse` is 3.30:1 light but 1.89:1 dark (2.47:1 in FigJam), and `icon-warning` is 3.18:1 light but 1.47:1 dark (9.32:1 in FigJam): each fails 3:1 in at least one theme. The kit paints neither on a toast. Instead:
 
 | Tone | Icon token | Light | Dark | FigJam |
 |---|---|---|---|---|
-| `info`, `warning` | `icon-oninverse` | 11.60:1 | 17.49:1 | 11.60:1 |
-| `success` | `icon-success` | 4.81:1 | 4.13:1 | 4.81:1 |
-| `danger` | `icon-danger` | 3.81:1 | 4.31:1 | 3.81:1 |
+| `info`, `warning` | `icon-oninverse` | 11.55:1 | 17.40:1 | 11.60:1 |
+| `success` | `bg-success` | 4.81:1 | 4.13:1 | 4.81:1 |
+| `danger` | `bg-danger` | 3.81:1 | 4.31:1 | 3.81:1 |
 
-The three right-hand columns are the report's "Toast icon" rows. The rejected `icon-brand` and `icon-warning` pairs are not in the report, because the kit doesn't paint them; their numbers come from the Phase 3 build and were recomputed for this page with the report's method. Info and warning share a colour, so their icons also differ in shape (an "i" in a circle, a "!" in a triangle), as do success (a tick in a circle) and danger (a "!" in a circle). A toast without a tone (or with a tone the kit doesn't know) has no icon. Recheck the table once the palette is captured from a running plugin ([tokens.md](tokens.md#browser-preview-fallback)).
+The three right-hand columns are the report's "Toast icon" rows. The rejected `icon-brand` and `icon-warning` pairs are not in the report, because the kit doesn't paint them; their numbers were computed for this page with the report's method from the same palette. Info and warning share a colour, so their icons also differ in shape (an "i" in a circle, a "!" in a triangle), as do success (a tick in a circle) and danger (a "!" in a circle). A toast without a tone (or with a tone the kit doesn't know) has no icon.
+
+**Why the solid fills.** The kit first picked `icon-success` and `icon-danger` on the docs-table palette, where they kept at least 3.8:1 in both themes. Figma's injected dark values are light tints (`icon-success` `#7cd797`, `icon-danger` `#fca397`), made for the dark panel, so on the white toast they fell to 1.75:1 and 1.94:1 (in light 3.77:1 and 3.02:1). No `icon-*` or `text-*` success or danger token keeps 3:1 on `bg-inverse` in all three captured palettes; the solid fills do, so since the 2026-10-14 capture, still within 0.4.0, the toast paints its success and danger icons with `bg-success` and `bg-danger` (the table above). These ratios are computed from the captured palette; a toast has not been looked at in Figma yet ([release-checklist.md](release-checklist.md#components-in-the-figma-app)).
 
 ### Guidance when contrast matters
 
@@ -280,7 +297,7 @@ Fixing the rest without colour keywords is possible for some of it (a thicker or
 
 ## What the automated checks cover
 
-`npm run test:e2e` runs these in Chromium. The CI workflow's e2e job runs them on every push, but it has not run on GitHub yet. In the run on 2026-10-14 at kit 0.4.0 (Playwright 1.62.1, Chromium 151.0.7922.34) 165 tests passed and 10 were skipped (the docs screenshots and the listing images, made only on request); 31 of the 165 run axe.
+`npm run test:e2e` runs these in Chromium. The CI workflow's e2e job runs them on every push, but it has not run on GitHub yet. In the run on 2026-10-14 at the `v0.4.0` tag (Playwright 1.62.1, Chromium 151.0.7922.34) 165 tests passed and 10 were skipped (the docs screenshots and the listing images, made only on request); 31 of the 165 run axe. With the fixes from the Figma run the same day, 169 passed and 10 were skipped, of 179, still with 31 axe runs.
 
 | Check | What it covers |
 |---|---|
@@ -295,16 +312,16 @@ What is left out, and why:
 - **`color-contrast`**, for the [decision above](#the-contrast-decision); the report replaces it.
 - **axe's best-practice rules** (landmarks, `region`, heading order, a dialog's name and the like) are not WCAG requirements and are not run. The starter already uses `<main>` and real headings.
 - **WCAG 2.2 rules** (target size and the like): the runs use the 2.0 and 2.1 tags only.
-- **Things no automated check can see:** how a screen reader actually announces the plugin, real Figma (the window, its theme and whether the iframe matches the preview), forced colours on Windows, and zoom. These belong to the manual checks in [release-checklist.md](release-checklist.md#manual-surface-matrix); none of them has been run yet.
+- **Things no automated check can see:** how a screen reader actually announces the plugin, real Figma (the window, its theme and whether the iframe matches the preview), forced colours on Windows, and zoom. These belong to the manual checks in [release-checklist.md](release-checklist.md#manual-surface-matrix). Of them, only real Figma has been looked at: on 2026-10-14 the starter ran in Figma desktop 126.9.13 in both themes and in FigJam, Slides and Buzz, its handle took Shift+Right, and its look was compared with Figma's own panel (the README's side by side). Screen readers, Windows forced colours and zoom are still to do.
 
 ## Known gaps
 
-What Phase 1 listed here and kit 0.3.0 resolved: the keyboard resize announcement and the handle's hint ([above](#the-resize-hint-and-the-announcement)), End, the tooltip's keyboard access and `aria-describedby`, the audit rules `missing-describedby` and `aria-label-override`, and a first forced-colours block. What kit 0.4.0 resolved: Escape for tooltips (WCAG 1.4.13 dismissible, [above](#tooltip)), report rows for every Phase 2 part ([Measured ratios](#measured-ratios)), focus that fell to the top of the page when a focused toast went ([Toast](#toast)), and dialog openers, close buttons and tooltip Escape in a browser without the popover API. Still open:
+What Phase 1 listed here and kit 0.3.0 resolved: the keyboard resize announcement and the handle's hint ([above](#the-resize-hint-and-the-announcement)), End, the tooltip's keyboard access and `aria-describedby`, the audit rules `missing-describedby` and `aria-label-override`, and a first forced-colours block. What kit 0.4.0 resolved: Escape for tooltips (WCAG 1.4.13 dismissible, [above](#tooltip)), report rows for every Phase 2 part ([Measured ratios](#measured-ratios)), focus that fell to the top of the page when a focused toast went ([Toast](#toast)), dialog openers, close buttons and tooltip Escape in a browser without the popover API, and the report on a captured palette (Figma desktop 126.9.13, 2026-10-14: the focus ring is still 2.99:1 in light, the label pair 4.00:1), and the toast's success and danger icons, which that capture put below 3:1 in dark and which now use the solid fills ([Toast icons on the inverse surface](#toast-icons-on-the-inverse-surface); computed, not yet looked at in Figma). Still open:
 
 - **Forced colours, the rest of it:** pressed toggles, focus that looks like rest, filled buttons without emphasis, tooltips and menus without an edge, the loading label. It needs a decision on whether system colour keywords may appear inside the forced-colours block ([above](#forced-colours-windows-high-contrast)), and a check on Windows itself.
-- **Contrast below the minimum in Figma's own pairs**, now measured for Phase 2 and 3 too: the notice icons on their tints, the checked box on the light panel, the number prefix and a selected row's meta text ([Measured ratios](#measured-ratios)). Kept for fidelity, like the label pair. Two toast pairs, its focus ring and a hovered action, are computed on this page but not yet rows of the report ([Parts that share a row](#parts-that-share-a-row)).
-- **Contrast on a captured palette.** Recapture the palette from a running plugin with `tools/probe`, re-run the report, and check the focus ring (2.99:1 in light), the label pair and the toast's tone icons against the real values.
+- **Contrast below the minimum in Figma's own pairs**, measured on the captured palette: the notice icons on their tints in FigJam, the checked box on the light panel, the number prefix and a selected row's meta text in light and FigJam ([Measured ratios](#measured-ratios)), and the brand and selection pairs of Slides, Dev Mode and Buzz ([Other editors' brand colours](#other-editors-brand-colours)). Kept for fidelity, like the label pair. Two toast pairs, its focus ring and a hovered action, are computed on this page but not yet rows of the report ([Parts that share a row](#parts-that-share-a-row)).
+- **The palette drifts.** The report is only as current as the last capture; recapture monthly and re-run it. Slides, Dev Mode and Buzz were captured in the dark theme only, and whether Figma's "enhanced contrast" setting changes the injected values is unverified.
 - **Real assistive technology.** A VoiceOver and NVDA pass over the starter and the examples inside Figma: the handle's hint and announcement, the tabs heard as radios, tooltips as descriptions, the menu, the dialog (its name, first focus, focus return), toasts (polite and `danger` ones, also inside an open dialog), live regions. The table to fill is in [release-checklist.md](release-checklist.md#screen-readers).
 - **Toasts with an action are timed** (WCAG 2.2.1) unless you pass `duration: 0`; the kit's default is 4 s for every toast ([Toast](#toast)).
-- **Menus need the popover API.** Without it a menu cannot open, and the runtime adds no menu listeners. Since kit 0.4.0, dialog openers, close buttons and Escape on a tooltip work without it (`e2e/dialog.spec.mjs` runs them with `showPopover` removed). Chromium has had it since version 114, and whether Figma's plugin window supports it is one of the `tools/probe` measurements ([release-checklist.md](release-checklist.md#manual-surface-matrix)).
+- **Menus need the popover API.** Without it a menu cannot open, and the runtime adds no menu listeners. Since kit 0.4.0, dialog openers, close buttons and Escape on a tooltip work without it (`e2e/dialog.spec.mjs` runs them with `showPopover` removed). Chromium has had it since version 114, and the `tools/probe` runs on 2026-10-14 found it in Figma's plugin window (Figma desktop 126.9.13, Chrome 150) in Design, FigJam, Slides, Dev Mode and Buzz. Opening a kit menu inside Figma has not been tried yet ([release-checklist.md](release-checklist.md#manual-surface-matrix)).
 - **Tab can leave a modal dialog for Figma's UI.** The plugin runs in an iframe, and `showModal()` makes only the plugin's page inert, not Figma's around it, so Tab past a dialog's last control (or Shift+Tab before its first) can move focus into Figma's UI; Escape then no longer reaches the dialog until focus comes back. The kit does not wrap Tab inside the dialog. Measured in the preview (Chromium 151); in Figma it is unchecked ([release-checklist.md](release-checklist.md#manual-surface-matrix)).

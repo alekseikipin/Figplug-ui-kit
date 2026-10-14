@@ -1031,13 +1031,26 @@ function topLevelModule({ main }) {
   return out;
 }
 
+// figma.ui.onmessage holds one handler, so a second assignment silently replaces the first. One
+// assignment (Figma's template style) is fine: in Figma desktop 126.9.13 (2026-10-14, tools/probe)
+// it left the kit's figma.ui.on('message') listener in place in all five editors. Clearing the
+// property (= undefined, = null, = void 0, also in parentheses or with "as T") is deliberate: it
+// does not count as a handler, and the next assignment after it starts over.
+const CLEARS_HANDLER = /^\s*(?:\(\s*)*(?:undefined|null|void(?:\s+0|\s*\(\s*0\s*\)))(?:\s*\))*(?:\s+as\s+[\w$.]+(?:\[\])*)*\s*(?:[;,)}\n]|$)/;
 function onmessageAssign({ main }) {
   if (!main) return [];
   const masked = plainMembers(main.text);
-  return [...masked.matchAll(receiverPattern(String.raw`<figma>\.\s*ui\s*\.\s*onmessage\s*=(?!=)`, figmaNames(masked)))].map((m) =>
-    finding(main.path, main.text, m.index, 'onmessage-assign',
-      'figma.ui.onmessage = may remove the kit\'s figma.ui.on(\'message\') listener (UNVERIFIED until tools/probe runs; see docs/messages.md); '
-      + 'register with figma.ui.on(\'message\', (msg) => { ... }) instead', 'warning'));
+  const out = [];
+  let first = null; // the handler assigned since the last clear, if any
+  for (const m of masked.matchAll(receiverPattern(String.raw`<ui>\.\s*onmessage\s*=(?!=)`, figmaNames(masked)))) {
+    if (CLEARS_HANDLER.test(masked.slice(m.index + m[0].length))) { first = null; continue; }
+    if (first === null) { first = lineAt(main.text, m.index); continue; }
+    out.push(finding(main.path, main.text, m.index, 'onmessage-assign',
+      `figma.ui.onmessage is assigned again (first at line ${first}): the property holds one handler, so this one replaces `
+      + 'the earlier one, which silently stops receiving messages; register each handler with '
+      + 'figma.ui.on(\'message\', (msg) => { ... }), which keeps them all (docs/messages.md)', 'warning'));
+  }
+  return out;
 }
 
 // Calls that throw under "documentAccess": "dynamic-page", with what to use instead (Figma's
@@ -1083,18 +1096,18 @@ function plainMembers(js) {
   }
   return text.join('').replace(/\?\.(?=\s*[([])/g, '  ').replace(/\?\.(?!\d)/g, ' .');
 }
-// The other names this file gives figma, figma.root and figma.variables: const f = figma,
-// const root = figma.root, const { root, variables: vars } = figma.
+// The other names this file gives figma, figma.root, figma.variables and figma.ui: const f = figma,
+// const root = figma.root, const ui = figma.ui, const { root, variables: vars, ui } = figma.
 function figmaNames(plain) {
-  const names = { figma: [], root: [], variables: [] };
+  const names = { figma: [], root: [], variables: [], ui: [] };
   const end = String.raw`\s*(?=;|$|\n(?!\s*[.([]))`;
-  for (const m of plain.matchAll(new RegExp(String.raw`\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=;]*)?=\s*figma\s*(?:\.\s*(root|variables))?${end}`, 'g'))) {
+  for (const m of plain.matchAll(new RegExp(String.raw`\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=;]*)?=\s*figma\s*(?:\.\s*(root|variables|ui))?${end}`, 'g'))) {
     names[m[2] ?? 'figma'].push(m[1]);
   }
   for (const m of plain.matchAll(new RegExp(String.raw`\b(?:const|let|var)\s*\{([^{}]*)\}\s*=\s*figma${end}`, 'g'))) {
     for (const part of m[1].split(',')) {
       const [key, alias = key] = part.split(':').map((s) => s.trim());
-      if (key === 'root' || key === 'variables') names[key].push(alias);
+      if (key === 'root' || key === 'variables' || key === 'ui') names[key].push(alias);
     }
   }
   return names;
@@ -1103,7 +1116,8 @@ function receiverPattern(source, names) {
   const local = (list) => list.map((n) => `(?<![\\w$.])${n.replace(/\$/g, '\\$')}`);
   const figma = `(?:${['(?<![\\w$])figma', ...local(names.figma)].join('|')})\\s*`;
   const member = (key) => `(?:${[`${figma}\\.\\s*${key}`, ...local(names[key])].join('|')})\\s*`;
-  return new RegExp(source.replace('<figma>', figma).replace('<root>', member('root')).replace('<variables>', member('variables')), 'g');
+  return new RegExp(source.replace('<figma>', figma).replace('<root>', member('root')).replace('<variables>', member('variables'))
+    .replace('<ui>', member('ui')), 'g');
 }
 
 function syncGetter({ main }) {

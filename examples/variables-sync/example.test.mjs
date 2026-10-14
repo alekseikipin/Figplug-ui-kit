@@ -163,7 +163,7 @@ async function boot({ file = themeFile(), variables } = {}) {
     figma,
     __html__: '<html></html>',
     console: { warn: (...args) => warned.push(args.map(String).join(' ')), log() {}, error() {} },
-    // The kit's 500 ms show cap and 300 ms read timeout never need to fire here.
+    // The kit's show timers (800 ms after kit:ready, 3 s fallback) and 300 ms read timeout never need to fire here.
     setTimeout: () => 0,
     clearTimeout() {},
   });

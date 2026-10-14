@@ -106,6 +106,9 @@ async function runAll() {
   figma.ui.once('message', listenerE);
   report.coexistence.once1 = await ping('once1');
   report.coexistence.once2 = await ping('once2');
+  // Assigning again with no clear between: does the new handler replace C, as a property would?
+  figma.ui.onmessage = function (msg) { hit('assign:F', msg); route(msg); };
+  report.coexistence.assignAgain = await ping('assignAgain'); // expect on:A and assign:F, no assign:C
 
   // Window size behaviour on this surface.
   report.resize.initial = await measureAfter(function () {});

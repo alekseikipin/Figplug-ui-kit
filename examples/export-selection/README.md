@@ -34,6 +34,8 @@ Graded on the agent's clone as it left it, before any curation.
 | One-shot (automated checks) | yes |
 | Import into real Figma | pending |
 
+**In Figma (2026-10-14).** The curated plugin in this folder, not the one-shot output above, ran once in Figma Design (dark theme, Figma desktop 126.9.13) through the starter's imported manifest, with its `ui.html` and `code.js` swapped in for the run: it listed one layer at 2x and Export opened the native macOS Save dialog for `Icon-Rectangle@2x.png`, which was cancelled, so no file was saved (two or more layers not tried). Its own `manifest.json` has not been imported, and the light theme and its other editors have not been run ([release checklist](../../docs/release-checklist.md#the-examples)).
+
 ## What the agent built
 
 [`agent.diff`](agent.diff): 4 files changed, 445 insertions(+), 158 deletions(-) (`code.ts`, `code.js`, `manifest.json`, `ui.html`; no new files).

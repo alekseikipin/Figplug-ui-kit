@@ -5,13 +5,14 @@
 // Escape mid-drag, right-click, plain click, double-click, arrow keys, Home, reopen with a saved
 // size, replacing the demo markup, a data-kit-config override (and bad ones), host messages next
 // to kit messages, the three modes, the UI's own 500 ms fallback (alone, and racing a main thread
-// that answers late), and zero leaked listeners after every gesture. docs/window-chrome.md
-// describes the behaviour checked here.
+// that answers late), when main shows the window (on the first fit, 800 ms after kit:ready, after
+// kit:init in fixed mode, 3 s after showUI with no runtime), and zero leaked listeners after every
+// gesture. docs/window-chrome.md describes the behaviour checked here.
 
 import {
   test, expect, openPreview, pluginFrame, waitForPlugin, mark, messagesSince, resizesSince, writesSince,
   callsSince, waitForFinal, frameSize, contentHeight, drag, handleCenter, listenerCounter, host, patchFile, useKitFixture,
-  isMissingExample,
+  isMissingExample, runId,
 } from './helpers.mjs';
 
 test.beforeEach(async ({ page }) => { await useKitFixture(page); });
@@ -38,9 +39,11 @@ test.describe('fit-content (the starter default)', () => {
     expect(kit[2].msg).toEqual({ type: 'kit:resize', width: 320, height: h, user: false, final: false });
     expect(h).toBeLessThan(360);
 
-    // Figma's order: showUI hidden at the default size, resize to the fit, then show.
-    const calls = (await callsSince(page, { calls: 0 })).map((c) => c.name);
-    expect(calls.filter((n) => n.startsWith('ui.') || n === 'showUI')).toEqual(['showUI', 'ui.resize', 'ui.show']);
+    // Figma's order: showUI hidden at the default size, resize to the fit, then show, once the
+    // UI has asked for that size (a window shown before its page has painted is blank in Figma).
+    const calls = (await callsSince(page, { calls: 0 })).filter((c) => c.name.startsWith('ui.') || c.name === 'showUI');
+    expect(calls.map((c) => c.name)).toEqual(['showUI', 'ui.resize', 'ui.show']);
+    expect(calls[2].t, 'shown on the first kit:resize, not on a timer').toBeGreaterThanOrEqual(kit[2].t);
     const showUI = (await callsSince(page, { calls: 0 }, 'showUI'))[0].args[0];
     expect(showUI).toEqual({ width: 320, height: 360, themeColors: true, visible: false });
     expect(await frameSize(page)).toEqual({ width: 320, height: h, state: 'shown' });
@@ -641,15 +644,75 @@ test.describe('a main thread that answers late', () => {
   }
 });
 
+test.describe('when main shows the window', () => {
+  const uiCalls = async (page) => {
+    const id = await runId(page);
+    return (await callsSince(page, { calls: 0 })).filter((c) => c.run === id && (c.name.startsWith('ui.') || c.name === 'showUI'));
+  };
+
+  test('a page that has loaded but asks for no size yet is shown 800 ms after kit:ready, then fitted', async ({ page }) => {
+    // Web fonts that never settle, and a runtime told to wait 2 s for them: kit:ready goes out at
+    // once, the first kit:resize only after 2 s.
+    await patchFile(page, 'ui.html', [['<meta charset="utf-8">', '<meta charset="utf-8">'
+      + `<script>Object.defineProperty(document.fonts, 'ready', { value: new Promise(() => {}) });</${'script'}>`
+      + `<script type="application/json" data-kit-config>{"initTimeoutMs": 2000}</${'script'}>`]]);
+    await openPreview(page);
+    const frame = pluginFrame(page);
+    const kit = (await messagesSince(page, { messages: 0 })).filter((m) => typeof m.msg.type === 'string' && m.msg.type.startsWith('kit:'));
+    expect(kit.map((m) => `${m.dir} ${m.msg.type}`)).toEqual(['ui kit:ready', 'main kit:init', 'ui kit:resize']);
+    expect(kit[2].t - kit[0].t, 'the fit waited for the fonts').toBeGreaterThanOrEqual(1900);
+    const calls = await uiCalls(page);
+    expect(calls.map((c) => c.name).slice(0, 3)).toEqual(['showUI', 'ui.show', 'ui.resize']);
+    expect(calls[1].t - kit[0].t, '800 ms after kit:ready').toBeGreaterThanOrEqual(790);
+    expect(calls[1].t - kit[0].t).toBeLessThan(1300);
+    expect(calls.filter((c) => c.name === 'ui.show')).toHaveLength(1);
+    expect(await frameSize(page)).toEqual({ width: 320, height: await contentHeight(frame), state: 'shown' });
+  });
+
+  test('fonts that never settle, default initTimeoutMs: the runtime\'s capped fit still lands before main shows the window', async ({ page }) => {
+    // The runtime fits 500 ms after sending kit:ready at the latest; main waits 800 ms from receiving
+    // it, so the window never appears at its starting size and then shrinks (with equal 500 ms
+    // timers it did, in 2 of 8 runs).
+    await patchFile(page, 'ui.html', [['<meta charset="utf-8">', '<meta charset="utf-8">'
+      + `<script>Object.defineProperty(document.fonts, 'ready', { value: new Promise(() => {}) });</${'script'}>`]]);
+    await openPreview(page);
+    for (let i = 0; i < 3; i++) {
+      if (i > 0) {
+        await page.evaluate(() => window.kitPreviewHost.reload());
+        await page.waitForFunction(() => window.kitPreviewHost.calls().some((c) => c.run === window.kitPreviewHost.runId() && c.name === 'ui.show'), null, { timeout: 5000 });
+      }
+      const names = (await uiCalls(page)).map((c) => c.name);
+      expect(names.slice(0, 3), `run ${i + 1}`).toEqual(['showUI', 'ui.resize', 'ui.show']);
+    }
+  });
+
+  test('a page without the kit runtime (no kit:ready) is shown 3 s after showUI, at its starting size', async ({ page }) => {
+    await patchFile(page, 'ui.html', [['<script data-kit="runtime">', '<script type="text/plain" data-kit="runtime">']]);
+    await page.goto('/preview.html');
+    await page.waitForFunction(() => !!window.kitPreviewHost && window.kitPreviewHost.calls().some((c) => c.name === 'ui.show'), null, { timeout: 8000 });
+    const calls = await uiCalls(page);
+    expect(calls.map((c) => c.name)).toEqual(['showUI', 'ui.show']);
+    expect(calls[0].args[0]).toMatchObject({ width: 320, height: 360, visible: false });
+    expect(calls[1].t - calls[0].t).toBeGreaterThanOrEqual(2990);
+    expect(calls[1].t - calls[0].t).toBeLessThan(4000);
+    expect((await messagesSince(page, { messages: 0 })).filter((m) => typeof m.msg.type === 'string' && m.msg.type.startsWith('kit:'))).toEqual([]);
+    expect(await frameSize(page)).toEqual({ width: 320, height: 360, state: 'shown' });
+  });
+});
+
 test.describe('fixed, and no host at all', () => {
-  test('fixed: shown at its size from the start; no chrome, no handle, and the kit never asks for a size', async ({ page }) => {
+  test('fixed: hidden until its kit:init reply, then shown at its size; no chrome, no handle, and the kit never asks for a size', async ({ page }) => {
     await openPreview(page, { mode: 'fixed' });
     const frame = pluginFrame(page);
-    await page.waitForTimeout(600); // past both 500 ms fallbacks
+    await page.waitForTimeout(600); // past the runtime's 500 ms fallback
     const kit = (await messagesSince(page, { messages: 0 })).filter((m) => typeof m.msg.type === 'string' && m.msg.type.startsWith('kit:'));
     expect(kit.map((m) => `${m.dir} ${m.msg.type}`)).toEqual(['ui kit:ready', 'main kit:init']);
     expect(kit[1].msg).toMatchObject({ mode: 'fixed', chrome: true, size: { width: 320, height: 360 } });
-    expect((await callsSince(page, { calls: 0 }, 'showUI'))[0].args[0]).toMatchObject({ width: 320, height: 360, visible: true });
+    expect((await callsSince(page, { calls: 0 }, 'showUI'))[0].args[0]).toMatchObject({ width: 320, height: 360, visible: false });
+    const calls = (await callsSince(page, { calls: 0 })).filter((c) => c.name.startsWith('ui.') || c.name === 'showUI');
+    expect(calls.map((c) => c.name), 'never resized, shown once').toEqual(['showUI', 'ui.show']);
+    expect(calls[1].t, 'shown with the kit:init reply, once the UI has loaded').toBeGreaterThanOrEqual(kit[1].t);
+    expect(calls[1].t - kit[1].t).toBeLessThan(100);
     expect(await frameSize(page)).toEqual({ width: 320, height: 360, state: 'shown' });
     expect(await frame.evaluate(() => ({
       chrome: document.documentElement.dataset.kitChrome, mode: document.documentElement.dataset.kitMode,

@@ -3,7 +3,9 @@
 // except 'color-contrast': the kit keeps Figma's own token colours, some of which are below AA at
 // 11px, so contrast is reported instead of failed (decision and numbers: docs/accessibility.md).
 // The report test computes the ratios for the token pairs the kit actually paints, from
-// tokens.figma-fallback.css. The demo's own error state is checked in e2e/demo.spec.mjs.
+// tokens.figma-fallback.css: the palette captured from a running plugin in Figma (tools/probe,
+// 2026-10-14), so re-run it after each recapture. The demo's own error state is checked in
+// e2e/demo.spec.mjs.
 
 import { readFileSync } from 'node:fs';
 import { AxeBuilder } from '@axe-core/playwright';
@@ -123,8 +125,8 @@ const PAIRS = [
   ['Notice icon, danger', 'icon-danger', 'bg-danger-tertiary', 3, '.kit-notice[data-kit-tone="danger"] > .kit-icon'],
   ['Tooltip and toast text', 'text-oninverse', 'bg-inverse', 4.5, '.kit-tooltip, .kit-toast and its buttons'],
   ['Toast icon (no tone, info, warning)', 'icon-oninverse', 'bg-inverse', 3, '.kit-toast > .kit-icon'],
-  ['Toast icon, success', 'icon-success', 'bg-inverse', 3, '.kit-toast[data-kit-tone="success"] > .kit-icon'],
-  ['Toast icon, danger', 'icon-danger', 'bg-inverse', 3, '.kit-toast[data-kit-tone="danger"] > .kit-icon'],
+  ['Toast icon, success', 'bg-success', 'bg-inverse', 3, '.kit-toast[data-kit-tone="success"] > .kit-icon'],
+  ['Toast icon, danger', 'bg-danger', 'bg-inverse', 3, '.kit-toast[data-kit-tone="danger"] > .kit-icon'],
   ['Disabled text', 'text-disabled', 'bg', null, ':disabled (exempt: inactive control)'],
   ['Disabled filled button', 'text-ondisabled', 'bg-disabled', null, 'primary/danger :disabled (exempt)'],
   ['Secondary button ring', 'border', 'bg', null, '.kit-button ring (decorative: the label identifies it)'],
@@ -150,7 +152,7 @@ test('contrast report: WCAG ratios of the token pairs the kit paints, per theme'
     '|---|---|---|---|---|---|---|',
     ...rows,
   ].join('\n');
-  console.log(`\nContrast report (tokens.figma-fallback.css; 11px text counts as normal text)\n${table}\n`);
+  console.log(`\nContrast report (tokens.figma-fallback.css, the palette captured in Figma; 11px text counts as normal text)\n${table}\n`);
   await testInfo.attach('contrast-report.md', { body: table, contentType: 'text/markdown' });
   expect(rows).toHaveLength(PAIRS.length);
 });

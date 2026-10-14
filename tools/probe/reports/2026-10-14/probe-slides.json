@@ -1,0 +1,138 @@
+{
+  "ui": {
+    "earlyMessageArrived": true,
+    "earlyMessageAtMs": 307,
+    "messagesBeforeLoad": 0,
+    "htmlClassAtStart": "",
+    "figmaStylePresentAtStart": true,
+    "palettes": {
+      "figma-dark": {
+        "capturedAt": "2026-10-14T13:08:34.328Z",
+        "varCount": 174,
+        "figmaColorCount": 174,
+        "otherVars": [],
+        "styleText": ":root { --figma-color-bg: #2c2c2c; --figma-color-bg-brand: #f65009; --figma-color-bg-brand-hover: #db4606; --figma-color-bg-brand-pressed: #b93f13; --figma-color-bg-brand-secondary: #b93f13; --figma-color-bg-brand-tertiary: #603a2a; --figma-color-bg-component: #8a38f5; --figma-color-bg-component-hover: #7a2ed6; --figma-color-bg-component-pressed: #652ca8; --figma-color-bg-component-secondary: #652ca8; --figma-color-bg-component-tertiary: #473956; --figma-color-bg-danger: #e03e1a; --figma-color-bg-danger-hover: #c4381c; --figma-color-bg-danger-pressed: #963323; --figma-color-bg-danger-secondary: #963323; --figma-color-bg-danger-tertiary: #60332a; --figma-color-bg-disabled: #757575; --figma-color-bg-disabled-secondary: #b3b3b3; --figma-color-bg-hover: #383838; --figma-color-bg-inverse: #fff; --figma-color-bg-onselected: #d4693b; --figma-color-bg-onselected-hover: #d4693b; --figma-color-bg-onselected-pressed: #d4693b; --figma-color-bg-pressed: #444; --figma-color-bg-secondary: #383838; --figma-color-bg-selected: #864e37; --figma-color-bg-selected-hover: #a55e40; --figma-color-bg-selected-pressed: #d4693b; --figma-color-bg-selected-secondary: #603a2a; --figma-color-bg-selected-strong: #f65009; --figma-color-bg-selected-tertiary: #603a2a; --figma-color-bg-success: #198f51; --figma-color-bg-success-hover: #078348; --figma-color-bg-success-pressed: #0a5c35; --figma-color-bg-success-secondary: #0a5c35; --figma-color-bg-success-tertiary: #2f483c; --figma-color-bg-tertiary: #444; --figma-color-bg-warning: #f3c11b; --figma-color-bg-warning-hover: #f2b50d; --figma-color-bg-warning-pressed: #e4a711; --figma-color-bg-warning-secondary: #e4a711; --figma-color-bg-warning-tertiary: #5c4100; --figma-color-border: #444; --figma-color-border-brand: #864e37; --figma-color-border-brand-strong: #ffa27a; --figma-color-border-component: #604d75; --figma-color-border-component-hover: #8a38f5; --figma-color-border-component-strong: #d6b6fb; --figma-color-border-danger: #864537; --figma-color-border-danger-strong: #fca397; --figma-color-border-disabled: #444; --figma-color-border-disabled-strong: #fff6; --figma-color-border-onbrand: #db4606; --figma-color-border-onbrand-strong: #fff; --figma-color-border-oncomponent: #7a2ed6; --figma-color-border-oncomponent-strong: #fff; --figma-color-border-ondanger: #c4381c; --figma-color-border-ondanger-strong: #fff; --figma-color-border-onselected: #d4693b; --figma-color-border-onselected-strong: #ffffffe5; --figma-color-border-onsuccess: #078348; --figma-color-border-onsuccess-strong: #fff; --figma-color-border-onwarning: #e4a711; --figma-color-border-onwarning-strong: #000000e5; --figma-color-border-selected: #f65009; --figma-color-border-selected-strong: #ffa27a; --figma-color-border-strong: #ffffffe5; --figma-color-border-success: #517361; --figma-color-border-success-strong: #7cd797; --figma-color-border-warning: #7a5800; --figma-color-border-warning-strong: #f7d15f; --figma-color-icon: #fff; --figma-color-icon-brand: #ffa27a; --figma-color-icon-brand-pressed: #f65009; --figma-color-icon-brand-secondary: #db4606; --figma-color-icon-brand-tertiary: #603a2a; --figma-color-icon-component: #d1a8ff; --figma-color-icon-component-pressed: #d6b6fb; --figma-color-icon-component-secondary: #7f699b; --figma-color-icon-component-tertiary: #7f699b; --figma-color-icon-danger: #fca397; --figma-color-icon-danger-hover: #fbbcb6; --figma-color-icon-danger-pressed: #fbbcb6; --figma-color-icon-danger-secondary: #fca397; --figma-color-icon-danger-secondary-hover: #fca397; --figma-color-icon-danger-tertiary: #fca397; --figma-color-icon-disabled: #fff6; --figma-color-icon-hover: #fff; --figma-color-icon-onbrand: #fff; --figma-color-icon-onbrand-secondary: #fffc; --figma-color-icon-onbrand-tertiary: #fff6; --figma-color-icon-oncomponent: #fff; --figma-color-icon-oncomponent-secondary: #fffc; --figma-color-icon-oncomponent-tertiary: #fff6; --figma-color-icon-ondanger: #fff; --figma-color-icon-ondanger-secondary: #fffc; --figma-color-icon-ondanger-tertiary: #fff6; --figma-color-icon-ondisabled: #2c2c2c; --figma-color-icon-oninverse: #000000e5; --figma-color-icon-onselected: #fff; --figma-color-icon-onselected-secondary: #ffffffb2; --figma-color-icon-onselected-strong: #fff; --figma-color-icon-onselected-tertiary: #fff6; --figma-color-icon-onsuccess: #fff; --figma-color-icon-onsuccess-secondary: #fffc; --figma-color-icon-onsuccess-tertiary: #fff6; --figma-color-icon-onwarning: #000000e5; --figma-color-icon-onwarning-secondary: #00000080; --figma-color-icon-onwarning-tertiary: #0000004d; --figma-color-icon-pressed: #db4606; --figma-color-icon-secondary: #ffffffb2; --figma-color-icon-secondary-hover: #fff; --figma-color-icon-selected: #ffa27a; --figma-color-icon-selected-secondary: #f65009; --figma-color-icon-selected-tertiary: #db4606; --figma-color-icon-success: #7cd797; --figma-color-icon-success-pressed: #a5e5b7; --figma-color-icon-success-secondary: #7cd797; --figma-color-icon-success-tertiary: #7cd797; --figma-color-icon-tertiary: #fff6; --figma-color-icon-tertiary-hover: #fff; --figma-color-icon-warning: #f7d15f; --figma-color-icon-warning-pressed: #f7d15f; --figma-color-icon-warning-secondary: #f7d15f; --figma-color-icon-warning-tertiary: #f7d15f; --figma-color-text: #fff; --figma-color-text-brand: #ffa27a; --figma-color-text-brand-secondary: #ffa27a; --figma-color-text-brand-tertiary: #ffa27a; --figma-color-text-component: #d1a8ff; --figma-color-text-component-pressed: #d6b6fb; --figma-color-text-component-secondary: #a38cc0; --figma-color-text-component-tertiary: #7f699b; --figma-color-text-danger: #fca397; --figma-color-text-danger-secondary: #fca397; --figma-color-text-danger-tertiary: #fca397; --figma-color-text-disabled: #fff6; --figma-color-text-hover: #fff; --figma-color-text-onbrand: #fff; --figma-color-text-onbrand-secondary: #fffc; --figma-color-text-onbrand-tertiary: #fff6; --figma-color-text-oncomponent: #fff; --figma-color-text-oncomponent-secondary: #fffc; --figma-color-text-oncomponent-tertiary: #fff6; --figma-color-text-ondanger: #fff; --figma-color-text-ondanger-secondary: #fffc; --figma-color-text-ondanger-tertiary: #fff6; --figma-color-text-ondisabled: #2c2c2c; --figma-color-text-oninverse: #000000e5; --figma-color-text-onselected: #ffffffe5; --figma-color-text-onselected-secondary: #ffffffb2; --figma-color-text-onselected-strong: #fff; --figma-color-text-onselected-tertiary: #fff6; --figma-color-text-onsuccess: #fff; --figma-color-text-onsuccess-secondary: #fffc; --figma-color-text-onsuccess-tertiary: #fff6; --figma-color-text-onwarning: #000000e5; --figma-color-text-onwarning-secondary: #00000080; --figma-color-text-onwarning-tertiary: #0000004d; --figma-color-text-secondary: #ffffffb2; --figma-color-text-secondary-hover: #fff; --figma-color-text-selected: #ffa27a; --figma-color-text-selected-secondary: #ffa27a; --figma-color-text-selected-tertiary: #ffa27a; --figma-color-text-success: #7cd797; --figma-color-text-success-secondary: #7cd797; --figma-color-text-success-tertiary: #7cd797; --figma-color-text-tertiary: #fff6; --figma-color-text-tertiary-hover: #fff; --figma-color-text-warning: #f7d15f; --figma-color-text-warning-secondary: #f7d15f; --figma-color-text-warning-tertiary: #f7d15f; --figma-color-bg-slot: rgba(243, 22, 176, .25); --figma-color-border-slot: #f316b0; }"
+      }
+    },
+    "themeChanges": [
+      {
+        "at": 2,
+        "htmlClass": "figma-dark"
+      }
+    ],
+    "htmlClassAtLoad": "figma-dark",
+    "figmaStylePresentAtLoad": true,
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Figma/126.9.13 Chrome/150.0.7871.250 Electron/43.7.9 Safari/537.36 FigmaARM",
+      "origin": "null",
+      "protocol": "data:",
+      "referrer": "",
+      "devicePixelRatio": 2,
+      "colorScheme": "normal",
+      "prefersDark": true,
+      "interAvailable11": false,
+      "interDisplayAvailable": true,
+      "systemUiFamilyResolved": "system-ui, sans-serif",
+      "popoverSupported": true,
+      "dialogSupported": true,
+      "hasSelectorSupported": true,
+      "anchorPositioning": true,
+      "clipboardApi": false,
+      "resizeObserver": true
+    }
+  },
+  "main": {
+    "probe": 1,
+    "editorType": "slides",
+    "mode": "default",
+    "apiVersion": "1.0.0",
+    "earlyMessage": {
+      "arrived": true,
+      "sentAtMsFromStart": 2,
+      "receivedAtMsFromUiStart": 307,
+      "beforeLoad": false
+    },
+    "coexistence": {
+      "onThenAssign": [
+        "on:A",
+        "assign:B"
+      ],
+      "afterAssignUndefined": [
+        "on:A"
+      ],
+      "assignThenOn": [
+        "on:A",
+        "on:D",
+        "assign:C"
+      ],
+      "afterOffD": [
+        "on:A",
+        "assign:C"
+      ],
+      "once1": [
+        "on:A",
+        "once:E",
+        "assign:C"
+      ],
+      "once2": [
+        "on:A",
+        "assign:C"
+      ]
+    },
+    "resize": {
+      "initial": {
+        "width": 360,
+        "height": 520
+      },
+      "to400x300": {
+        "width": 400,
+        "height": 300
+      },
+      "to10x10": {
+        "width": 70,
+        "height": 10
+      },
+      "to70x0": {
+        "width": 70,
+        "height": 0
+      },
+      "to4000x4000": {
+        "width": 2508,
+        "height": 1283
+      },
+      "nan": {
+        "width": 2508,
+        "height": 1283,
+        "threw": "in resize: Property \"resize width\" failed validation: Expected number, received nan"
+      },
+      "fractional": {
+        "width": 2508,
+        "height": 1283,
+        "threw": "in resize: Property \"resize width\" failed validation: Expected integer, received float"
+      },
+      "restored": {
+        "width": 360,
+        "height": 520
+      }
+    },
+    "storage": {
+      "roundTrip": {
+        "v": 1,
+        "width": 360,
+        "height": 520
+      },
+      "keys": [
+        "kit-probe"
+      ],
+      "afterDelete": "undefined"
+    },
+    "ui": null,
+    "errors": [],
+    "dynamicPage": {
+      "selectionLength": 0,
+      "getNodeById": "threw: in getNodeById: Cannot call with documentAccess: dynamic-page. Use figma.getNodeByIdAsync instead.",
+      "pagesCount": 1
+    },
+    "elapsedMs": 3094
+  }
+}

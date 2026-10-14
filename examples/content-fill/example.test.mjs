@@ -187,7 +187,7 @@ function boot(options) {
   const context = vm.createContext({
     figma: stub.figma,
     __html__: '<p>ui</p>',
-    setTimeout: () => 0, // the kit's show cap; 'fixed' windows are visible from the start
+    setTimeout: () => 0, // the kit's show timers; a 'fixed' window opens hidden and shows after kit:init
     clearTimeout: () => {},
     console: { warn: (...args) => stub.calls.warn.push(args.map(String).join(' ')), log: () => {}, error: () => {} },
   });
@@ -237,10 +237,10 @@ test('ui.html: the select offers exactly the kinds code.js accepts, and has no H
   assert.ok(!UI_HTML.includes('<!--'));
 });
 
-test('boot: a fixed 320 x 249 window, visible at once, the selection posted, saved settings restored', async () => {
+test('boot: a fixed 320 x 249 window, opened hidden, the selection posted, saved settings restored', async () => {
   const app = boot({ stored: { kind: 'email', nested: true } });
   assert.equal(app.calls.showUI.length, 1);
-  assert.deepEqual(app.calls.showUI[0].options, { width: 320, height: 249, themeColors: true, visible: true });
+  assert.deepEqual(app.calls.showUI[0].options, { width: 320, height: 249, themeColors: true, visible: false });
   assert.deepEqual(app.replies('cf-selection'), [{ type: 'cf-selection', direct: 0, nested: 0 }]);
   await settle();
   assert.deepEqual(app.replies('cf-settings'), [{ type: 'cf-settings', kind: 'email', nested: true }]);

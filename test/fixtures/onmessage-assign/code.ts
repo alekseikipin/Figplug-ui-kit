@@ -3,6 +3,12 @@ const KIT_PROTOCOL = 1;
 figma.showUI(__html__, { themeColors: true });
 figma.ui.postMessage({ type: 'fixture', protocol: KIT_PROTOCOL });
 
+// One assignment, Figma's template style: quiet on its own.
 figma.ui.onmessage = (msg: { type?: unknown }) => {
   if (msg.type === 'close') figma.closePlugin();
+};
+
+// A second assignment replaces the first, so 'close' above is never handled again: the warning.
+figma.ui.onmessage = (message: { type?: unknown }) => {
+  if (message.type === 'create') figma.createRectangle();
 };

@@ -4,11 +4,21 @@
 
 Starter files for Figma classic plugins with native-looking UI and a resizable window, made to be built on with Claude Code or Cursor. Not [rsms/figplug](https://github.com/rsms/figplug) (the plugin build tool). Fallback name: TBD.
 
-| Light | Dark |
-|---|---|
-| ![The starter plugin window, light theme](docs/img/starter-light.png) | ![The starter plugin window, dark theme](docs/img/starter-dark.png) |
+<table>
+  <tr><th></th><th>The kit's starter window</th><th>Figma's own Design panel</th></tr>
+  <tr>
+    <th>Light</th>
+    <td valign="top"><img src="docs/img/figma-starter-light.png" width="420" alt="The Kit starter plugin window in Figma's light theme: a Create shapes heading, a Count field set to 5, a Shape select set to Rectangle, the status 5 layers selected, and Close and Create buttons"></td>
+    <td valign="top"><img src="docs/img/figma-panel-light.png" width="220" alt="Figma's Design panel in the light theme at the same moment: 5 selected, with the Position, Layout, Appearance and Fill sections"></td>
+  </tr>
+  <tr>
+    <th>Dark</th>
+    <td valign="top"><img src="docs/img/figma-starter-dark.png" width="420" alt="The same Kit starter window in Figma's dark theme"></td>
+    <td valign="top"><img src="docs/img/figma-panel-dark.png" width="220" alt="Figma's Design panel in the dark theme at the same moment"></td>
+  </tr>
+</table>
 
-_Rendered by the browser preview (`npm run preview`): a stand-in window frame and the fallback palette, not Figma itself. A side-by-side with Figma's own panel is pending a capture in the real Figma app ([steps](docs/release-checklist.md#a-side-by-side-with-figmas-own-panel-item-4))._
+_Captured in Figma desktop 126.9.13 on 2026-10-14 (macOS): the starter's window next to Figma's own Design panel, at the same moment and the same scale, with the five rectangles the starter made selected. The account avatar is cropped out of the panel._
 
 Three hand-editable files and nothing to install: `manifest.json`, `code.ts` (compiled `code.js` included) and `ui.html`. Colours are Figma's own `--figma-color-*` tokens, so the UI follows light, dark and FigJam; controls are 24px like Figma's panels; the window fits its content, resizes from a corner grip and remembers the width. [`AGENTS.md`](AGENTS.md) tells your agent the rules, and `npm run audit` checks what it wrote.
 
@@ -76,7 +86,7 @@ Every colour is one of Figma's `--figma-color-*` tokens, which Figma injects and
 
 ### Messages
 
-`ui.html` and `code.ts` share nothing but messages, and each side sends them differently. The kit's own messages are `kit:*`; give yours any other `type`, an interface each, a guard before trusting them, and register with `figma.ui.on('message')`, never `figma.ui.onmessage =`. [docs/messages.md](docs/messages.md)
+`ui.html` and `code.ts` share nothing but messages, and each side sends them differently. The kit's own messages are `kit:*`; give yours any other `type`, an interface each, a guard before trusting them, and register with `figma.ui.on('message')` rather than `figma.ui.onmessage =` (an assignment keeps the kit's listener, but holds one handler, so a second one replaces the first). [docs/messages.md](docs/messages.md)
 
 ### Accessibility
 
@@ -102,7 +112,7 @@ There is no package to bump: re-paste the three `data-kit` blocks in `ui.html`, 
 
 ## Examples
 
-Five finished plugins in [`examples/`](examples/), one per [archetype task](docs/prompts.md#the-five-archetype-tasks). Each began as the one prompt in a fresh clone and was then reviewed and fixed; its README has the prompt, the agent's diff and what the review changed. Each has its own `manifest.json` to import (none has been run in the Figma app yet).
+Five finished plugins in [`examples/`](examples/), one per [archetype task](docs/prompts.md#the-five-archetype-tasks). Each began as the one prompt in a fresh clone and was then reviewed and fixed; its README has the prompt, the agent's diff and what the review changed. Each has its own `manifest.json` to import. Each ran once in Figma Design (dark) on 2026-10-14 through the starter's manifest and ran its main action; its own manifest, the light theme and its other editors have not been run yet ([release checklist](docs/release-checklist.md#the-examples)).
 
 - [rename-layers](examples/rename-layers/README.md) (`fit-content`): prefix, find and replace, numbering, with a preview of every new name.
 - [export-selection](examples/export-selection/README.md) (`resizable`): the selected layers as PNG at 1x, 2x or 3x, one download each.

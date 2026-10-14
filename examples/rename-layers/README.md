@@ -24,6 +24,8 @@ A fresh agent in a fresh clone of kit 0.3.0, given only the prompt above. A sepa
 
 All the automated checks passed, so this counts as an automated one-shot. The fake-host boot opened `preview.html`: the window was 360 × 431 in `fit-content` mode, no console errors, and with 3 layers selected, Rename wrote exactly the 3 previewed names with one `commitUndo`. Importing into the Figma desktop app has not been tried, so it is not yet a full one-shot.
 
+**In Figma (2026-10-14).** The curated plugin in this folder, not the one-shot output above, ran once in Figma Design (dark theme, Figma desktop 126.9.13) through the starter's imported manifest, with its `ui.html` and `code.js` swapped in for the run: with the prefix `Icon/` it previewed "5 of 5 will change" and Rename renamed all 5 layers (Cmd+Z not tried). Its own `manifest.json` has not been imported, and the light theme and its other editors have not been run ([release checklist](../../docs/release-checklist.md#the-examples)).
+
 ## What the agent built
 
 `code.js | 272`, `code.ts | 346`, `manifest.json | 6`, `ui.html | 300`: 4 files changed, 762 insertions, 162 deletions. The whole diff is in [agent.diff](agent.diff).
