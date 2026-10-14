@@ -32,6 +32,8 @@ const PLACES = [
   ['tokens.figma-fallback.css', 'the header', new RegExp(`^/\\* tokens\\.figma-fallback\\.css · kit v${V} · `)],
   ['playwright.config.mjs', 'the header', new RegExp(`^// playwright\\.config\\.mjs · kit v${V}\\n`)],
   ['.github/ISSUE_TEMPLATE/bug_report.yml', 'the "Kit header" placeholder', new RegExp(`\\n {6}placeholder: kit v${V} · protocol 1\\n`)],
+  ['README.md', 'the "kit" badge', new RegExp(`\\[!\\[Kit v${V}\\]\\(https://img\\.shields\\.io/badge/kit-v\\1-`)],
+  ['README.md', 'the Status line', new RegExp(`\\n\\*\\*Kit ${V}, before 1\\.0`)],
 ];
 
 test(`every place that names the kit version says package.json's ${VERSION}`, () => {

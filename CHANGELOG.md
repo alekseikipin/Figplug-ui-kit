@@ -6,7 +6,16 @@ All notable changes to the kit. The format follows [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **The README shows the kit at work.** Animations recorded in the kit's browser preview (`preview.html`'s stand-in for Figma, in Chromium), each in light and dark and captioned on every frame as not Figma: `docs/media/hero-*.gif`, `window-*.gif`, `components-*.gif` and `examples-*.gif`. Also `docs/media/components-sheet-*.png` (the 20 components at a glance) and three animated illustrations, `agent.svg`, `audit.svg` and `how-it-works.svg`, each with a `-narrow.svg` for phones. The real Figma evidence is still the captures in `docs/img/figma-*.png`, now also joined into `docs/img/figma-side-by-side-*.png` (cropped, not edited).
+- **`e2e/readme-media.spec.mjs`** remakes the GIFs, the components sheet and the side-by-side images: `UPDATE_MEDIA=1 npx playwright test e2e/readme-media.spec.mjs` (needs ffmpeg). Without `UPDATE_MEDIA` it is skipped. The SVGs come from `tools/readme-svg/` (`node tools/readme-svg/build.mjs`, no dependencies).
+- **`test/docs-links.test.mjs`** also checks the `src`, `srcset` and `href` attributes of the HTML in the Markdown files, and that an `.svg#id` link names an id the SVG has.
+- **`test/version.test.mjs`** also reads the README's "kit" badge and the version in its Status section, which joined the [version bump](docs/release-checklist.md#version-bump) list.
+
+### Changed
+
+- **Pages deploys only once it is enabled.** `.github/workflows/pages.yml` skips the deploy after CI until the repository variable `PAGES_ENABLED` is `true`, instead of failing on a site that isn't there ([release checklist](docs/release-checklist.md#outward-actions-waiting-for-the-owner), action 3).
 
 ## [0.4.0] - Unreleased
 

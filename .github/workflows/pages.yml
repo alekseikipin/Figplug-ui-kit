@@ -2,7 +2,9 @@ name: Pages
 
 # Publishes the browser preview (preview.html with ui.html, code.js, the fallback palette and the
 # examples its Plugin picker runs) to GitHub Pages. Pages must be enabled once by the owner:
-# Settings > Pages > Build and deployment > Source: GitHub Actions.
+# Settings > Pages > Build and deployment > Source: GitHub Actions, then the repository variable
+# PAGES_ENABLED set to true (Settings > Secrets and variables > Actions > Variables). Until that
+# variable exists the deploy after CI is skipped rather than failing on a site that isn't there.
 #
 # It runs only after CI has passed on a push to main in this repository (never for a pull request,
 # even one from a fork's own "main"), and deploys exactly the commit CI tested. A manual run
@@ -29,7 +31,8 @@ jobs:
     name: Deploy the preview
     if: >-
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event.workflow_run.conclusion == 'success' &&
+      (vars.PAGES_ENABLED == 'true' &&
+      github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest

@@ -1,6 +1,9 @@
 // Every page in docs/ is reachable from docs/index.md, and every relative link and #anchor in the
 // repo's Markdown resolves: the target file exists, and an anchor matches a heading the way GitHub
-// makes heading ids. Plain file reads, so `npm run check` catches a renamed heading or file.
+// makes heading ids. That covers Markdown links and the HTML the README uses for its media
+// (src, srcset and href attributes), where an .svg#id link needs that id in the SVG (the README's
+// SVGs pick their theme with #light and #dark). Plain file reads, so `npm run check` catches a
+// renamed heading, file or GIF.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -64,13 +67,26 @@ test('every page in docs/ is linked from docs/index.md', () => {
   assert.deepEqual(pages.filter((n) => !linked.has(join(ROOT, 'docs', n))), [], 'pages missing from docs/index.md');
 });
 
+/** The links in a Markdown file's prose: Markdown links, and the src, srcset and href of its HTML. */
+function links(text) {
+  const body = prose(text);
+  const out = [...body.matchAll(/\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/g)].map((m) => m[1]);
+  for (const m of body.matchAll(/<[a-z][^>]*>/gi)) {
+    for (const a of m[0].matchAll(/\s(src|srcset|href)="([^"]*)"/gi)) {
+      // A srcset lists candidates, "url 2x, url 3x": the URL is each one's first word.
+      if (a[1].toLowerCase() === 'srcset') out.push(...a[2].split(',').map((c) => c.trim().split(/\s+/)[0]).filter(Boolean));
+      else out.push(a[2]);
+    }
+  }
+  return out;
+}
+
 test('relative links and #anchors in the Markdown files resolve', () => {
   const files = markdownFiles();
   assert.ok(files.some((f) => f.endsWith('README.md')) && files.some((f) => f.endsWith('AGENTS.md')));
   const broken = [];
   for (const file of files) {
-    for (const m of prose(readFileSync(file, 'utf8')).matchAll(/\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/g)) {
-      const link = m[1];
+    for (const link of links(readFileSync(file, 'utf8'))) {
       if (/^[a-z][a-z0-9+.-]*:/i.test(link)) continue; // https:, mailto: ...
       const [path, hash] = link.split('#');
       const target = path ? resolve(dirname(file), decodeURIComponent(path)) : file;
@@ -81,12 +97,18 @@ test('relative links and #anchors in the Markdown files resolve', () => {
       if (!existsSync(target) && inExamples[0] !== '..' && !existsSync(join(EXAMPLES, inExamples[0] || ''))) continue;
       if (!existsSync(target) && target === EXAMPLES) continue;
       if (!existsSync(target)) { broken.push(`${where} (no such file)`); continue; }
-      if (hash && statSync(target).isFile() && target.endsWith('.md') && !anchors(target).has(decodeURIComponent(hash))) {
-        broken.push(`${where} (no heading with that id)`);
-      }
+      if (!hash || !statSync(target).isFile()) continue;
+      const id = decodeURIComponent(hash);
+      if (target.endsWith('.md') && !anchors(target).has(id)) broken.push(`${where} (no heading with that id)`);
+      if (target.endsWith('.svg') && !readFileSync(target, 'utf8').includes(`id="${id}"`)) broken.push(`${where} (no element with that id in the SVG)`);
     }
   }
   assert.deepEqual(broken, []);
+});
+
+test('the link check reads HTML attributes as well as Markdown links', () => {
+  const found = links('[a](a.md) <img src="b.gif" alt="x"> <source srcset="c.svg#dark 1x, d.svg 2x"> <a href="#e">e</a>\n```html\n<img src="in-a-fence.png">\n```\n`<img src="inline-code.png">`');
+  assert.deepEqual(found, ['a.md', 'b.gif', 'c.svg#dark', 'd.svg', '#e']);
 });
 
 test('heading ids follow GitHub', () => {

@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="418" viewBox="0 0 400 418" role="img" aria-labelledby="t d" xml:space="preserve">
+<title id="t">npm run audit catches a hard-coded colour</title>
+<desc id="d">Animated illustration with real audit output from kit 0.4.0: a rule with color: #333; is added to the host &lt;style&gt; in ui.html at line 951. npm run audit prints &quot;ui.html:951  color-literal  literal colour #333 in color; use a var(--figma-color-*) token (transparent and currentColor are fine)&quot; and &quot;audit: 1 error(s), 0 warning(s) in 6 plugin folders; see docs/pitfalls.md&quot;. The value is replaced with var(--figma-color-text), and the next npm run audit prints &quot;audit: no problems in 6 plugin folders&quot;.</desc>
+<style>
+svg{--win:#ffffff;--bar:#f6f8fa;--line:#d1d9e0;--tm:#f6f8fa;--fg:#1f2328;--mute:#59636e;--faint:#818b98;--tag:#116329;--sel:#6639ba;--prop:#0550ae;--val:#0a3069;--lit:#953800;--fn:#8250df;--err:#d1242f;--ok:#1a7f37;--selbg:#b6e3ff;--acc:#0969da;--dot:#d1d9e0}
+@media (prefers-color-scheme:dark){svg{--win:#0d1117;--bar:#151b23;--line:#3d444d;--tm:#151b23;--fg:#f0f6fc;--mute:#9198a1;--faint:#656c76;--tag:#7ee787;--sel:#d2a8ff;--prop:#79c0ff;--val:#a5d6ff;--lit:#ffa657;--fn:#d2a8ff;--err:#f85149;--ok:#3fb950;--selbg:#1f4a7a;--acc:#4493f8;--dot:#3d444d}}
+#dark:target{--win:#0d1117;--bar:#151b23;--line:#3d444d;--tm:#151b23;--fg:#f0f6fc;--mute:#9198a1;--faint:#656c76;--tag:#7ee787;--sel:#d2a8ff;--prop:#79c0ff;--val:#a5d6ff;--lit:#ffa657;--fn:#d2a8ff;--err:#f85149;--ok:#3fb950;--selbg:#1f4a7a;--acc:#4493f8;--dot:#3d444d}
+#light:target{--win:#ffffff;--bar:#f6f8fa;--line:#d1d9e0;--tm:#f6f8fa;--fg:#1f2328;--mute:#59636e;--faint:#818b98;--tag:#116329;--sel:#6639ba;--prop:#0550ae;--val:#0a3069;--lit:#953800;--fn:#8250df;--err:#d1242f;--ok:#1a7f37;--selbg:#b6e3ff;--acc:#0969da;--dot:#d1d9e0}
+.m{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:12.5px}
+.t{font-size:12px}
+.s{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+text{white-space:pre}
+.b{font-weight:600}
+.win{fill:var(--win);stroke:var(--line)}
+.bar{fill:var(--bar)}
+.sep{stroke:var(--line);fill:none}
+.tmfill{fill:var(--tm)}
+.edbg{fill:var(--win)}
+.tmbg{fill:var(--tm)}
+.gut{fill:var(--faint)}
+.fg{fill:var(--fg)}
+.mute{fill:var(--mute)}
+.pun{fill:var(--mute)}
+.com{fill:var(--mute)}
+.tag{fill:var(--tag)}
+.sel{fill:var(--sel)}
+.prop{fill:var(--prop)}
+.val{fill:var(--val)}
+.lit{fill:var(--lit)}
+.fn{fill:var(--fn)}
+.errt{fill:var(--err)}
+.okt{fill:var(--ok)}
+.errf{fill:var(--err)}
+.okf{fill:var(--ok)}
+.tick{fill:none;stroke:var(--win);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.squig{fill:none;stroke:var(--err);stroke-width:1.3}
+.selbg{fill:var(--selbg)}
+.cur{fill:var(--fg)}
+.curb{fill:var(--acc)}
+.dot{fill:var(--dot)}
+.title{fill:var(--mute);font-size:12px}
+.label{fill:var(--mute);font-size:10.5px;letter-spacing:.08em;font-weight:600}
+.cv,.cur,.curb,.hide{opacity:0}
+.cap{fill:var(--acc);font-size:12px;font-weight:500}
+@media (prefers-reduced-motion:no-preference){
+.an{animation-duration:12s;animation-iteration-count:infinite;animation-fill-mode:both;animation-timing-function:ease-out}
+.k0{animation-name:k0}
+.k1{animation-name:k1}
+.k2{animation-name:k2}
+.k3{animation-name:k3}
+.k4{animation-name:k4}
+.k5{animation-name:k5}
+.k6{animation-name:k6}
+.k7{animation-name:k7}
+.k8{animation-name:k8}
+.k9{animation-name:k9}
+.ka{animation-name:ka}
+.kb{animation-name:kb}
+.kc{animation-name:kc}
+.kd{animation-name:kd}
+.ke{animation-name:ke}
+.kf{animation-name:kf}
+.kg{animation-name:kg}
+.kh{animation-name:kh}
+.ki{animation-name:ki}
+.kj{animation-name:kj}
+.kk{animation-name:kk}
+.kl{animation-name:kl}
+.km{animation-name:km}
+.kn{animation-name:kn}
+.ko{animation-name:ko}
+.kp{animation-name:kp}
+.kq{animation-name:kq}
+.kr{animation-name:kr}
+.ks{animation-name:ks}
+.kt{animation-name:kt}
+.ku{animation-name:ku}
+.kv{animation-name:kv}
+.kw{animation-name:kw}
+.kx{animation-name:kx}
+@keyframes k0{0%,6.25%{opacity:0;transform:translateY(0px)}6.33%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k1{0%,11.25%{opacity:0;transform:translateY(0px)}11.33%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k2{0%,17.08%{opacity:0;transform:translateY(0px)}17.17%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k3{0%,6.25%{opacity:1;transform:translateX(0);animation-timing-function:steps(12,end)}10.42%{opacity:1;transform:translateX(92px)}10.58%,100%{opacity:0;transform:translateX(92px)}}
+@keyframes k4{0%,6.25%{opacity:0}6.33%,10.42%{opacity:1}10.5%,100%{opacity:0}}
+@keyframes k5{0%,6.25%{opacity:0;transform:translateY(0px)}6.33%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k6{0%,46.67%{opacity:1;transform:translateX(0);animation-timing-function:steps(24,end)}55.83%{opacity:1;transform:translateX(182px)}56%,100%{opacity:0;transform:translateX(182px)}}
+@keyframes k7{0%,46.67%{opacity:0}46.75%,55.83%{opacity:1}55.92%,100%{opacity:0}}
+@keyframes k8{0%,46.25%{opacity:0;transform:translateY(0px)}46.33%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k9{0%,41.67%{opacity:0}42.33%,46.08%{opacity:1}46.75%,100%{opacity:0}}
+@keyframes ka{0%,11.25%{opacity:1;transform:translateX(0);animation-timing-function:steps(14,end)}16.25%{opacity:1;transform:translateX(107px)}16.42%,100%{opacity:0;transform:translateX(107px)}}
+@keyframes kb{0%,11.25%{opacity:0}11.33%,16.25%{opacity:1}16.33%,100%{opacity:0}}
+@keyframes kc{0%,11.25%{opacity:0}11.33%,46.17%{opacity:1}46.25%,100%{opacity:0}}
+@keyframes kd{0%,28.33%{opacity:0}29.58%,46.08%{opacity:1}47.33%,100%{opacity:0}}
+@keyframes ke{0%,65.83%{opacity:0;transform:translateY(0px)}67.5%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kf{0%,17.08%{opacity:1;transform:translateX(0);animation-timing-function:steps(1,end)}17.92%{opacity:1;transform:translateX(9.5px)}18.08%,100%{opacity:0;transform:translateX(9.5px)}}
+@keyframes kg{0%,17.08%{opacity:0}17.17%,17.92%{opacity:1}18%,100%{opacity:0}}
+@keyframes kh{0%,17.08%{opacity:0;transform:translateY(0px)}17.17%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ki{0%,6.25%{transform:translateY(-60px)}6.33%,11.25%{transform:translateY(-40px)}11.33%,17.08%{transform:translateY(-20px)}17.17%,100%{transform:translateY(0)}}
+@keyframes kj{0%,18.75%{opacity:0;transform:translateY(0px)}18.83%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kk{0%,21.25%{opacity:1;transform:translateX(0);animation-timing-function:steps(13,end)}24.58%{opacity:1;transform:translateX(95.6px)}24.75%,100%{opacity:0;transform:translateX(95.6px)}}
+@keyframes kl{0%,18.75%{opacity:0}18.83%,24.58%{opacity:1}24.67%,100%{opacity:0}}
+@keyframes km{0%,27.5%{opacity:0;transform:translateY(4px)}29.58%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kn{0%,28.75%{opacity:0;transform:translateY(4px)}30.83%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ko{0%,56.67%{opacity:0;transform:translateY(0px)}56.75%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kp{0%,59.17%{opacity:1;transform:translateX(0);animation-timing-function:steps(13,end)}62.5%{opacity:1;transform:translateX(95.6px)}62.67%,100%{opacity:0;transform:translateX(95.6px)}}
+@keyframes kq{0%,56.67%{opacity:0}56.75%,62.5%{opacity:1}62.58%,100%{opacity:0}}
+@keyframes kr{0%,65.83%{opacity:0;transform:translateY(4px)}67.92%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ks{0%,92.92%{opacity:1}96.67%,100%{opacity:0}}
+@keyframes kt{0%,1.25%{opacity:0}2.92%,18.75%{opacity:1}20.42%,100%{opacity:0}}
+@keyframes ku{0%,20.42%{opacity:0}22.08%,40%{opacity:1}41.67%,100%{opacity:0}}
+@keyframes kv{0%,41.67%{opacity:0}43.33%,56.67%{opacity:1}58.33%,100%{opacity:0}}
+@keyframes kw{0%,58.33%{opacity:0;transform:translateY(0px)}60%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kx{0%,100%{opacity:0}}
+}
+</style>
+<g id="dark"><g id="light">
+<defs><clipPath id="ed"><rect x="1" y="37" width="398" height="160"/></clipPath><clipPath id="code"><rect x="70" y="37" width="326" height="160"/></clipPath><clipPath id="tm"><rect x="1" y="205" width="398" height="212"/></clipPath></defs>
+<rect class="win" x="0.5" y="0.5" width="399" height="417" rx="10"/>
+<path class="bar" d="M0.5 36V10.5a10 10 0 0 1 10-10h379a10 10 0 0 1 10 10V36z"/>
+<path class="tmfill" d="M0.5 204H399.5V407.5a10 10 0 0 1-10 10H10.5a10 10 0 0 1-10-10z"/>
+<path class="sep" d="M0.5 36.5H399.5M0.5 204.5H399.5"/>
+<rect class="sep" x="0.5" y="0.5" width="399" height="417" rx="10"/>
+<circle class="dot" cx="20" cy="18" r="5.5"/><circle class="dot" cx="38" cy="18" r="5.5"/><circle class="dot" cx="56" cy="18" r="5.5"/>
+<text class="s title" x="72" y="22" text-anchor="start">ui.html</text>
+<text class="s label" x="20" y="224">TERMINAL</text>
+<g class="an ks"><g class="an kt hide"><text class="s cap" x="384" y="22" text-anchor="end">1 · a hard-coded colour</text></g><g class="an ku hide"><text class="s cap" x="384" y="22" text-anchor="end">2 · npm run audit flags it</text></g><g class="an kv hide"><text class="s cap" x="384" y="22" text-anchor="end">3 · a Figma token instead</text></g><g class="an kw hide"><text class="s cap" x="384" y="22" text-anchor="end">4 · clean</text></g><g class="an kx"><text class="s cap" x="384" y="22" text-anchor="end">flagged, then fixed with a token</text></g>
+<g><text class="m gut" x="56" y="62" text-anchor="end">947</text></g>
+<g><text class="m gut" x="56" y="82" text-anchor="end">948</text></g>
+<g><text class="m gut" x="56" y="102" text-anchor="end">949</text></g>
+<g><text class="m gut" x="56" y="122" text-anchor="end">950</text></g>
+<g class="an k0"><text class="m gut" x="56" y="142" text-anchor="end">951</text></g>
+<g class="an k1"><text class="m gut" x="56" y="162" text-anchor="end">952</text></g>
+<g class="an k2"><text class="m gut" x="56" y="182" text-anchor="end">953</text></g>
+<g clip-path="url(#code)">
+<text class="m" x="72" y="62" textLength="52.5" lengthAdjust="spacing"><tspan class="pun">&lt;</tspan><tspan class="tag">style</tspan><tspan class="pun">&gt;</tspan></text>
+<text class="m" x="72" y="82" textLength="712.5" lengthAdjust="spacing"><tspan class="com">/* Your styles. Build with kit classes first; add rules here only for what they don't cover. */</tspan></text>
+<text class="m" x="72" y="102" textLength="322.5" lengthAdjust="spacing"><tspan class="sel">.demo-status</tspan><tspan class="fg"> { </tspan><tspan class="prop">flex</tspan><tspan class="fg">: </tspan><tspan class="val">1 1 0</tspan><tspan class="fg">; </tspan><tspan class="prop">min-width</tspan><tspan class="fg">: </tspan><tspan class="val">0</tspan><tspan class="fg">; }</tspan></text>
+</g>
+<g class="an k5"><text class="m" x="72" y="122" textLength="90" lengthAdjust="spacing"><tspan class="sel">.demo-hint</tspan><tspan class="fg"> {</tspan></text><g clip-path="url(#ed)"><g class="an k3 cv"><rect class="edbg" x="71" y="107" width="102" height="20"/><rect class="an k4 cur" x="73" y="109" width="1.6" height="16"/></g></g></g>
+<g class="an k8"><text class="m" x="72" y="142" textLength="247.5" lengthAdjust="spacing"><tspan class="fg">  </tspan><tspan class="prop">color</tspan><tspan class="fg">: </tspan><tspan class="fn">var</tspan><tspan class="fg">(</tspan><tspan class="val">--figma-color-text</tspan><tspan class="fg">);</tspan></text></g>
+<g clip-path="url(#ed)"><g class="an k6 cv"><rect class="edbg" x="138.5" y="127" width="192" height="20"/><rect class="an k7 cur" x="140.5" y="129" width="1.6" height="16"/></g></g>
+<rect class="an k9 selbg hide" x="138.5" y="128" width="32" height="19" rx="2"/>
+<g class="an kc hide"><text class="m" x="72" y="142" textLength="105" lengthAdjust="spacing"><tspan class="fg">  </tspan><tspan class="prop">color</tspan><tspan class="fg">: </tspan><tspan class="lit">#333</tspan><tspan class="fg">;</tspan></text><g clip-path="url(#ed)"><g class="an ka cv"><rect class="edbg" x="71" y="127" width="117" height="20"/><rect class="an kb cur" x="73" y="129" width="1.6" height="16"/></g></g></g>
+<path class="an kd squig hide" d="M139.5 146L142.5 143.5L145.5 146L148.5 143.5L151.5 146L154.5 143.5L157.5 146L160.5 143.5L163.5 146L166.5 143.5L169.5 146"/>
+<circle class="an kd errf hide" cx="16" cy="137.5" r="4"/>
+<g class="an ke"><circle class="okf" cx="16" cy="137.5" r="5.5"/><path class="tick" d="M13.4 137.4l1.8 1.8 3.3-3.4"/></g>
+<g class="an kh"><text class="m" x="72" y="162" textLength="7.5" lengthAdjust="spacing"><tspan class="fg">}</tspan></text><g clip-path="url(#ed)"><g class="an kf cv"><rect class="edbg" x="71" y="147" width="19.5" height="20"/><rect class="an kg cur" x="73" y="149" width="1.6" height="16"/></g></g></g>
+<g class="an ki"><text class="m" x="72" y="182" textLength="60" lengthAdjust="spacing"><tspan class="pun">&lt;/</tspan><tspan class="tag">style</tspan><tspan class="pun">&gt;</tspan></text></g>
+<g class="an kj"><text class="m t" x="20" y="248" textLength="108" lengthAdjust="spacing"><tspan class="mute">$ </tspan><tspan class="fg">npm run audit</tspan></text><g clip-path="url(#tm)"><g class="an kk cv"><rect class="tmbg" x="33.4" y="234" width="105.6" height="19"/><rect class="an kl curb" x="35.4" y="236" width="7.2" height="15"/></g></g></g>
+<g class="an km"><text class="m t" x="20" y="267" textLength="360" lengthAdjust="spacing"><tspan class="fg">ui.html:951 </tspan><tspan class="fg"> </tspan><tspan class="errt b">color-literal</tspan><tspan class="fg"> </tspan><tspan class="fg"> </tspan><tspan class="fg">literal </tspan><tspan class="fg">colour </tspan><tspan class="fg">#333 </tspan><tspan class="fg">in</tspan></text><text class="m t" x="20" y="286" textLength="280.8" lengthAdjust="spacing"><tspan class="fg">color; </tspan><tspan class="fg">use </tspan><tspan class="fg">a </tspan><tspan class="fg">var(--figma-color-*) </tspan><tspan class="fg">token</tspan></text><text class="m t" x="20" y="305" textLength="280.8" lengthAdjust="spacing"><tspan class="fg">(transparent </tspan><tspan class="fg">and </tspan><tspan class="fg">currentColor </tspan><tspan class="fg">are </tspan><tspan class="fg">fine)</tspan></text></g>
+<g class="an kn"><text class="m t" x="20" y="324" textLength="309.6" lengthAdjust="spacing"><tspan class="errt">audit: </tspan><tspan class="errt">1 </tspan><tspan class="errt">error(s), </tspan><tspan class="errt">0 </tspan><tspan class="errt">warning(s) </tspan><tspan class="errt">in </tspan><tspan class="errt">6 </tspan><tspan class="errt">plugin</tspan></text><text class="m t" x="20" y="343" textLength="208.8" lengthAdjust="spacing"><tspan class="errt">folders; </tspan><tspan class="errt">see </tspan><tspan class="errt">docs/pitfalls.md</tspan></text></g>
+<g class="an ko"><text class="m t" x="20" y="381" textLength="108" lengthAdjust="spacing"><tspan class="mute">$ </tspan><tspan class="fg">npm run audit</tspan></text><g clip-path="url(#tm)"><g class="an kp cv"><rect class="tmbg" x="33.4" y="367" width="105.6" height="19"/><rect class="an kq curb" x="35.4" y="369" width="7.2" height="15"/></g></g></g>
+<g class="an kr"><text class="m t" x="20" y="400" textLength="273.6" lengthAdjust="spacing"><tspan class="okt">audit: </tspan><tspan class="okt">no </tspan><tspan class="okt">problems </tspan><tspan class="okt">in </tspan><tspan class="okt">6 </tspan><tspan class="okt">plugin </tspan><tspan class="okt">folders</tspan></text></g>
+</g>
+</g></g>
+</svg>

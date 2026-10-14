@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="526" viewBox="0 0 400 526" role="img" aria-labelledby="t d" xml:space="preserve">
+<title id="t">How the kit works: two threads and their messages</title>
+<desc id="d">Animated diagram, narrow version. code.ts runs on Figma's main thread (the figma API, no DOM); ui.html runs in an iframe (the DOM, no figma object). installKitWindow() opens the window hidden at 320 × 360. The runtime sends kit:ready { protocol: 1 }, code.ts answers kit:init { mode, chrome, bounds, size, … }, the runtime measures the content and sends kit:resize { width: 320, height: 237, … }, and code.ts calls figma.ui.resize and shows the window at that size. (That this removes a blank or unfitted flash in Figma itself is still to be re-checked in a Figma run.) Clicking Create sends the demo's create-shapes message; code.ts answers created and selection, and one more kit:resize grows the window to 245. Sizes are those of the starter in the kit's browser preview.</desc>
+<style>
+svg{--card:#f6f8fa;--line:#d1d9e0;--fg:#1f2328;--mute:#59636e;--kit:#0969da;--you:#8250df}
+@media (prefers-color-scheme:dark){svg{--card:#151b23;--line:#3d444d;--fg:#f0f6fc;--mute:#9198a1;--kit:#4493f8;--you:#ab7df8}}
+#dark:target{--card:#151b23;--line:#3d444d;--fg:#f0f6fc;--mute:#9198a1;--kit:#4493f8;--you:#ab7df8}
+#light:target{--card:#f6f8fa;--line:#d1d9e0;--fg:#1f2328;--mute:#59636e;--kit:#0969da;--you:#8250df}
+.m{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+.s{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+text{white-space:pre}
+.b{font-weight:600}
+.card{fill:var(--card);stroke:var(--line)}
+.h{fill:var(--fg);font-size:14px;font-weight:600}
+.sub{fill:var(--mute);font-size:12px;font-weight:400}
+.note{fill:var(--mute);font-size:11px}
+.rail{stroke:var(--line);stroke-width:1.5;stroke-dasharray:3 4}
+.railend{fill:var(--line)}
+.ln{fill:none;stroke-width:1.6}
+.hd{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.kits{stroke:var(--kit)}
+.yous{stroke:var(--you)}
+.kitf{fill:var(--kit)}
+.youf{fill:var(--you)}
+.kitt{fill:var(--kit)}
+.yout{fill:var(--you)}
+.code{fill:var(--fg)}
+.sep{fill:var(--mute);font-size:11px;font-style:italic}
+.caph{fill:var(--fg);font-size:13.5px;font-weight:600}
+.capd{fill:var(--mute);font-size:12px}
+.leg{fill:var(--mute);font-size:11.5px}
+.hide{opacity:0}
+@media (prefers-reduced-motion:no-preference){
+.an{animation-duration:14s;animation-iteration-count:infinite;animation-fill-mode:both;animation-timing-function:ease-out}
+.k0{animation-name:k0}
+.k1{animation-name:k1}
+.k2{animation-name:k2}
+.k3{animation-name:k3}
+.k4{animation-name:k4}
+.k5{animation-name:k5}
+.k6{animation-name:k6}
+.k7{animation-name:k7}
+.k8{animation-name:k8}
+.k9{animation-name:k9}
+.ka{animation-name:ka}
+.kb{animation-name:kb}
+.kc{animation-name:kc}
+.kd{animation-name:kd}
+.ke{animation-name:ke}
+.kf{animation-name:kf}
+.kg{animation-name:kg}
+.kh{animation-name:kh}
+.ki{animation-name:ki}
+.kj{animation-name:kj}
+.kk{animation-name:kk}
+.kl{animation-name:kl}
+.km{animation-name:km}
+.kn{animation-name:kn}
+.ko{animation-name:ko}
+.kp{animation-name:kp}
+.kq{animation-name:kq}
+.kr{animation-name:kr}
+.ks{animation-name:ks}
+.kt{animation-name:kt}
+.ku{animation-name:ku}
+.kv{animation-name:kv}
+.kw{animation-name:kw}
+.kx{animation-name:kx}
+.ky{animation-name:ky}
+.kz{animation-name:kz}
+.k10{animation-name:k10}
+.k11{animation-name:k11}
+.k12{animation-name:k12}
+.k13{animation-name:k13}
+.k14{animation-name:k14}
+.k15{animation-name:k15}
+@keyframes k0{0%,2.5%{opacity:0}3.93%,23.57%{opacity:1}25%,100%{opacity:0}}
+@keyframes k1{0%,25%{opacity:0}26.43%,64.29%{opacity:1}65.71%,100%{opacity:0}}
+@keyframes k2{0%,65.36%{opacity:0;transform:translateY(0px)}66.79%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k3{0%,7.14%{stroke-dashoffset:340px}10.71%,100%{stroke-dashoffset:0px}}
+@keyframes k4{0%,10.36%{opacity:0;transform:translateY(0px)}10.93%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k5{0%,7.14%{opacity:0;transform:translateY(3px)}8.57%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k6{0%,7.14%{opacity:0;transform:translateX(0)}7.21%{opacity:1;transform:translateX(0)}10.71%{opacity:1;transform:translateX(-340px)}11.07%,100%{opacity:0;transform:translateX(-340px)}}
+@keyframes k7{0%,13.93%{stroke-dashoffset:340px}17.5%,100%{stroke-dashoffset:0px}}
+@keyframes k8{0%,17.14%{opacity:0;transform:translateY(0px)}17.71%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k9{0%,13.93%{opacity:0;transform:translateY(3px)}15.36%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ka{0%,13.93%{opacity:0;transform:translateX(0)}14%{opacity:1;transform:translateX(0)}17.5%{opacity:1;transform:translateX(340px)}17.86%,100%{opacity:0;transform:translateX(340px)}}
+@keyframes kb{0%,20.36%{stroke-dashoffset:340px}23.93%,100%{stroke-dashoffset:0px}}
+@keyframes kc{0%,23.57%{opacity:0;transform:translateY(0px)}24.14%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kd{0%,20.36%{opacity:0;transform:translateY(3px)}21.79%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ke{0%,20.36%{opacity:0;transform:translateX(0)}20.43%{opacity:1;transform:translateX(0)}23.93%{opacity:1;transform:translateX(-340px)}24.29%,100%{opacity:0;transform:translateX(-340px)}}
+@keyframes kf{0%,33.57%{opacity:0;transform:translateY(4px)}35.36%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kg{0%,39.29%{stroke-dashoffset:340px}42.86%,100%{stroke-dashoffset:0px}}
+@keyframes kh{0%,42.5%{opacity:0;transform:translateY(0px)}43.07%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ki{0%,39.29%{opacity:0;transform:translateY(3px)}40.71%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kj{0%,39.29%{opacity:0;transform:translateX(0)}39.36%{opacity:1;transform:translateX(0)}42.86%{opacity:1;transform:translateX(-340px)}43.21%,100%{opacity:0;transform:translateX(-340px)}}
+@keyframes kk{0%,48.21%{stroke-dashoffset:340px}51.79%,100%{stroke-dashoffset:0px}}
+@keyframes kl{0%,51.43%{opacity:0;transform:translateY(0px)}52%,100%{opacity:1;transform:translateY(0)}}
+@keyframes km{0%,48.21%{opacity:0;transform:translateY(3px)}49.64%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kn{0%,48.21%{opacity:0;transform:translateX(0)}48.29%{opacity:1;transform:translateX(0)}51.79%{opacity:1;transform:translateX(340px)}52.14%,100%{opacity:0;transform:translateX(340px)}}
+@keyframes ko{0%,51.79%{stroke-dashoffset:340px}55.36%,100%{stroke-dashoffset:0px}}
+@keyframes kp{0%,55%{opacity:0;transform:translateY(0px)}55.57%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kq{0%,51.79%{opacity:0;transform:translateY(3px)}53.21%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kr{0%,51.79%{opacity:0;transform:translateX(0)}51.86%{opacity:1;transform:translateX(0)}55.36%{opacity:1;transform:translateX(340px)}55.71%,100%{opacity:0;transform:translateX(340px)}}
+@keyframes ks{0%,61.07%{stroke-dashoffset:340px}64.64%,100%{stroke-dashoffset:0px}}
+@keyframes kt{0%,64.29%{opacity:0;transform:translateY(0px)}64.86%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ku{0%,61.07%{opacity:0;transform:translateY(3px)}62.5%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kv{0%,61.07%{opacity:0;transform:translateX(0)}61.14%{opacity:1;transform:translateX(0)}64.64%{opacity:1;transform:translateX(-340px)}65%,100%{opacity:0;transform:translateX(-340px)}}
+@keyframes kw{0%,1.07%{opacity:0;transform:translateY(3px)}2.5%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kx{0%,1.07%{opacity:0;transform:translateY(3px)}2.5%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ky{0%,24.29%{opacity:0;transform:translateY(3px)}25.71%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kz{0%,43.21%{opacity:0;transform:translateY(3px)}44.64%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k10{0%,65%{opacity:0;transform:translateY(3px)}66.43%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k11{0%,1.07%{opacity:0}2.86%,23.57%{opacity:1}25.36%,100%{opacity:0}}
+@keyframes k12{0%,25.36%{opacity:0}27.14%,34.64%{opacity:1}36.43%,100%{opacity:0}}
+@keyframes k13{0%,36.43%{opacity:0}38.21%,58.57%{opacity:1}60.36%,100%{opacity:0}}
+@keyframes k14{0%,60.36%{opacity:0;transform:translateY(3px)}62.14%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k15{0%,93.57%{opacity:1}96.79%,100%{opacity:0}}
+}
+</style>
+<g id="dark"><g id="light">
+<g class="an k15">
+<rect class="card" x="16.5" y="16.5" width="177" height="59" rx="10"/>
+<text class="s h" x="30" y="40">code.ts<tspan class="sub" dx="6">main thread</tspan></text>
+<text class="s note" x="30" y="60">the figma API · no DOM</text>
+<rect class="card" x="206.5" y="16.5" width="177" height="59" rx="10"/>
+<text class="s h" x="220" y="40">ui.html<tspan class="sub" dx="6">iframe</tspan></text>
+<text class="s note" x="220" y="60">the DOM · no figma object</text>
+<path class="rail" d="M28 76V392"/><path class="rail" d="M372 76V392"/>
+<circle class="railend" cx="28" cy="76" r="2.5"/><circle class="railend" cx="372" cy="76" r="2.5"/>
+<g class="an k0 hide"><text class="m kitt" x="364" y="100" text-anchor="end" style="font-size:10.5px" textLength="170.1" lengthAdjust="spacing">window: hidden at 320 × 360</text></g>
+<g class="an k1 hide"><text class="m kitt" x="364" y="100" text-anchor="end" style="font-size:10.5px" textLength="163.8" lengthAdjust="spacing">window: shown at 320 × 237</text></g>
+<g class="an k2"><text class="m kitt" x="364" y="100" text-anchor="end" style="font-size:10.5px" textLength="107.1" lengthAdjust="spacing">window: 320 × 245</text></g>
+<path class="an k3 ln kits" d="M370 142H30" style="stroke-dasharray:340px"/><path class="an k4 hd kits" d="M37 138L30 142L37 146"/><circle class="an k6 kitf hide" cx="370" cy="142" r="3.5"/><g class="an k5"><text class="m kitt" x="200" y="135" text-anchor="middle" style="font-size:10.5px" textLength="157.5" lengthAdjust="spacing">kit:ready { protocol: 1 }</text></g>
+<path class="an k7 ln kits" d="M30 172H370" style="stroke-dasharray:340px"/><path class="an k8 hd kits" d="M363 168L370 172L363 176"/><circle class="an ka kitf hide" cx="30" cy="172" r="3.5"/><g class="an k9"><text class="m kitt" x="200" y="165" text-anchor="middle" style="font-size:10.5px" textLength="264.6" lengthAdjust="spacing">kit:init { mode, chrome, bounds, size, … }</text></g>
+<path class="an kb ln kits" d="M370 202H30" style="stroke-dasharray:340px"/><path class="an kc hd kits" d="M37 198L30 202L37 206"/><circle class="an ke kitf hide" cx="370" cy="202" r="3.5"/><g class="an kd"><text class="m kitt" x="200" y="195" text-anchor="middle" style="font-size:10.5px" textLength="258.3" lengthAdjust="spacing">kit:resize { width: 320, height: 237, … }</text></g>
+<g class="an kf"><text class="s sep" x="200" y="244" text-anchor="middle">the person clicks Create</text></g>
+<path class="an kg ln yous" d="M370 270H30" style="stroke-dasharray:340px"/><path class="an kh hd yous" d="M37 266L30 270L37 274"/><circle class="an kj youf hide" cx="370" cy="270" r="3.5"/><g class="an ki"><text class="m yout" x="200" y="263" text-anchor="middle" style="font-size:10.5px" textLength="182.7" lengthAdjust="spacing">create-shapes { count: 5, … }</text></g>
+<path class="an kk ln yous" d="M30 306H370" style="stroke-dasharray:340px"/><path class="an kl hd yous" d="M363 302L370 306L363 310"/><circle class="an kn youf hide" cx="30" cy="306" r="3.5"/><g class="an km"><text class="m yout" x="200" y="299" text-anchor="middle" style="font-size:10.5px" textLength="126" lengthAdjust="spacing">created { count: 5 }</text></g>
+<path class="an ko ln yous" d="M30 332H370" style="stroke-dasharray:340px"/><path class="an kp hd yous" d="M363 328L370 332L363 336"/><circle class="an kr youf hide" cx="30" cy="332" r="3.5"/><g class="an kq"><text class="m yout" x="200" y="325" text-anchor="middle" style="font-size:10.5px" textLength="138.6" lengthAdjust="spacing">selection { count: 5 }</text></g>
+<path class="an ks ln kits" d="M370 364H30" style="stroke-dasharray:340px"/><path class="an kt hd kits" d="M37 360L30 364L37 368"/><circle class="an kv kitf hide" cx="370" cy="364" r="3.5"/><g class="an ku"><text class="m kitt" x="200" y="357" text-anchor="middle" style="font-size:10.5px" textLength="258.3" lengthAdjust="spacing">kit:resize { width: 320, height: 245, … }</text></g>
+<g class="an kw"><text class="m code b" x="36" y="100" text-anchor="start" style="font-size:10px" textLength="108" lengthAdjust="spacing">installKitWindow()</text></g>
+<g class="an kx"><text class="m code" x="36" y="114" text-anchor="start" style="font-size:10px" textLength="210" lengthAdjust="spacing">figma.showUI(…, { visible: false })</text></g>
+<g class="an ky"><text class="m code" x="36" y="218" text-anchor="start" style="font-size:10px" textLength="252" lengthAdjust="spacing">figma.ui.resize(320, 237), figma.ui.show()</text></g>
+<g class="an kz"><text class="m code" x="36" y="286" text-anchor="start" style="font-size:10px" textLength="162" lengthAdjust="spacing">figma.createRectangle() × 5</text></g>
+<g class="an k10"><text class="m code" x="36" y="380" text-anchor="start" style="font-size:10px" textLength="150" lengthAdjust="spacing">figma.ui.resize(320, 245)</text></g>
+<g class="an k11 hide"><text class="s caph" x="16" y="418">1 · Opens hidden, sized by the kit’s messages</text><text class="s capd" x="16" y="438">The runtime measures [data-kit-root]; code.ts applies the</text><text class="s capd" x="16" y="454">size.</text></g>
+<g class="an k12 hide"><text class="s caph" x="16" y="418">2 · Shown once it has fitted its content</text><text class="s capd" x="16" y="438">Hidden until then, so it shouldn’t flash blank or jump (to</text><text class="s capd" x="16" y="454">re-check in Figma).</text></g>
+<g class="an k13 hide"><text class="s caph" x="16" y="418">3 · Your messages use the same channel</text><text class="s capd" x="16" y="438">Any type that isn’t kit:*, typed like kit.d.ts types the</text><text class="s capd" x="16" y="454">kit’s.</text></g>
+<g class="an k14"><text class="s caph" x="16" y="418">4 · The content grew a line; the window follows</text><text class="s capd" x="16" y="438">A ResizeObserver refits it: one more kit:resize.</text></g>
+<path class="ln kits" d="M16 484h22"/><path class="hd kits" d="M33 480l5 4-5 4"/><text class="s leg" x="48" y="488">kit:ready, kit:init, kit:resize, kit:fit: the kit’s own</text>
+<path class="ln yous" d="M16 506h22"/><path class="hd yous" d="M33 502l5 4-5 4"/><text class="s leg" x="48" y="510">any other type: yours (here, the starter’s demo)</text>
+</g>
+</g></g>
+</svg>

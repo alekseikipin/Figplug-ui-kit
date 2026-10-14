@@ -22,7 +22,7 @@ Figma's trademark guidelines ask not to put "Fig" (part of Figma's name) in a pr
 
 ### Description
 
-Paste as is. The first paragraph is the same "Is this for you?" block as the top of the README.
+Paste as is. The first paragraph is the "Is this for you?" note from the top of the README, in shorter words and without the link.
 
 > **Is this for you?** Quick internal tool: use Figma's agent. Network access, monetization, FigJam, Dev Mode or full UI control: start here.
 >

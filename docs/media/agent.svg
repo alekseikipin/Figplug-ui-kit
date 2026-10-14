@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="476" viewBox="0 0 880 476" role="img" aria-labelledby="t d" xml:space="preserve">
+<title id="t">The one prompt, run by a coding agent</title>
+<desc id="d">Animated illustration, not a recording: the README's one prompt, with the rename-layers task from docs/prompts.md (&quot;renames the selected layers with a prefix, find and replace, and optional numbering, and shows a preview of the new names before I apply them&quot;), is typed into a coding agent (Claude Code, Cursor or similar). The agent clones the repo, reads AGENTS.md and docs/components.md, edits manifest.json, ui.html and code.ts, runs npm install, npm run build, npm run audit (&quot;audit: no problems in 6 plugin folders&quot;) and npm run check:ui (&quot;check-ui: no type errors in 6 plugin folders&quot;), then says how to import the plugin: Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json. The command output lines are real output from kit 0.4.0.</desc>
+<style>
+svg{--win:#ffffff;--bar:#f6f8fa;--line:#d1d9e0;--fg:#1f2328;--mute:#59636e;--faint:#818b98;--pbg:#f6f8fa;--acc:#0969da;--ok:#1a7f37;--read:#0969da;--edit:#8250df;--run:#bc4c00;--dot:#d1d9e0}
+@media (prefers-color-scheme:dark){svg{--win:#0d1117;--bar:#151b23;--line:#3d444d;--fg:#f0f6fc;--mute:#9198a1;--faint:#656c76;--pbg:#151b23;--acc:#4493f8;--ok:#3fb950;--read:#4493f8;--edit:#ab7df8;--run:#db6d28;--dot:#3d444d}}
+#dark:target{--win:#0d1117;--bar:#151b23;--line:#3d444d;--fg:#f0f6fc;--mute:#9198a1;--faint:#656c76;--pbg:#151b23;--acc:#4493f8;--ok:#3fb950;--read:#4493f8;--edit:#ab7df8;--run:#db6d28;--dot:#3d444d}
+#light:target{--win:#ffffff;--bar:#f6f8fa;--line:#d1d9e0;--fg:#1f2328;--mute:#59636e;--faint:#818b98;--pbg:#f6f8fa;--acc:#0969da;--ok:#1a7f37;--read:#0969da;--edit:#8250df;--run:#bc4c00;--dot:#d1d9e0}
+.m{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:12.5px}
+.s{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+text{white-space:pre}
+.b{font-weight:600}
+.win{fill:var(--win);stroke:var(--line)}
+.bar{fill:var(--bar)}
+.sep{stroke:var(--line)}
+.pbox{fill:var(--pbg);stroke:var(--line)}
+.pbg{fill:var(--pbg)}
+.cur{fill:var(--acc)}
+.fg{fill:var(--fg)}
+.mute{fill:var(--mute)}
+.acc{fill:var(--acc)}
+.ok,.okf{fill:var(--ok)}
+.read{fill:var(--read)}
+.edit{fill:var(--edit)}
+.run{fill:var(--run)}
+.dot{fill:var(--dot)}
+.elbow{fill:none;stroke:var(--faint);stroke-width:1.2}
+.title{fill:var(--mute);font-size:12px}
+.cv,.cur,.hide{opacity:0}
+.runf{fill:var(--run)}
+.status{fill:var(--mute);font-size:12px}
+.okt{fill:var(--ok)}
+@media (prefers-reduced-motion:no-preference){
+.an{animation-duration:14s;animation-iteration-count:infinite;animation-fill-mode:both;animation-timing-function:ease-out}
+.k0{animation-name:k0}
+.k1{animation-name:k1}
+.k2{animation-name:k2}
+.k3{animation-name:k3}
+.k4{animation-name:k4}
+.k5{animation-name:k5}
+.k6{animation-name:k6}
+.k7{animation-name:k7}
+.k8{animation-name:k8}
+.k9{animation-name:k9}
+.ka{animation-name:ka}
+.kb{animation-name:kb}
+.kc{animation-name:kc}
+.kd{animation-name:kd}
+.ke{animation-name:ke}
+.kf{animation-name:kf}
+.kg{animation-name:kg}
+.kh{animation-name:kh}
+.ki{animation-name:ki}
+.kj{animation-name:kj}
+.kk{animation-name:kk}
+.kl{animation-name:kl}
+.km{animation-name:km}
+.kn{animation-name:kn}
+.ko{animation-name:ko}
+.kp{animation-name:kp}
+@keyframes k0{0%,2.14%{opacity:1;transform:translateX(0);animation-timing-function:steps(101,end)}4.82%{opacity:1;transform:translateX(759.5px)}4.96%,100%{opacity:0;transform:translateX(759.5px)}}
+@keyframes k1{0%,2.14%{opacity:0}2.21%,4.82%{opacity:1}4.89%,100%{opacity:0}}
+@keyframes k2{0%,4.82%{opacity:1;transform:translateX(0);animation-timing-function:steps(103,end)}7.55%{opacity:1;transform:translateX(774.5px)}7.69%,100%{opacity:0;transform:translateX(774.5px)}}
+@keyframes k3{0%,4.82%{opacity:0}4.89%,7.55%{opacity:1}7.62%,100%{opacity:0}}
+@keyframes k4{0%,7.55%{opacity:1;transform:translateX(0);animation-timing-function:steps(79,end)}9.64%{opacity:1;transform:translateX(594.5px)}9.79%,100%{opacity:0;transform:translateX(594.5px)}}
+@keyframes k5{0%,7.55%{opacity:0}7.62%,9.64%{opacity:1}9.71%,100%{opacity:0}}
+@keyframes k6{0%,12.14%{opacity:0;transform:translateY(4px)}13.93%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k7{0%,14.43%{opacity:0;transform:translateY(4px)}16.21%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k8{0%,16.71%{opacity:0;transform:translateY(4px)}18.5%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k9{0%,19%{opacity:0;transform:translateY(4px)}20.79%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ka{0%,21.29%{opacity:0;transform:translateY(4px)}23.07%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kb{0%,23.57%{opacity:0;transform:translateY(4px)}25.36%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kc{0%,25.86%{opacity:0;transform:translateY(4px)}27.64%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kd{0%,28.14%{opacity:0;transform:translateY(4px)}29.93%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ke{0%,30.43%{opacity:0;transform:translateY(4px)}32.21%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kf{0%,32.71%{opacity:0;transform:translateY(4px)}34.5%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kg{0%,35%{opacity:0;transform:translateY(4px)}36.79%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kh{0%,37.29%{opacity:0;transform:translateY(4px)}39.07%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ki{0%,39.57%{opacity:0;transform:translateY(4px)}41.36%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kj{0%,41.86%{opacity:0;transform:translateY(4px)}43.64%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kk{0%,44.14%{opacity:0;transform:translateY(4px)}45.93%,100%{opacity:1;transform:translateY(0)}}
+@keyframes kl{0%,46.43%{opacity:0;transform:translateY(4px)}48.21%,100%{opacity:1;transform:translateY(0)}}
+@keyframes km{0%,96.07%{opacity:1}99.29%,100%{opacity:0}}
+@keyframes kn{0%,10.71%{opacity:0}11.79%,43.79%{opacity:1}44.86%,100%{opacity:0}}
+@keyframes ko{0%{opacity:0}11.43%{opacity:0}12.5%,14.29%{opacity:1}15.36%{opacity:0}17.14%{opacity:0}18.21%,20%{opacity:1}21.07%{opacity:0}22.86%{opacity:0}23.93%,25.71%{opacity:1}26.79%{opacity:0}28.57%{opacity:0}29.64%,31.43%{opacity:1}32.5%{opacity:0}34.29%{opacity:0}35.36%,37.14%{opacity:1}38.21%{opacity:0}40%{opacity:0}41.07%,42.86%{opacity:1}43.93%{opacity:0}100%{opacity:0}}
+@keyframes kp{0%,44.14%{opacity:0;transform:translateY(0px)}45.57%,100%{opacity:1;transform:translateY(0)}}
+}
+</style>
+<g id="dark"><g id="light">
+<defs><clipPath id="pc"><rect x="17" y="51" width="846" height="74" rx="7"/></clipPath></defs>
+<rect class="win" x="0.5" y="0.5" width="879" height="475" rx="10"/>
+<path class="bar" d="M0.5 36V10.5a10 10 0 0 1 10-10h859a10 10 0 0 1 10 10V36z"/>
+<path class="sep" d="M0.5 36.5H879.5"/>
+<circle class="dot" cx="20" cy="18" r="5.5"/><circle class="dot" cx="38" cy="18" r="5.5"/><circle class="dot" cx="56" cy="18" r="5.5"/>
+<text class="s title" x="440" y="22" text-anchor="middle">your coding agent</text>
+<g class="an km">
+<g class="an kn hide"><circle class="an ko runf hide" cx="798" cy="18" r="3.5"/><text class="s status" x="864" y="22" text-anchor="end">working…</text></g>
+<g class="an kp"><text class="s status okt" x="864" y="22" text-anchor="end">✓ done</text></g>
+<rect class="pbox" x="16" y="50" width="848" height="76" rx="8"/>
+<text class="m acc b" x="27" y="73">&gt;</text>
+<text class="m fg" x="44" y="73" textLength="757.5" lengthAdjust="spacing">Clone https://github.com/alekseikipin/Figplug-ui-kit, read AGENTS.md, build a plugin that renames the</text>
+<g clip-path="url(#pc)"><g class="an k0 cv"><rect class="pbg" x="43" y="58" width="769.5" height="20"/><rect class="an k1 cur" x="45" y="60" width="7.5" height="16" rx="1"/></g></g>
+<text class="m fg" x="44" y="93" textLength="772.5" lengthAdjust="spacing">selected layers with a prefix, find and replace, and optional numbering, and shows a preview of the new</text>
+<g clip-path="url(#pc)"><g class="an k2 cv"><rect class="pbg" x="43" y="78" width="784.5" height="20"/><rect class="an k3 cur" x="45" y="80" width="7.5" height="16" rx="1"/></g></g>
+<text class="m fg" x="44" y="113" textLength="592.5" lengthAdjust="spacing">names before I apply them with kit classes only, then tell me how to import it.</text>
+<g clip-path="url(#pc)"><g class="an k4 cv"><rect class="pbg" x="43" y="98" width="604.5" height="20"/><rect class="an k5 cur" x="45" y="100" width="7.5" height="16" rx="1"/></g></g>
+<g class="an k6"><circle class="run" cx="23" cy="151.5" r="3.5"/><text class="m b run" x="36" y="156" textLength="22.5" lengthAdjust="spacing">Run</text><text class="m fg" x="81" y="156" textLength="450" lengthAdjust="spacing">git clone https://github.com/alekseikipin/Figplug-ui-kit.git</text></g>
+<g class="an k7"><circle class="read" cx="23" cy="171.5" r="3.5"/><text class="m b read" x="36" y="176" textLength="30" lengthAdjust="spacing">Read</text><text class="m fg" x="81" y="176" textLength="67.5" lengthAdjust="spacing">AGENTS.md</text></g>
+<g class="an k8"><circle class="read" cx="23" cy="191.5" r="3.5"/><text class="m b read" x="36" y="196" textLength="30" lengthAdjust="spacing">Read</text><text class="m fg" x="81" y="196" textLength="135" lengthAdjust="spacing">docs/components.md</text></g>
+<g class="an k9"><circle class="edit" cx="23" cy="211.5" r="3.5"/><text class="m b edit" x="36" y="216" textLength="30" lengthAdjust="spacing">Edit</text><text class="m fg" x="81" y="216" textLength="97.5" lengthAdjust="spacing">manifest.json</text><text class="m mute" x="193.5" y="216" textLength="142.5" lengthAdjust="spacing">its own name and id</text></g>
+<g class="an ka"><circle class="edit" cx="23" cy="231.5" r="3.5"/><text class="m b edit" x="36" y="236" textLength="30" lengthAdjust="spacing">Edit</text><text class="m fg" x="81" y="236" textLength="52.5" lengthAdjust="spacing">ui.html</text><text class="m mute" x="193.5" y="236" textLength="457.5" lengthAdjust="spacing">kit-field, kit-checkbox, kit-list in a kit-scroll, kit-footer</text></g>
+<g class="an kb"><circle class="edit" cx="23" cy="251.5" r="3.5"/><text class="m b edit" x="36" y="256" textLength="30" lengthAdjust="spacing">Edit</text><text class="m fg" x="81" y="256" textLength="52.5" lengthAdjust="spacing">code.ts</text><text class="m mute" x="193.5" y="256" textLength="397.5" lengthAdjust="spacing">typed rename messages below &quot;Your plugin starts here&quot;</text></g>
+<g class="an kc"><circle class="run" cx="23" cy="271.5" r="3.5"/><text class="m b run" x="36" y="276" textLength="22.5" lengthAdjust="spacing">Run</text><text class="m fg" x="81" y="276" textLength="82.5" lengthAdjust="spacing">npm install</text></g>
+<g class="an kd"><path class="elbow" d="M40 282V291H49"/><text class="m mute" x="56" y="296" textLength="367.5" lengthAdjust="spacing">added 8 packages, and audited 9 packages in 344ms</text></g>
+<g class="an ke"><circle class="run" cx="23" cy="311.5" r="3.5"/><text class="m b run" x="36" y="316" textLength="22.5" lengthAdjust="spacing">Run</text><text class="m fg" x="81" y="316" textLength="97.5" lengthAdjust="spacing">npm run build</text></g>
+<g class="an kf"><path class="elbow" d="M40 322V331H49"/><text class="m mute" x="56" y="336" textLength="165" lengthAdjust="spacing">&gt; tsc -p tsconfig.json</text></g>
+<g class="an kg"><circle class="run" cx="23" cy="351.5" r="3.5"/><text class="m b run" x="36" y="356" textLength="22.5" lengthAdjust="spacing">Run</text><text class="m fg" x="81" y="356" textLength="97.5" lengthAdjust="spacing">npm run audit</text></g>
+<g class="an kh"><path class="elbow" d="M40 362V371H49"/><text class="m ok" x="56" y="376" textLength="285" lengthAdjust="spacing">audit: no problems in 6 plugin folders</text></g>
+<g class="an ki"><circle class="run" cx="23" cy="391.5" r="3.5"/><text class="m b run" x="36" y="396" textLength="22.5" lengthAdjust="spacing">Run</text><text class="m fg" x="81" y="396" textLength="120" lengthAdjust="spacing">npm run check:ui</text></g>
+<g class="an kj"><path class="elbow" d="M40 402V411H49"/><text class="m ok" x="56" y="416" textLength="330" lengthAdjust="spacing">check-ui: no type errors in 6 plugin folders</text></g>
+<g class="an kk"><circle class="okf" cx="23" cy="431.5" r="3.5"/><text class="m fg" x="36" y="436" textLength="720" lengthAdjust="spacing">Done: build, audit and check:ui pass (your plugin and the 5 examples). In the Figma desktop app:</text></g>
+<g class="an kl"><text class="m acc b" x="36" y="456" textLength="607.5" lengthAdjust="spacing">Figma → Plugins → Development → Import plugin from manifest… → pick manifest.json</text></g>
+</g>
+</g></g>
+</svg>
