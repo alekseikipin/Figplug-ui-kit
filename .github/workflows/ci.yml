@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build, audit, check:ui, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # code.js is committed so the folder imports into Figma with no terminal. It must be exactly
+      # what tsc makes from code.ts, or the plugin people import is not the code under review.
+      - name: Build, and check that the committed code.js matches code.ts
+        run: |
+          npm run build
+          if ! git diff --exit-code || [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            echo "::error::npm run build changed or added files. Run npm run build locally and commit the result (code.js)."
+            exit 1
+          fi
+
+      - run: npm run audit
+      - run: npm run check:ui
+      - run: npm test
+
+  e2e:
+    name: Browser tests (Playwright, Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # The browser matching the pinned @playwright/test, plus the OS libraries it needs.
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

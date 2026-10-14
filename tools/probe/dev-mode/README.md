@@ -1,0 +1,1 @@
+Dev Mode copy of the probe. Figma's manifest docs don't support `dev` together with `figjam` in one `editorType` list, so Dev Mode gets its own manifest here (`["figma", "dev"]` plus `"capabilities": ["inspect"]`). `code.js` and `ui.html` are byte copies of `../code.js` and `../ui.html`; `test/tools.test.mjs` fails if they drift, so edit the parent files and copy them over.

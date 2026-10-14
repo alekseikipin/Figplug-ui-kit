@@ -1,0 +1,16 @@
+{
+  "name": "Fixture: manifest-no-document-access",
+  "id": "kit-fixture-manifest-no-document-access",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": [
+    "figma",
+    "figjam"
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ]
+  }
+}

@@ -1,693 +1,1015 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <style>
-    :root {
-      color-scheme: light dark;    /* helps native controls match theme */
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kit starter</title>
+<meta name="kit" content="kit v0.2.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
+<style data-kit="tokens">
+/* kit tokens v0.2.0 · protocol 1 · MIT · https://github.com/alekseikipin/Figplug-ui-kit · issues: https://github.com/alekseikipin/Figplug-ui-kit/issues · re-paste all three data-kit blocks to upgrade */
 
-      /* Spacing scale */
-      --size-1: 2px;   /* 2px */
-      --size-2: 4px;   /* 4px */
-      --size-3: 6px;   /* 6px */
-      --size-4: 8px;   /* 8px */
-      --size-5: 12px;  /* 12px */
-      --size-6: 16px;  /* 16px */
-      --size-7: 20px;  /* 20px */
-      --size-8: 24px;  /* 24px */
-      --size-9: 32px;  /* 32px */
+/* Colours come from Figma: showUI({ themeColors: true }) injects every --figma-color-* variable
+   and puts figma-light or figma-dark on <html>. color-scheme follows that class, never the OS,
+   so scrollbars and the native <select> popup match the theme the person picked in Figma. */
+:root { color-scheme: light; }
+:root.figma-dark { color-scheme: dark; }
 
-      /* Radius */
-      --radius-2: 1px;
-      --radius-4: 4px;
-      --radius-6: 6px;
+/* Figma injects colours only. Everything below is measured from UI3 (docs/tokens.md has the
+   sources) and assumes the browser's 16px root font size, so never change html { font-size }. */
+:root {
+  /* Spacing: same steps as Figma's --spacer-* scale. */
+  --kit-spacer-0-5: 2px;
+  --kit-spacer-1: 4px;
+  --kit-spacer-1-5: 6px;
+  --kit-spacer-2: 8px;
+  --kit-spacer-2-5: 12px;
+  --kit-spacer-3: 16px;
+  --kit-spacer-4: 24px;
+  --kit-spacer-5: 32px;
+  --kit-spacer-6: 40px;
 
-      /* Semantic tokens */
-      --field-bg: var(--figma-color-bg-secondary);
-      --field-border: var(--figma-color-border);
-      --field-text: var(--figma-color-text);
-      
-      /* Type scale */
-      --font-sm: 11px;
-      --font-md: 12px;
+  /* Radius: medium for controls, large for menus and dialogs. */
+  --kit-radius-small: 2px;
+  --kit-radius-medium: 5px;
+  --kit-radius-large: 13px;
+  --kit-radius-full: 9999px;
 
-      /* Icon sizing */
-      --icon-size: var(--size-5);
+  /* Controls: every control is 24px tall (large: 32px); icons are drawn in a 24px frame. */
+  --kit-control-height: 24px;
+  --kit-control-height-large: 32px;
+  --kit-icon-size: 24px;
+  --kit-icon-size-small: 16px;
+  --kit-border-width: 1px;
+  --kit-focus-width: 1px;
 
-      /* Figma-aligned control sizing */
-      --control-height: 32px;
-      --border-width: 1px;
-      --focus-ring-width: 1px;
-      --button-padding-x: var(--size-4);
-      --input-padding-x: var(--size-5);
-      --caret-size: 5px;
-      --resizer-size: 20px;
-      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-    
-    /* Density toggles (override component tokens only) */
-    [data-density="compact"] {
-      --control-height: 28px;
-      --button-padding-x: var(--size-3);
-      --input-padding-x: var(--size-4);
-    }
+  /* Type: UI3 body text is 11px on a 16px line. 450/550 render exactly only with a variable
+     font (system-ui on macOS, variable Inter); static fonts round to the nearest weight. */
+  --kit-font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --kit-font-size: 11px;
+  --kit-line-height: 16px;
+  --kit-letter-spacing: 0.055px;
+  --kit-font-weight: 450;
+  --kit-font-weight-strong: 550;
+  --kit-font-size-large: 13px;
+  --kit-line-height-large: 22px;
+  --kit-letter-spacing-large: -0.032px;
+  --kit-font-size-heading: 15px;
+  --kit-line-height-heading: 25px;
+  --kit-letter-spacing-heading: -0.075px;
+  --kit-font-size-small: 9px;
+  --kit-line-height-small: 14px;
+  --kit-letter-spacing-small: 0.045px;
 
-    [data-density="comfortable"] {
-      --control-height: 36px;
-      --button-padding-x: var(--size-5);
-      --input-padding-x: var(--size-6);
-    }
-    
-    /* Global box-sizing */
-    * { 
-      box-sizing: border-box; 
-    }
-    
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: var(--font-family);
-      background-color: var(--figma-color-bg);
-      transition: background-color 0.2s ease;
-      color: var(--figma-color-text);
-      position: relative;
-      min-height: 100vh;
-      box-sizing: border-box;
-    }
-    
-    .container {
-      padding: var(--size-6) var(--size-6) var(--size-6);
-    }
-    
-    .component-library {
-      /* Allow full plugin width and let inner groups wrap naturally */
-      max-width: none;
-      width: 100%;
-      margin: 0;
-    }
-    
-    .component-section {
-      margin-bottom: 0;
-    }
-    
-    .divider {
-      width: 100%;
-      height: var(--border-width);
-      background-color: var(--figma-color-border);
-      margin: 0;
-    }
-    
-    .category-label {
-      font-size: var(--font-md);
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      color: var(--figma-color-text);
-      margin-bottom: var(--size-5);
-    }
-    
-    .group-label {
-      font-size: var(--font-sm);
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      color: var(--figma-color-text-secondary);
-      margin-bottom: var(--size-4);
-      display: block;
-    }
-    
-    .button-group {
-      display: flex;
-      gap: var(--size-4);
-      flex-wrap: wrap;
-    }
-    
-    /* Button styles */
-    .button {
-      height: var(--control-height);
-      padding: 0 var(--button-padding-x);
-      border-radius: var(--radius-6);
-      font-size: var(--font-sm);
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-      border: none;
-      outline: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    /* Button icon */
-    .button .icon {
-      width: var(--icon-size);
-      height: var(--icon-size);
-      margin-right: var(--size-4);
-      stroke-width: var(--border-width);
-      color: currentColor;
-      flex: 0 0 auto;
-    }
-    .button.icon-right .icon {
-      margin-right: 0;
-      margin-left: var(--size-4);
-    }
-    
-    .button-primary {
-      background-color: var(--figma-color-bg-brand);
-      color: var(--figma-color-text-onbrand);
-      border: var(--border-width) solid transparent;
-    }
-    
-    .button-primary:hover {
-      background-color: var(--figma-color-bg-brand-hover);
-    }
-    
-    .button-primary:active {
-      background-color: var(--figma-color-bg-brand-pressed);
-      border-color: var(--figma-color-border-brand-strong);
-    }
-    
-    .button-secondary {
-      background-color: var(--figma-color-bg);
-      color: var(--figma-color-text);
-      border: var(--border-width) solid var(--figma-color-border);
-    }
-    
-    .button-secondary:hover {
-      background-color: var(--figma-color-bg-hover);
-    }
-    
-    .button-secondary:active {
-      background-color: var(--figma-color-bg-pressed);
-      color: var(--figma-color-text);
-    }
-    
-    /* Focus-visible styles */
-    .button:focus-visible {
-      outline: var(--focus-ring-width) solid var(--figma-color-border-brand);
-      outline-offset: 0;
-    }
-    
-    /* Input field styles */
-    .input-field {
-      width: 100%;
-      height: var(--control-height);
-      padding: 0 var(--input-padding-x);
-      border: var(--border-width) solid var(--field-border);
-      border-radius: var(--radius-6);
-      font-size: var(--font-sm);
-      font-family: inherit;
-      line-height: calc(var(--control-height) - (var(--border-width) * 2));
-      background-color: var(--field-bg);
-      color: var(--field-text);
-      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-      outline: none;
-      box-shadow: none;
-    }
-    
-    .input-field:hover {
-      border-color: var(--figma-color-border-selected);
-    }
-    
-    .input-field:focus {
-      border-color: var(--figma-color-border-brand);
-      box-shadow: none;
-    }
-    
-    .input-field:focus-visible {
-      outline: var(--focus-ring-width) solid var(--figma-color-border-brand);
-      outline-offset: 0;
-    }
-    
-    .input-field::placeholder {
-      color: var(--figma-color-text-tertiary);
-    }
-    
-    /* Input with icon styles */
-    .input-with-icon {
-      position: relative;
-      width: 100%;
-    }
-    
-    .input-with-icon .input-icon {
-      position: absolute;
-      left: var(--size-4);
-      top: 50%;
-      transform: translateY(-50%);
-      width: var(--icon-size);
-      height: var(--icon-size);
-      pointer-events: none;
-      opacity: 0.6;
-      stroke-width: var(--border-width);
-    }
-    
-    .input-with-icon .input-field {
-      padding-left: var(--size-9);
-    }
-    
-    /* Dropdown styles */
-    .dropdown {
-      position: relative;
-      width: 100%;
-    }
-    
-    .dropdown::after {
-      content: '';
-      position: absolute;
-      right: var(--size-4);
-      top: 50%;
-      transform: translateY(-50%);
-      width: 0;
-      height: 0;
-      border-left: calc(var(--caret-size) - 1px) solid transparent;
-      border-right: calc(var(--caret-size) - 1px) solid transparent;
-      border-top: var(--caret-size) solid var(--figma-color-text-secondary);
-      pointer-events: none;
-    }
-    
-    .dropdown-select {
-      width: 100%;
-      height: var(--control-height);
-      padding: 0 var(--size-9) 0 var(--input-padding-x);
-      border: var(--border-width) solid var(--field-border);
-      border-radius: var(--radius-6);
-      font-size: var(--font-sm);
-      font-family: inherit;
-      line-height: calc(var(--control-height) - (var(--border-width) * 2));
-      background-color: var(--field-bg);
-      color: var(--field-text);
-      cursor: pointer;
-      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-      outline: none;
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      box-shadow: none;
-    }
-    
-    .dropdown-select:hover {
-      border-color: var(--figma-color-border-selected);
-    }
-    
-    .dropdown-select:focus {
-      border-color: var(--figma-color-border-brand);
-      box-shadow: none;
-    }
-    
-    .dropdown-select:focus-visible {
-      outline: var(--focus-ring-width) solid var(--figma-color-border-brand);
-      outline-offset: 0;
-    }
-    
-    /* Resize handle styles */
-    .resize-handle {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      width: var(--resizer-size);
-      height: var(--resizer-size);
-      cursor: se-resize;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      touch-action: none;
-    }
-    
-    .resize-handle::after {
-      content: '';
-      width: var(--size-1);
-      height: var(--size-5);
-      background-color: var(--figma-color-text-tertiary);
-      border-radius: var(--radius-2);
-      opacity: 0.5;
-      transform: rotate(45deg);
-      transition: background-color 0.15s ease, opacity 0.15s ease;
-    }
-    
-    .resize-handle:hover::after {
-      background-color: var(--figma-color-text-secondary);
-      opacity: 0.7;
-    }
-    
-    .resize-handle.resizing::after {
-      background-color: var(--figma-color-text);
-      opacity: 1;
-    }
-    /* Keyboard focus style for resizer */
-    .resize-handle:focus-visible {
-      outline: var(--focus-ring-width) solid var(--figma-color-border-brand);
-      outline-offset: calc(var(--focus-ring-width) * -1);
-    }
+  /* Motion. */
+  --kit-duration-small: 100ms;
+  --kit-duration-medium: 200ms;
+  --kit-duration-large: 400ms;
+  --kit-easing: ease-out;
 
-    /* Reduced motion support */
-    @media (prefers-reduced-motion: reduce) {
-      * { transition: none !important; animation: none !important; }
+  /* Layers, in Figma's order: toast below menus. Dialogs use the top layer and need none. */
+  --kit-z-handle: 10;
+  --kit-z-toast: 11;
+  --kit-z-menu: 13;
+
+  /* Elevation: the only literal colours in the kit, because Figma injects no shadow tokens.
+     Exact UI3 values (elevation 300 / 400 / 500) written as rgba. */
+  --kit-shadow-tooltip: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 5px 12px 0px rgba(0, 0, 0, 0.13), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.15);
+  --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 16px 0px rgba(0, 0, 0, 0.12), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.12);
+  --kit-shadow-dialog: 0px 2px 5px 0px rgba(0, 0, 0, 0.15), 0px 10px 24px 0px rgba(0, 0, 0, 0.18), 0px 0px 0.5px 0px rgba(0, 0, 0, 0.08);
+  --kit-scrim: rgba(0, 0, 0, 0.5);
+}
+
+/* Dark UI3 elevation: deeper drop shadows plus a faint inner edge that lifts a surface off the
+   dark editor behind it. */
+:root.figma-dark {
+  --kit-shadow-tooltip: 0px 1px 3px 0px rgba(0, 0, 0, 0.5), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.3), 0px 5px 12px 0px rgba(0, 0, 0, 0.35), inset 0px 0.5px 0px 0px rgba(255, 255, 255, 0.08);
+  --kit-shadow-menu: 0px 2px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 16px 0px rgba(0, 0, 0, 0.35), inset 0px 0.5px 0px 0px rgba(255, 255, 255, 0.08);
+  --kit-shadow-dialog: 0px 3px 5px 0px rgba(0, 0, 0, 0.35), inset 0px 0px 0.5px 0px rgba(255, 255, 255, 0.35), 0px 10px 24px 0px rgba(0, 0, 0, 0.45), inset 0px 0.5px 0px 0px rgba(255, 255, 255, 0.08);
+}
+</style>
+<style data-kit="components">
+/* kit components · colours are var(--figma-color-*) only · states are attributes, not classes · docs/components.md */
+
+/* == base == */
+*, *::before, *::after { box-sizing: border-box; }
+/* The runtime toggles [hidden] on the resize handle; !important keeps kit display rules from undoing it. */
+[hidden] { display: none !important; }
+body {
+  margin: 0; font-family: var(--kit-font-family); font-size: var(--kit-font-size); line-height: var(--kit-line-height);
+  letter-spacing: var(--kit-letter-spacing); font-weight: var(--kit-font-weight);
+  color: var(--figma-color-text); background-color: var(--figma-color-bg);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
+/* Form controls do not inherit type and would fall back to the browser's 13px. */
+button, input, select, textarea { margin: 0; font: inherit; letter-spacing: inherit; color: inherit; }
+a { color: var(--figma-color-text-brand); text-decoration: none; }
+a:focus-visible { outline: var(--kit-focus-width) solid var(--figma-color-border-selected); outline-offset: var(--kit-focus-width); border-radius: var(--kit-radius-small); }
+
+/* == layout == */
+/* flow-root keeps the last child's bottom margin inside the root, so the runtime's fit counts it. */
+.kit-app { display: flow-root; }
+.kit-section { padding: var(--kit-spacer-3); }
+.kit-divider { margin: 0; border: 0; border-top: var(--kit-border-width) solid var(--figma-color-border); }
+.kit-stack { display: flex; flex-direction: column; gap: var(--kit-spacer-2); }
+.kit-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--kit-spacer-2); }
+/* In a row, fields share the width and shrink; buttons keep theirs and wrap in a narrow window. */
+.kit-row > :is(.kit-field, .kit-input, .kit-input-icon, .kit-select) { flex: 1 1 0; min-width: 0; }
+.kit-heading { margin: 0; font-size: var(--kit-font-size); line-height: var(--kit-line-height); letter-spacing: var(--kit-letter-spacing); font-weight: var(--kit-font-weight-strong); }
+.kit-text-secondary { color: var(--figma-color-text-secondary); }
+.kit-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* Icons use a 24px frame (viewBox 0 0 24 24) and currentColor, so they take the colour of their container. */
+.kit-icon { display: block; flex: none; width: var(--kit-icon-size); height: var(--kit-icon-size); }
+.kit-icon-small { width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); }
+.kit-field { display: flex; flex-direction: column; gap: var(--kit-spacer-1); min-width: 0; }
+/* UI3 field labels are secondary text at regular weight; strong weight belongs to headings. */
+.kit-label { color: var(--figma-color-text-secondary); }
+.kit-help { margin: 0; color: var(--figma-color-text-secondary); }
+.kit-field:has(:is(input, select, textarea):is(:disabled, [aria-disabled="true"])) > .kit-label { color: var(--figma-color-text-disabled); }
+.kit-field:has([aria-invalid="true"]) > .kit-help { color: var(--figma-color-text-danger); }
+
+/* == button == */
+/* Variants and states swap these private properties; one rule paints them. The ring is an
+   inset outline, not a border, so recolouring it never moves the label. */
+.kit-button {
+  --kit-button-bg: transparent; --kit-button-bg-hover: var(--figma-color-bg-hover); --kit-button-bg-pressed: var(--figma-color-bg-pressed);
+  --kit-button-text: var(--figma-color-text); --kit-button-ring: var(--figma-color-border);
+  position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center;
+  height: var(--kit-control-height); padding: 0 var(--kit-spacer-2); border: 0; border-radius: var(--kit-radius-medium);
+  outline: var(--kit-border-width) solid var(--kit-button-ring); outline-offset: -1px;
+  background-color: var(--kit-button-bg); color: var(--kit-button-text);
+  text-decoration: none; white-space: nowrap; cursor: default; user-select: none;
+}
+.kit-button:hover { background-color: var(--kit-button-bg-hover); }
+.kit-button:active { background-color: var(--kit-button-bg-pressed); }
+.kit-button:focus-visible { outline-color: var(--figma-color-border-selected); }
+.kit-button-tertiary { --kit-button-ring: transparent; }
+.kit-button-primary { --kit-button-bg: var(--figma-color-bg-brand); --kit-button-bg-hover: var(--figma-color-bg-brand-hover); --kit-button-bg-pressed: var(--figma-color-bg-brand-pressed); --kit-button-text: var(--figma-color-text-onbrand); --kit-button-ring: transparent; }
+.kit-button-danger { --kit-button-bg: var(--figma-color-bg-danger); --kit-button-bg-hover: var(--figma-color-bg-danger-hover); --kit-button-bg-pressed: var(--figma-color-bg-danger-pressed); --kit-button-text: var(--figma-color-text-ondanger); --kit-button-ring: transparent; }
+/* Filled buttons ring in two tones, a light line on the fill and a dark one outside, so focus reads on both. */
+.kit-button-primary:focus-visible { outline-color: var(--figma-color-border-onbrand-strong); box-shadow: 0 0 0 var(--kit-focus-width) var(--figma-color-border-selected-strong); }
+.kit-button-danger:focus-visible { outline-color: var(--figma-color-border-ondanger-strong); box-shadow: 0 0 0 var(--kit-focus-width) var(--figma-color-border-danger-strong); }
+.kit-button[aria-pressed="true"] { --kit-button-bg: var(--figma-color-bg-selected); --kit-button-bg-hover: var(--figma-color-bg-selected-hover); --kit-button-bg-pressed: var(--figma-color-bg-selected-pressed); --kit-button-text: var(--figma-color-text-brand); --kit-button-ring: transparent; }
+/* Disabled repaints the background itself, so it outranks :hover and :active by order alone. */
+.kit-button:is(:disabled, [aria-disabled="true"]) { --kit-button-bg: transparent; --kit-button-text: var(--figma-color-text-disabled); --kit-button-ring: var(--figma-color-border-disabled); background-color: var(--kit-button-bg); }
+.kit-button-tertiary:is(:disabled, [aria-disabled="true"]) { --kit-button-ring: transparent; }
+.kit-button:is(.kit-button-primary, .kit-button-danger):is(:disabled, [aria-disabled="true"]) { --kit-button-bg: var(--figma-color-bg-disabled); --kit-button-text: var(--figma-color-text-ondisabled); --kit-button-ring: transparent; }
+.kit-button-large { height: var(--kit-control-height-large); padding: 0 var(--kit-spacer-2-5); }
+/* A leading 24px icon frame carries its own inner space, so it replaces the start padding. */
+.kit-button:has(> .kit-icon:first-child) { padding-left: 0; }
+.kit-button-large:has(> .kit-icon:first-child) { padding-left: var(--kit-spacer-1); }
+/* Loading keeps the label's width but paints it transparent under a spinner (sized by
+   aspect-ratio so the only heights on button rules are 24/32). */
+.kit-button[aria-busy="true"] { color: transparent; pointer-events: none; }
+.kit-button[aria-busy="true"]::after {
+  content: ""; position: absolute; inset: 0; width: var(--kit-spacer-2-5); aspect-ratio: 1; margin: auto;
+  border: var(--kit-border-width) solid var(--kit-button-text); border-right-color: transparent; border-radius: var(--kit-radius-full);
+  animation: kit-spin 800ms linear infinite;
+}
+@keyframes kit-spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .kit-button[aria-busy="true"]::after { animation: none; } } /* static ring */
+
+/* == input == */
+/* Filled field, inset-outline ring. UI3 inputs have no pressed state. */
+.kit-input {
+  display: block; width: 100%; min-width: 0; height: var(--kit-control-height); padding: 0 var(--kit-spacer-2);
+  border: 0; border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid transparent; outline-offset: -1px;
+  background-color: var(--figma-color-bg-secondary); color: var(--figma-color-text); appearance: none;
+}
+/* opacity: Firefox fades placeholders on top of the token. */
+.kit-input::placeholder { color: var(--figma-color-text-tertiary); opacity: 1; }
+.kit-input:hover { outline-color: var(--figma-color-border); }
+.kit-input[aria-invalid="true"] { outline-color: var(--figma-color-border-danger-strong); }
+.kit-input:is(:disabled, [aria-disabled="true"]) { outline-color: var(--figma-color-border-disabled); background-color: var(--figma-color-bg); color: var(--figma-color-text-disabled); }
+.kit-input:is(:disabled, [aria-disabled="true"])::placeholder { color: var(--figma-color-text-disabled); }
+/* Focus comes after the states so an invalid or aria-disabled field still shows where focus is;
+   the error stays visible in the red .kit-help text. */
+.kit-input:focus-visible { outline-color: var(--figma-color-border-selected); }
+/* type="search": drop the browser's clear button, whose colour no token controls. */
+.kit-input::-webkit-search-cancel-button, .kit-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+/* The icon fills the field's 24px start slot; clicks fall through to the input. */
+.kit-input-icon { position: relative; display: block; min-width: 0; }
+.kit-input-icon > .kit-icon { position: absolute; top: 0; bottom: 0; left: 0; margin: auto 0; color: var(--figma-color-icon-secondary); pointer-events: none; }
+.kit-input-icon > .kit-icon-small { left: var(--kit-spacer-1); }
+.kit-input-icon > .kit-input { padding-left: var(--kit-icon-size); }
+.kit-input-icon:has(> .kit-input:is(:disabled, [aria-disabled="true"])) > .kit-icon { color: var(--figma-color-icon-disabled); }
+
+/* == select == */
+/* Native <select>: the system popup, typeahead and screen-reader support come free; only the
+   closed control is styled. The wrapper exists because <select> cannot draw ::after. */
+.kit-select { position: relative; display: block; min-width: 0; }
+.kit-select > select {
+  display: block; width: 100%; min-width: 0; height: var(--kit-control-height); padding: 0 var(--kit-icon-size) 0 var(--kit-spacer-2);
+  border: 0; border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid var(--figma-color-border); outline-offset: -1px;
+  background-color: var(--figma-color-bg); color: var(--figma-color-text);
+  text-overflow: ellipsis; white-space: nowrap; cursor: default; appearance: none;
+}
+/* Windows and Linux paint the open list from these; without them dark mode can show light on light. */
+.kit-select :is(option, optgroup) { background-color: var(--figma-color-bg); color: var(--figma-color-text); }
+/* Caret: two borders of a rotated square in the 24px end slot. No image, and forced colours keep it. */
+.kit-select::after {
+  content: ""; position: absolute; top: calc(50% - 5px); right: 9px; width: 6px; aspect-ratio: 1;
+  border: solid; border-width: 0 var(--kit-border-width) var(--kit-border-width) 0;
+  color: var(--figma-color-icon-secondary); transform: rotate(45deg); pointer-events: none;
+}
+.kit-select:hover::after { color: var(--figma-color-icon-secondary-hover); }
+.kit-select > select[aria-invalid="true"] { outline-color: var(--figma-color-border-danger-strong); }
+.kit-select > select:is(:disabled, [aria-disabled="true"]) { outline-color: var(--figma-color-border-disabled); color: var(--figma-color-text-disabled); }
+.kit-select > select:focus-visible { outline-color: var(--figma-color-border-selected); } /* after the states, as for inputs */
+.kit-select:has(> select:is(:disabled, [aria-disabled="true"]))::after { color: var(--figma-color-icon-disabled); }
+
+/* == resize-handle == */
+/* 24px target in the window corner. It ships [hidden]; the runtime shows it when kit:init turns
+   the chrome on. Grip = a resizable textarea's two diagonal lines, in icon-secondary (>= 3:1). */
+.kit-resize-handle {
+  position: fixed; right: 0; bottom: 0; z-index: var(--kit-z-handle);
+  width: var(--kit-control-height); height: var(--kit-control-height); padding: 0; border: 0; border-radius: var(--kit-radius-medium);
+  outline: var(--kit-focus-width) solid transparent; outline-offset: -1px;
+  background: transparent; color: var(--figma-color-icon-secondary); cursor: nwse-resize;
+  touch-action: none; user-select: none; /* pen and touch drags reach the pointer handlers */
+}
+/* A fit-content window follows its content's height, so only the width can be dragged. */
+html[data-kit-mode="fit-content"] .kit-resize-handle { cursor: ew-resize; }
+.kit-resize-handle::before, .kit-resize-handle::after { content: ""; position: absolute; border-top: var(--kit-border-width) solid; transform: rotate(-45deg); }
+.kit-resize-handle::before { right: 2.5px; bottom: 7.5px; width: 11px; }
+.kit-resize-handle::after { right: 3px; bottom: 5.5px; width: 6px; }
+.kit-resize-handle:hover, .kit-resize-handle:active { color: var(--figma-color-icon); }
+.kit-resize-handle:focus-visible { outline-color: var(--figma-color-border-selected); }
+/* Keep the last row of content clear of the grip while the chrome is on. */
+html[data-kit-chrome="on"] .kit-app { padding-bottom: var(--kit-spacer-4); }
+/* A trailing .kit-section already pads 16px; 8px more keeps the 24px handle clear of it. */
+html[data-kit-chrome="on"] .kit-app:has(> .kit-section:last-child) { padding-bottom: var(--kit-spacer-2); }
+</style>
+<script data-kit="runtime">
+(() => {
+  'use strict';
+  // kit window runtime · docs/window-chrome.md
+  // Talks to installKitWindow() in code.ts: posts kit:ready, takes mode and bounds from kit:init,
+  // and asks for every size change with kit:resize. code.ts owns persistence; this side owns
+  // gestures, measuring and deduping. Message shapes live in kit.d.ts.
+
+  // Must equal KIT_PROTOCOL in code.ts. Bump both together when a kit:* message changes shape.
+  const KIT_PROTOCOL = 1;
+  const KIT_VERSION = '0.2.0';
+
+  /**
+   * Defaults. Don't edit them here (this block must stay byte-identical to the release so the
+   * audit can spot drift and upgrades are a re-paste). Override any field from your own markup
+   * with a script element of type="application/json" carrying data-kit-config, whose text is
+   * JSON such as { "snapWidths": [300, 400] }. See docs/window-chrome.md, "Customising CONFIG".
+   * @type {{ snapWidths: number[], step: number, bigStep: number, initTimeoutMs: number, fallbackMode: KitMode, strings: { resizeLabel: string } }}
+   */
+  const CONFIG = {
+    snapWidths: [320, 480, 640], // double-click, Enter and Space cycle through these widths
+    step: 8,                     // px per arrow key...
+    bigStep: 32,                 // ...and per Shift+arrow
+    initTimeoutMs: 500,          // stop waiting for code.ts after this (e.g. ui.html opened in a browser)
+    fallbackMode: 'fit-content', // used only when kit:init never arrives; the real mode comes from code.ts
+    strings: { resizeLabel: 'Resize window' },
+  };
+
+  /* kit:pure:start */
+  // Pure, DOM-free and deterministic: test/pure.test.mjs cuts these lines out and runs them in
+  // node:vm, so nothing here may touch the page or anything declared outside this block.
+
+  // Figma's documented floor for showUI and figma.ui.resize is 70 x 0. It documents no ceiling;
+  // 4096 is ours, so a runaway number can't ask for an absurd window before kit:init arrives.
+  const KIT_GENEROUS_BOUNDS = Object.freeze({ minWidth: 70, maxWidth: 4096, minHeight: 0, maxHeight: 4096 });
+
+  /**
+   * Repair any bounds-like value: finite whole numbers, never under 70 x 0, and min <= max. When
+   * min > max, min wins (as in CSS and as code.ts does). Missing or junk fields take the generous
+   * default, so the result is always safe to clamp against.
+   * @param {Partial<KitBounds> | null | undefined} bounds
+   * @returns {KitBounds}
+   */
+  function sanitizeBounds(bounds) {
+    /** @type {Partial<KitBounds>} */
+    const b = bounds !== null && typeof bounds === 'object' ? bounds : {};
+    /** @param {unknown} value @param {number} fallback */
+    const pick = (value, fallback) => (typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : fallback);
+    const g = KIT_GENEROUS_BOUNDS;
+    const minWidth = Math.max(g.minWidth, pick(b.minWidth, g.minWidth));
+    const maxWidth = Math.max(minWidth, pick(b.maxWidth, g.maxWidth));
+    const minHeight = Math.max(g.minHeight, pick(b.minHeight, g.minHeight));
+    const maxHeight = Math.max(minHeight, pick(b.maxHeight, g.maxHeight));
+    return { minWidth, maxWidth, minHeight, maxHeight };
+  }
+
+  /**
+   * Clamp a requested size into bounds and round it to whole pixels. Never returns NaN or
+   * Infinity: NaN (or a non-number) and -Infinity land on the minimum, +Infinity on the maximum.
+   * @param {number} width
+   * @param {number} height
+   * @param {Partial<KitBounds> | null} [bounds]
+   * @returns {KitSize}
+   */
+  function clampSize(width, height, bounds) {
+    const b = sanitizeBounds(bounds);
+    /** @param {unknown} value @param {number} min @param {number} max */
+    const axis = (value, min, max) => (typeof value !== 'number' || Number.isNaN(value) ? min : Math.min(max, Math.max(min, Math.round(value))));
+    return { width: axis(width, b.minWidth, b.maxWidth), height: axis(height, b.minHeight, b.maxHeight) };
+  }
+
+  /**
+   * The snap after `width`: the narrowest snap strictly wider than it, wrapping to the narrowest
+   * of all once `width` is at or past the widest. Order doesn't matter; non-finite and
+   * non-positive entries are skipped. With no usable snaps the width comes back unchanged (0 if
+   * it isn't finite), so the result can always be fed to clampSize.
+   * @param {number} width
+   * @param {readonly number[]} snaps
+   * @returns {number}
+   */
+  function nextSnap(width, snaps) {
+    const list = (Array.isArray(snaps) ? snaps : [])
+      .filter((s) => typeof s === 'number' && Number.isFinite(s) && s > 0)
+      .sort((a, b) => a - b);
+    if (list.length === 0) return typeof width === 'number' && Number.isFinite(width) ? width : 0;
+    for (const snap of list) if (snap > width) return snap;
+    return list[0];
+  }
+
+  /**
+   * True when both sizes exist and match exactly. A missing size is never "the same", so the
+   * first request after startup is always sent.
+   * @param {KitSize | null | undefined} a
+   * @param {KitSize | null | undefined} b
+   */
+  function sameSize(a, b) {
+    return !!a && !!b && a.width === b.width && a.height === b.height;
+  }
+  /* kit:pure:end */
+
+  /** @typedef {{ width: number, height: number, user: boolean }} KitQueuedSize */
+  /** @typedef {{ controller: AbortController, pointerId: number, x: number, y: number, start: KitSize, last: KitSize, moved: boolean }} KitDragState */
+
+  // ---- State. Mode, chrome and bounds come only from kit:init (or the fallback): code.ts is the
+  // single source of truth, so the two files can never disagree about limits.
+  /** @type {KitMode} */
+  let mode = CONFIG.fallbackMode;
+  /** @type {KitBounds} */
+  let bounds = KIT_GENEROUS_BOUNDS;
+  let chrome = false;
+  /** @type {KitSize | null} */
+  let initSize = null;
+  /** @type {KitSize | null} */
+  let defaultSize = null;
+  let configured = false; // kit:init applied, or the fallback took over
+  let fontsLoaded = false;
+  let started = false;    // the first size request has gone out
+  let warnedProtocol = false;
+  /** @type {number | undefined} */
+  let initTimer;
+  /** @type {HTMLElement | null} */
+  let handle = null;
+
+  // ---- Request bookkeeping. Every size change goes through requestSize(), so the queued frame,
+  // lastSent and the dedupe can't drift apart (the old script's direct sends did exactly that).
+  /** @type {KitSize | null} */
+  let lastSent = null;
+  /** @type {KitQueuedSize | null} */
+  let queued = null;
+  let frame = 0;
+  // The viewport lags one host round trip behind a request. Until the size last asked for has
+  // landed, fits and gestures must start from it, per axis: a reflow from an older in-flight
+  // size would drag the window back, and fast keys would each add their step to the same stale
+  // size. Set in send(), cleared by onViewportResize() once the viewport gets there.
+  /** @type {number | null} */
+  let headingWidth = null;
+  /** @type {number | null} */
+  let headingHeight = null;
+  // resizable Home changes the width, and content only reflows once that width lands; the
+  // fitted height is measured again then.
+  /** @type {number | null} */
+  let refitAtWidth = null;
+  /** @type {KitDragState | null} */
+  let drag = null;
+  // Whether the last press on the handle turned into a drag: the dblclick that the second press
+  // of a double-click produces must not snap on top of that drag.
+  let pressMoved = false;
+  /** @type {ResizeObserver | null} */
+  let observer = null;
+  /** @type {Element | null} */
+  let observedRoot = null;
+  let retargetTimer = 0;
+
+  /** @param {KitUiToMainMessage} message */
+  function post(message) {
+    // Opened directly in a browser there is no parent; the init timeout covers that case.
+    if (window.parent === window) return;
+    window.parent.postMessage({ pluginMessage: message }, '*');
+  }
+
+  /** @param {unknown} value @returns {value is KitMode} */
+  function isMode(value) {
+    return value === 'fit-content' || value === 'resizable' || value === 'fixed';
+  }
+
+  /** @param {unknown} value @returns {value is KitSize} */
+  function isSize(value) {
+    if (value === null || typeof value !== 'object') return false;
+    const size = /** @type {Record<string, unknown>} */ (value);
+    return typeof size.width === 'number' && Number.isFinite(size.width) && typeof size.height === 'number' && Number.isFinite(size.height);
+  }
+
+  function chromeOn() {
+    return configured && chrome && mode !== 'fixed';
+  }
+
+  /** @returns {KitSize} */
+  function viewportSize() {
+    // A plugin window shown with visible:false may not be laid out yet (0 x 0); until it is, the
+    // size code.ts reported in kit:init is the better answer.
+    if (window.innerWidth > 0 || !initSize) return { width: window.innerWidth, height: window.innerHeight };
+    return initSize;
+  }
+
+  /** @returns {number} */
+  function targetWidth() {
+    if (queued) return queued.width;
+    if (drag) return drag.last.width;
+    if (headingWidth !== null) return headingWidth;
+    return viewportSize().width;
+  }
+
+  /** Where the window is, or is about to be. @returns {KitSize} */
+  function currentSize() {
+    const height = queued ? queued.height : drag ? drag.last.height : headingHeight !== null ? headingHeight : viewportSize().height;
+    return { width: targetWidth(), height };
+  }
+
+  function findRoot() {
+    return document.querySelector('[data-kit-root]') || document.body || document.documentElement;
+  }
+
+  /**
+   * The height the content needs, whatever the window's height is now: the root's bottom edge
+   * in document coordinates plus whatever spacing sits below it. This only works because the
+   * root's height comes from its content: a root with height:100% or min-height:100vh tracks the
+   * window instead, so the window can never shrink (docs/window-chrome.md).
+   * @returns {number}
+   */
+  function contentHeight() {
+    if (!(window.innerWidth > 0)) return viewportSize().height; // not laid out: nothing to measure
+    const root = findRoot();
+    const px = (/** @type {string} */ value) => parseFloat(value) || 0;
+    let bottom = root.getBoundingClientRect().bottom + window.scrollY + px(getComputedStyle(root).marginBottom);
+    const body = document.body;
+    if (body && root !== body && body.contains(root)) {
+      const style = getComputedStyle(body);
+      bottom += px(style.paddingBottom) + px(style.borderBottomWidth) + px(style.marginBottom);
     }
-  </style>
+    return Math.ceil(bottom);
+  }
+
+  function defaultWidth() {
+    return defaultSize ? defaultSize.width : viewportSize().width;
+  }
+
+  /**
+   * The single way to ask for a size. Coalesces to one message per frame unless `immediate` or
+   * `final`; either of those cancels the queued frame first, so a stale frame can never land on
+   * top of a revert or a final size.
+   * @param {number} width
+   * @param {number} height
+   * @param {{ immediate?: boolean, final?: boolean, user?: boolean }} [options]
+   */
+  function requestSize(width, height, options = {}) {
+    const size = clampSize(width, height, bounds);
+    const user = options.user === true;
+    if (options.immediate || options.final) {
+      cancelFrame();
+      send(size, user, options.final === true);
+      return;
+    }
+    // A fit merged into a queued drag frame keeps the drag's user flag: the width is still theirs.
+    queued = { width: size.width, height: size.height, user: user || (queued !== null && queued.user) };
+    if (!frame) frame = requestAnimationFrame(flushFrame);
+  }
+
+  function cancelFrame() {
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    queued = null;
+  }
+
+  function flushFrame() {
+    frame = 0;
+    const next = queued;
+    queued = null;
+    if (next) send({ width: next.width, height: next.height }, next.user, false);
+  }
+
+  /** @param {KitSize} size @param {boolean} user @param {boolean} final */
+  function send(size, user, final) {
+    // Finals always go out: code.ts persists on them, and an Escape revert must win.
+    if (!final && sameSize(size, lastSent)) return;
+    lastSent = size;
+    // A floating window (chrome on) lands on every size code.ts applies. A docked panel (chrome
+    // off: Dev Mode, Buzz) is sized by Figma and may never match, so there the viewport is the truth.
+    const track = chromeOn();
+    headingWidth = track && size.width !== window.innerWidth ? size.width : null;
+    headingHeight = track && size.height !== window.innerHeight ? size.height : null;
+    /** @type {KitResizeMessage} */
+    const message = { type: 'kit:resize', width: size.width, height: size.height, user, final };
+    post(message);
+  }
+
+  /** @param {{ immediate?: boolean, final?: boolean, user?: boolean }} options */
+  function fitNow(options) {
+    if (!started || mode === 'fixed') return; // before the first fit there is nothing to redo
+    watchRootSoon();
+    requestSize(targetWidth(), contentHeight(), options);
+  }
+
+  // ---- Fit-content observation. The root is looked up on every fit, never cached once, so
+  // replacing the demo markup (or adding [data-kit-root] later) keeps fitting.
+  function syncObserver() {
+    const wanted = started && mode === 'fit-content';
+    if (!wanted) {
+      if (observer) observer.disconnect();
+      observer = null;
+      observedRoot = null;
+      window.clearTimeout(retargetTimer);
+      retargetTimer = 0;
+      return;
+    }
+    if (!observer) observer = new ResizeObserver(() => fitNow({}));
+    watchRoot();
+  }
+
+  // A replaced root reports one last 0 x 0 size as it leaves the page, and the fit it triggers
+  // already measures the new root (contentHeight() looks it up). Moving the observer waits for
+  // the next task: observe() on a shallower element from inside an observer callback makes the
+  // browser fire a "ResizeObserver loop completed with undelivered notifications" error event.
+  function watchRootSoon() {
+    if (!observer || retargetTimer || findRoot() === observedRoot) return;
+    retargetTimer = window.setTimeout(() => {
+      retargetTimer = 0;
+      watchRoot();
+    }, 0);
+  }
+
+  function watchRoot() {
+    if (!observer) return;
+    const root = findRoot();
+    if (root === observedRoot) return;
+    if (observedRoot) observer.unobserve(observedRoot);
+    observer.observe(root);
+    observedRoot = root;
+  }
+
+  // The first request doubles as "ready to show": code.ts keeps the window hidden until the
+  // first kit:resize (or its own 500 ms cap), so it waits for fonts and for the real mode.
+  function start() {
+    if (started || !configured || !fontsLoaded) return;
+    started = true;
+    // kit:init's size is where code.ts has put the window (the restored or the default size).
+    // The viewport can still be a host round trip behind it, and asking for the viewport's size
+    // would undo the restore. A docked panel (chrome off) keeps its own size.
+    const base = initSize && chromeOn() ? initSize : viewportSize();
+    if (mode === 'fit-content') requestSize(base.width, contentHeight(), { immediate: true });
+    // resizable never auto-fits: keep the saved or default size, just announce readiness.
+    else if (mode === 'resizable') requestSize(base.width, base.height, { immediate: true });
+    // fixed: visible from the start and never resized by the kit.
+    syncObserver();
+  }
+
+  /**
+   * @param {KitMode} nextMode
+   * @param {boolean} nextChrome
+   * @param {Partial<KitBounds> | null} nextBounds
+   * @param {KitSize | null} size
+   * @param {KitSize | null} fallbackDefault
+   */
+  function configure(nextMode, nextChrome, nextBounds, size, fallbackDefault) {
+    mode = nextMode;
+    chrome = nextChrome;
+    bounds = sanitizeBounds(nextBounds);
+    initSize = size ? clampSize(size.width, size.height, bounds) : null;
+    const base = fallbackDefault || viewportSize();
+    defaultSize = clampSize(base.width, base.height, bounds);
+    configured = true;
+
+    const on = chromeOn();
+    const html = document.documentElement;
+    html.dataset.kitChrome = on ? 'on' : 'off'; // CSS reserves the grip corner only while 'on'
+    html.dataset.kitMode = mode;                // lets CSS pick the handle cursor per mode
+    if (handle) handle.hidden = !on;
+
+    if (!started) start();
+    else {
+      // kit:init arrived after the fallback had already started: the real mode wins. Main may
+      // apply the fallback's fit after it sent kit:init, so ask again for the size kit:init
+      // reported (resizable), or refit (fit-content). Main ignores kit:resize in fixed mode.
+      syncObserver();
+      if (mode === 'fit-content') fitNow({});
+      else if (mode === 'resizable' && initSize && chromeOn()) requestSize(initSize.width, initSize.height, { immediate: true });
+    }
+  }
+
+  /** @param {KitInitMessage} msg */
+  function applyInit(msg) {
+    window.clearTimeout(initTimer);
+    if (msg.protocol !== KIT_PROTOCOL && !warnedProtocol) {
+      warnedProtocol = true;
+      // A string is quoted, so "1" and 1 read differently in the warning.
+      const theirs = typeof msg.protocol === 'string' ? JSON.stringify(msg.protocol) : String(msg.protocol);
+      console.warn(`kit: code.ts speaks protocol ${theirs}, this ui.html speaks ${KIT_PROTOCOL}. Re-paste the kit:window block (code.ts) and the three data-kit blocks (ui.html) from the same kit release.`);
+    }
+    // Validated field by field: a malformed init degrades to defaults instead of throwing.
+    configure(
+      isMode(msg.mode) ? msg.mode : CONFIG.fallbackMode,
+      msg.chrome === true,
+      msg.bounds,
+      isSize(msg.size) ? msg.size : null,
+      isSize(msg.defaultSize) ? msg.defaultSize : null,
+    );
+  }
+
+  function useFallback() {
+    if (configured) return;
+    // No code.ts answered: no chrome (nothing would persist), generous bounds, still fit.
+    configure(isMode(CONFIG.fallbackMode) ? CONFIG.fallbackMode : 'fit-content', false, null, null, null);
+  }
+
+  /** @param {unknown} value @returns {value is KitMainToUiMessage} */
+  function isKitMessage(value) {
+    return value !== null && typeof value === 'object' && /** @type {{ type?: unknown }} */ (value).type === 'kit:init';
+  }
+
+  /** @param {MessageEvent} event */
+  function onMessage(event) {
+    // Host messages (any type not starting with 'kit:') fall straight through: no
+    // stopPropagation, no preventDefault, so the plugin's own listeners see every message.
+    const data = event.data;
+    /** @type {unknown} */
+    const msg = data !== null && typeof data === 'object' ? data.pluginMessage : undefined;
+    if (!isKitMessage(msg)) return;
+    if (msg.type === 'kit:init') applyInit(msg);
+  }
+
+  function onViewportResize() {
+    if (headingWidth !== null && window.innerWidth === headingWidth) headingWidth = null;
+    if (headingHeight !== null && window.innerHeight === headingHeight) headingHeight = null;
+    if (refitAtWidth !== null && window.innerWidth === refitAtWidth) {
+      refitAtWidth = null;
+      if (mode === 'resizable' && !drag) requestSize(window.innerWidth, contentHeight(), { final: true, user: true });
+    }
+  }
+
+  // ---- Gestures. The handle is the <button data-kit-resize> in the markup; without it the
+  // window still fits, there is just nothing to drag.
+
+  /**
+   * @param {KitSize} base
+   * @returns {KitSize}
+   */
+  function snapTarget(base) {
+    // Snaps outside the bounds would clamp to the current size and look like a dead key.
+    const usable = CONFIG.snapWidths.filter((w) => w >= bounds.minWidth && w <= bounds.maxWidth);
+    const width = nextSnap(base.width, usable.length > 0 ? usable : CONFIG.snapWidths);
+    return { width, height: mode === 'resizable' ? base.height : contentHeight() };
+  }
+
+  /** @param {PointerEvent} event */
+  function onPointerDown(event) {
+    // Primary button of the primary pointer only: right-click or a second finger never drags.
+    if (event.button !== 0 || !event.isPrimary || drag || !chromeOn() || !handle) return;
+    pressMoved = false;
+    const el = handle;
+    try {
+      el.setPointerCapture(event.pointerId);
+    } catch {
+      return; // no live pointer (synthetic event): without capture the drag could never end
+    }
+    // preventDefault stops text selection, but it also cancels the focus a mousedown would
+    // give; focus explicitly so Escape reaches this frame and keys continue from here.
+    // focusVisible:false: a script focus() otherwise draws the keyboard ring after a mouse drag
+    // (browsers without the option ignore it).
+    event.preventDefault();
+    el.focus({ preventScroll: true, focusVisible: false });
+    refitAtWidth = null;
+    const now = currentSize();
+    const start = clampSize(now.width, now.height, bounds);
+    // One controller per drag: aborting it removes every listener below at once, however the
+    // drag ends, so nothing outlives it (the old {once:true} listeners did, after Escape).
+    const controller = new AbortController();
+    const signal = controller.signal;
+    drag = { controller, pointerId: event.pointerId, x: event.clientX, y: event.clientY, start, last: start, moved: false };
+    el.addEventListener('pointermove', onPointerMove, { signal });
+    el.addEventListener('pointerup', commitDrag, { signal });
+    el.addEventListener('pointercancel', commitDrag, { signal }); // the person did move: keep it
+    el.addEventListener('lostpointercapture', commitDrag, { signal });
+    window.addEventListener('keydown', onDragKey, { signal, capture: true });
+  }
+
+  /** @param {PointerEvent} event */
+  function onPointerMove(event) {
+    const d = drag;
+    if (!d || event.pointerId !== d.pointerId) return;
+    // clientX/Y are stable across the resize: the window grows from its top-left corner.
+    const width = d.start.width + (event.clientX - d.x);
+    const height = mode === 'resizable' ? d.start.height + (event.clientY - d.y) : contentHeight();
+    const target = clampSize(width, height, bounds);
+    const changed = mode === 'resizable' ? !sameSize(target, d.start) : target.width !== d.start.width;
+    if (!d.moved && !changed) return; // a click that wobbles inside one pixel is still a click
+    d.moved = true;
+    d.last = target;
+    requestSize(target.width, target.height, { user: true });
+  }
+
+  /** @param {PointerEvent} event */
+  function commitDrag(event) {
+    // Only the dragging pointer ends the drag: a second finger or a stray tap lifting does not.
+    if (drag && event.pointerId === drag.pointerId) endDrag(true);
+  }
+
+  /** @param {KeyboardEvent} event */
+  function onDragKey(event) {
+    if (event.key !== 'Escape') return;
+    // Escape belongs to the drag while one is active, so the host's own Escape (close a panel,
+    // close the plugin) doesn't fire as well. Only another capture listener on window still
+    // sees it: stopPropagation can't stop listeners on the same target.
+    event.preventDefault();
+    event.stopPropagation();
+    endDrag(false);
+  }
+
+  /** @param {boolean} keep true commits the last size, false reverts to the start size */
+  function endDrag(keep) {
+    const d = drag;
+    if (!d) return;
+    drag = null;
+    pressMoved = d.moved;
+    d.controller.abort();
+    if (handle && handle.hasPointerCapture(d.pointerId)) handle.releasePointerCapture(d.pointerId);
+    if (!d.moved) return; // plain click, or Escape before any change: nothing to persist or undo
+    const size = keep ? d.last : d.start;
+    // fit-content measures the height now. The drag's own height was measured before its width
+    // landed and the content reflowed; sent as the final, it would overwrite the observer's
+    // newer fit, and with the root's size unchanged nothing would ever correct it.
+    requestSize(size.width, mode === 'resizable' ? size.height : contentHeight(), { final: true, user: true });
+  }
+
+  /** @param {MouseEvent} event */
+  function onDoubleClick(event) {
+    // A second press that dragged already resized the window: no snap on top of it.
+    if (event.button !== 0 || drag || pressMoved || !chromeOn()) return;
+    event.preventDefault();
+    refitAtWidth = null;
+    const next = snapTarget(currentSize());
+    requestSize(next.width, next.height, { final: true, user: true });
+  }
+
+  /** @param {KeyboardEvent} event */
+  function onKeyDown(event) {
+    if (drag || !chromeOn() || event.altKey || event.ctrlKey || event.metaKey) return;
+    const base = currentSize();
+    const step = event.shiftKey ? CONFIG.bigStep : CONFIG.step;
+    /** @type {KitSize} */
+    let next;
+    switch (event.key) {
+      case 'ArrowLeft':
+      case 'ArrowRight':
+        next = {
+          width: base.width + (event.key === 'ArrowRight' ? step : -step),
+          height: mode === 'resizable' ? base.height : contentHeight(),
+        };
+        break;
+      case 'ArrowUp':
+      case 'ArrowDown':
+        if (mode !== 'resizable') return; // fit-content owns the height; let the page scroll
+        next = { width: base.width, height: base.height + (event.key === 'ArrowDown' ? step : -step) };
+        break;
+      case 'Enter':
+      case ' ':
+      case 'Home':
+        event.preventDefault();
+        if (event.repeat) return; // holding Enter would spin through the snaps
+        if (event.key === 'Home') {
+          next = { width: defaultWidth(), height: contentHeight() };
+          if (mode === 'resizable' && next.width !== window.innerWidth) refitAtWidth = clampSize(next.width, 0, bounds).width;
+        } else next = snapTarget(base);
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    if (event.key !== 'Home') refitAtWidth = null; // a newer gesture replaces Home's pending refit
+    requestSize(next.width, next.height, { final: true, user: true });
+  }
+
+  // Merge <script type="application/json" data-kit-config> over CONFIG. Unknown keys and values
+  // of the wrong shape are ignored with one warning, so a typo can't break the window.
+  function applyConfigOverrides() {
+    const el = document.querySelector('script[type="application/json"][data-kit-config]');
+    if (!el) return;
+    /** @type {unknown} */
+    let raw;
+    try { raw = JSON.parse(el.textContent || '{}'); } catch (error) {
+      console.warn('[kit] data-kit-config is not valid JSON; using defaults.', error);
+      return;
+    }
+    /** @param {unknown} v @returns {v is Record<string, unknown>} */
+    const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+    if (!isObject(raw)) {
+      console.warn('[kit] data-kit-config must be a JSON object, such as {"snapWidths": [300, 400]}; using defaults.');
+      return;
+    }
+    /** @param {unknown} v */
+    const positive = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
+    /** @type {string[]} */
+    const ignored = [];
+    for (const key of Object.keys(raw)) {
+      const v = raw[key];
+      if (key === 'snapWidths' && Array.isArray(v) && v.length > 0 && v.every(positive)) CONFIG.snapWidths = v.slice();
+      // Whole pixels, at least 1: a fractional step rounds back to the same width, a dead key.
+      else if ((key === 'step' || key === 'bigStep') && typeof v === 'number' && Number.isInteger(v) && v >= 1) CONFIG[key] = v;
+      // setTimeout treats anything past 2^31 - 1 ms as 0.
+      else if (key === 'initTimeoutMs' && typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 0x7fffffff) CONFIG.initTimeoutMs = v;
+      else if (key === 'fallbackMode' && isMode(v)) CONFIG.fallbackMode = v;
+      else if (key === 'strings' && isObject(v)) {
+        for (const name of Object.keys(v)) {
+          const text = v[name];
+          // A blank label would leave the handle without an accessible name.
+          if (name === 'resizeLabel' && typeof text === 'string' && text.trim() !== '') CONFIG.strings.resizeLabel = text;
+          else ignored.push('strings.' + name);
+        }
+      } else ignored.push(key);
+    }
+    if (ignored.length > 0) console.warn('[kit] data-kit-config: ignored ' + ignored.join(', ') + ' (unknown key or wrong type).');
+  }
+
+  // ---- Startup. Listeners registered here are the only long-lived ones: three on the handle,
+  // two on window. Everything a drag adds is removed when it ends.
+  function boot() {
+    applyConfigOverrides();
+    mode = CONFIG.fallbackMode;
+    const found = document.querySelector('[data-kit-resize]');
+    handle = found instanceof HTMLElement ? found : null;
+    if (handle) {
+      handle.setAttribute('aria-label', CONFIG.strings.resizeLabel);
+      handle.addEventListener('pointerdown', onPointerDown);
+      handle.addEventListener('dblclick', onDoubleClick);
+      handle.addEventListener('keydown', onKeyDown);
+    }
+    window.addEventListener('message', onMessage);
+    window.addEventListener('resize', onViewportResize);
+
+    // Measuring before web fonts settle fits the fallback font's line heights. A font that never
+    // settles (a request that hangs) must not keep the window from fitting, so the wait is capped
+    // at CONFIG.initTimeoutMs; in fit-content mode the observer refits when the font swaps in.
+    /** @type {Promise<unknown>} */
+    const fonts = 'fonts' in document ? document.fonts.ready : Promise.resolve();
+    const fontCap = new Promise((resolve) => window.setTimeout(resolve, CONFIG.initTimeoutMs));
+    Promise.race([fonts.catch(() => undefined), fontCap]).then(() => {
+      fontsLoaded = true;
+      start();
+    });
+
+    initTimer = window.setTimeout(useFallback, CONFIG.initTimeoutMs);
+    post({ type: 'kit:ready', protocol: KIT_PROTOCOL });
+  }
+
+  /** @type {KitUiApi} */
+  const api = Object.freeze({ version: KIT_VERSION, protocol: KIT_PROTOCOL, fit: () => fitNow({}) });
+  window.kit = api;
+
+  // This script sits in <head>, before the handle and the root exist.
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+  else boot();
+})();
+</script>
+<style>
+/* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
+/* The status text takes the free space, so the buttons sit at the end of the row. */
+.demo-status { flex: 1 1 0; min-width: 0; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="component-library">
-      <div class="category-label">Component library</div>
-      <div class="component-section">
-        <div class="group-label">Buttons</div>
-        <div class="button-group">
-          <button class="button button-primary">Primary</button>
-          <button class="button button-secondary">Secondary</button>
-          <button class="button button-primary">
-            <svg class="icon" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-linecap="round"/>
-            </svg>
-            Primary with icon
-          </button>
-          <button class="button button-secondary">
-            <svg class="icon" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path d="M2 6h8M6 2v8" stroke="currentColor" stroke-linecap="round"/>
-            </svg>
-            Secondary with icon
-          </button>
-        </div>
+<main class="kit-app" data-kit-root>
+  <div class="kit-section kit-stack">
+    <h1 class="kit-heading">Create shapes</h1>
+    <div class="kit-field">
+      <label class="kit-label" for="count">Count</label>
+      <input class="kit-input" id="count" type="text" inputmode="numeric" autocomplete="off" value="5" aria-describedby="count-help">
+      <p class="kit-help" id="count-help">From 1 to 50, placed in a row.</p>
+    </div>
+    <div class="kit-field">
+      <label class="kit-label" for="shape">Shape</label>
+      <div class="kit-select">
+        <select id="shape">
+          <option value="rectangle">Rectangle</option>
+          <option value="ellipse">Ellipse</option>
+        </select>
       </div>
     </div>
   </div>
-  
-  <div class="divider"></div>
-  
-  <div class="container">
-    <div class="component-library">
-      <div class="component-section">
-        <label for="basic-input" class="group-label">Input field</label>
-        <input type="text" id="basic-input" class="input-field" placeholder="Enter text here...">
-      </div>
-    </div>
+  <hr class="kit-divider">
+  <div class="kit-section kit-row">
+    <p class="kit-help demo-status" id="status" role="status">Nothing selected</p>
+    <button class="kit-button kit-button-secondary" id="close" type="button">Close</button>
+    <button class="kit-button kit-button-primary" id="create" type="button">Create</button>
   </div>
-  
-  <div class="divider"></div>
-  
-  <div class="container">
-    <div class="component-library">
-      <div class="component-section">
-        <label for="search-input" class="group-label">Input field with icon</label>
-        <div class="input-with-icon">
-          <svg class="input-icon" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <circle cx="5" cy="5" r="3.5" stroke="currentColor" />
-            <path d="M7.5 7.5L10 10" stroke="currentColor" stroke-linecap="round"/>
-          </svg>
-          <input type="text" id="search-input" class="input-field" placeholder="Search..." aria-label="Search input">
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="divider"></div>
-  
-  <div class="container">
-    <div class="component-library">
-      <div class="component-section">
-        <label for="dropdown-select" class="group-label">Dropdown</label>
-        <div class="dropdown">
-          <select id="dropdown-select" class="dropdown-select">
-            <option>Option 1</option>
-            <option>Option 2</option>
-            <option>Option 3</option>
-            <option>Option 4</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div
-    class="resize-handle"
-    id="resizeHandle"
-    tabindex="0"
-    role="separator"
-    aria-label="Resize panel"
-    title="Drag to resize. Use arrow keys to resize; Enter/Space to snap."
-  ></div>
-  
-  <script>
-    const resizeHandle = document.getElementById('resizeHandle');
-    let isResizing = false;
-    let startX = 0;
-    let startY = 0;
-    let startWidth = 0;
-    let startHeight = 0;
-    let rafId = 0;
-    let nextSize = null; // { width, height }
-    let lastSentW = window.innerWidth;
-    let lastSentH = window.innerHeight;
-    let lastClickTime = 0;
-    let persistTimer = null;
-    const snapSizes = [320, 480, 640];
-    // (removed) currentSnapIndex was unused
-    // Size bounds (keep in sync with main thread)
-    const MIN_W = 280, MAX_W = 900, MIN_H = 200, MAX_H = 800;
-    // Init handshake state
-    let hasSavedSize = false;
-    let initWidth = window.innerWidth;
-    let initHeight = window.innerHeight;
-    let persistenceEnabled = true;
+</main>
+<button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+<script>
+'use strict';
+// Demo logic: replace it with your plugin's. It speaks the demo's own messages with code.ts
+// ('create-shapes', 'close' out; 'selection', 'created' back); kit:* messages are the runtime's.
+// Markup: replace everything inside <main> with your plugin; keep data-kit-root on the element
+// whose height the window should fit, and keep the resize handle after it. No HTML comments in
+// this file: see docs/pitfalls.md (Figma's sandbox and comment markers).
+(() => {
+  // Same range as MAX_SHAPES in code.ts, which clamps anything that slips past this check.
+  const MIN_COUNT = 1;
+  const MAX_COUNT = 50;
+  const HELP = `From ${MIN_COUNT} to ${MAX_COUNT}, placed in a row.`;
+  const ERROR = `Enter a whole number from ${MIN_COUNT} to ${MAX_COUNT}.`;
 
-    // Throttled resize: coalesces to one send per animation frame
-    function throttledResize(width, height) {
-      nextSize = { width, height };
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = 0;
-        if (!nextSize) return;
-        const w = Math.round(Math.max(MIN_W, Math.min(MAX_W, nextSize.width)));
-        const h = Math.round(Math.max(MIN_H, Math.min(MAX_H, nextSize.height)));
-        nextSize = null;
-        if (w !== lastSentW || h !== lastSentH) {
-          lastSentW = w;
-          lastSentH = h;
-          sendResize(w, h);
-        }
-      });
+  const count = /** @type {HTMLInputElement} */ (document.getElementById('count'));
+  const countHelp = /** @type {HTMLElement} */ (document.getElementById('count-help'));
+  const shape = /** @type {HTMLSelectElement} */ (document.getElementById('shape'));
+  const create = /** @type {HTMLButtonElement} */ (document.getElementById('create'));
+  const closeButton = /** @type {HTMLButtonElement} */ (document.getElementById('close'));
+  const status = /** @type {HTMLElement} */ (document.getElementById('status'));
+
+  let selected = 0;
+  let result = '';
+  let requestedShape = 'rectangle';
+
+  /** @param {{ type: string } & Record<string, unknown>} message */
+  function post(message) {
+    parent.postMessage({ pluginMessage: message }, '*');
+  }
+
+  /** The count as a number, or null when it is not a whole number in range. */
+  function readCount() {
+    const text = count.value.trim();
+    if (!/^\d+$/.test(text)) return null;
+    const n = Number(text);
+    return n >= MIN_COUNT && n <= MAX_COUNT ? n : null;
+  }
+
+  // The error state is aria-invalid on the input. The kit's CSS recolours the ring and the help
+  // text the input already points at with aria-describedby, so no class is toggled.
+  function validate() {
+    const ok = readCount() !== null;
+    if (ok) count.removeAttribute('aria-invalid');
+    else count.setAttribute('aria-invalid', 'true');
+    countHelp.textContent = ok ? HELP : ERROR;
+  }
+
+  function render() {
+    const selection = selected === 0 ? 'Nothing selected'
+      : `${selected} layer${selected === 1 ? '' : 's'} selected`;
+    // The last result goes on its own line, so a narrow window never breaks it mid-phrase.
+    status.replaceChildren(selection, ...(result ? [document.createElement('br'), result] : []));
+  }
+
+  function createShapes() {
+    // aria-busy blocks the mouse but not Enter or Space, so the handler checks it too.
+    if (create.getAttribute('aria-busy') === 'true') return;
+    const n = readCount();
+    if (n === null) {
+      validate();
+      count.focus();
+      return;
     }
-    
-    function sendResize(width, height) {
-      // Clamp to sensible bounds
-      const clampedWidth = Math.max(MIN_W, Math.min(MAX_W, width));
-      const clampedHeight = Math.max(MIN_H, Math.min(MAX_H, height));
-      
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          pluginMessage: {
-            type: 'resize',
-            width: clampedWidth,
-            height: clampedHeight
-          }
-        }, '*');
-      }
+    requestedShape = shape.value;
+    create.setAttribute('aria-busy', 'true');
+    post({ type: 'create-shapes', count: n, shape: requestedShape });
+  }
+
+  count.addEventListener('input', validate);
+  create.addEventListener('click', createShapes);
+  // Enter in the count field creates too. Deliberately not a <form>: a sandboxed iframe without
+  // allow-forms blocks form submission before the submit event fires, and Figma's sandbox flags
+  // are not documented.
+  count.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.isComposing) return;
+    event.preventDefault();
+    createShapes();
+  });
+
+  closeButton.addEventListener('click', () => post({ type: 'close' }));
+
+  // Registered at the top level, before the page finishes loading: Figma delivers the messages
+  // code.ts posted at startup (the first selection count) as soon as the page has loaded.
+  window.addEventListener('message', (event) => {
+    const msg = event.data && event.data.pluginMessage;
+    if (!msg || typeof msg !== 'object' || typeof msg.count !== 'number') return;
+    if (msg.type === 'selection') {
+      selected = msg.count;
+      render();
+    } else if (msg.type === 'created') {
+      // code.ts always answers, with count 0 when creating failed, so the button never sticks.
+      create.removeAttribute('aria-busy');
+      result = msg.count > 0 ? `Created ${msg.count} ${requestedShape}${msg.count === 1 ? '' : 's'}` : 'Nothing created';
+      render();
     }
-
-    function persistSize(width, height) {
-      if (!persistenceEnabled) return;
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          pluginMessage: {
-            type: 'persist-size',
-            width,
-            height
-          }
-        }, '*');
-      }
-    }
-
-    // Auto-size helpers
-    function computeContentHeight() {
-      const elements = Array.from(document.querySelectorAll('.container, .divider'));
-      let maxBottom = 0;
-      for (const el of elements) {
-        const rect = el.getBoundingClientRect();
-        if (rect && isFinite(rect.bottom)) {
-          maxBottom = Math.max(maxBottom, rect.bottom);
-        }
-      }
-      // Add small padding so content doesn't touch the bottom edge
-      return Math.ceil(maxBottom + 8);
-    }
-
-    function resizeToContent() {
-      const width = window.innerWidth;
-      const desiredHeight = computeContentHeight();
-      const clampedHeight = Math.max(MIN_H, Math.min(MAX_H, desiredHeight));
-      throttledResize(width, clampedHeight);
-      if (persistTimer) clearTimeout(persistTimer);
-      persistTimer = setTimeout(() => {
-        persistSize(width, clampedHeight);
-      }, 150);
-    }
-
-    // Handshake: UI ready -> main responds with init (hasSavedSize + current size)
-    window.addEventListener('load', () => {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ pluginMessage: { type: 'ready' } }, '*');
-      }
-    });
-
-    window.addEventListener('message', (event) => {
-      const data = event.data && event.data.pluginMessage;
-      if (!data) return;
-      if (data.type === 'init') {
-        hasSavedSize = !!data.hasSavedSize;
-        initWidth = data.width || initWidth;
-        initHeight = data.height || initHeight;
-        persistenceEnabled = data.persistenceEnabled !== undefined ? !!data.persistenceEnabled : true;
-        // Auto-size only when no saved size
-        const desiredHeight = computeContentHeight();
-        if (!hasSavedSize) {
-          const clampedHeight = Math.max(MIN_H, Math.min(MAX_H, desiredHeight));
-          throttledResize(initWidth, clampedHeight);
-          if (persistTimer) clearTimeout(persistTimer);
-          persistTimer = setTimeout(() => {
-            persistSize(initWidth, clampedHeight);
-          }, 150);
-        }
-      }
-    });
-    
-    function snapToSize(width) {
-      const height = Math.max(MIN_H, Math.min(MAX_H, window.innerHeight));
-      sendResize(width, height);
-      persistSize(width, height);
-    }
-    
-    // Double-click to snap between sizes
-    resizeHandle.addEventListener('dblclick', (e) => {
-      e.preventDefault();
-      const currentWidth = window.innerWidth;
-      
-      // Find the next snap size
-      let nextSize = snapSizes[0];
-      for (let i = 0; i < snapSizes.length; i++) {
-        if (currentWidth < snapSizes[i]) {
-          nextSize = snapSizes[i];
-          break;
-        }
-      }
-      
-      // If we're at or past the largest, go back to smallest
-      if (currentWidth >= snapSizes[snapSizes.length - 1]) {
-        nextSize = snapSizes[0];
-      }
-      
-      snapToSize(nextSize);
-    });
-    
-    resizeHandle.addEventListener('pointerdown', (e) => {
-      // Prevent double-click from triggering resize start
-      const now = Date.now();
-      if (now - lastClickTime < 300) return;
-      lastClickTime = now;
-
-      isResizing = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      startWidth = window.innerWidth;
-      startHeight = window.innerHeight;
-      activePointerId = e.pointerId;
-      resizeHandle.classList.add('resizing');
-      document.body.style.cursor = 'se-resize';
-      document.body.style.userSelect = 'none';
-      resizeHandle.setPointerCapture(e.pointerId);
-      e.preventDefault();
-
-      let canceled = false;
-
-      const onMove = (ev) => {
-        if (!isResizing) return;
-        const deltaX = ev.clientX - startX;
-        const deltaY = ev.clientY - startY;
-        const newWidth = startWidth + deltaX;
-        const newHeight = startHeight + deltaY;
-        throttledResize(newWidth, newHeight);
-      };
-
-      const onKeydown = (ev) => {
-        if (ev.key === 'Escape') {
-          canceled = true;
-          isResizing = false;
-          resizeHandle.classList.remove('resizing');
-          document.body.style.cursor = '';
-          document.body.style.userSelect = '';
-          // Revert to start size without persisting
-          sendResize(startWidth, startHeight);
-          try { if (activePointerId != null) resizeHandle.releasePointerCapture(activePointerId); } catch {}
-          resizeHandle.removeEventListener('pointermove', onMove);
-          document.removeEventListener('keydown', onKeydown);
-        }
-      };
-
-      document.addEventListener('keydown', onKeydown);
-
-      const endResize = () => {
-        if (!isResizing) return;
-        isResizing = false;
-        resizeHandle.classList.remove('resizing');
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-        const finalWidth = Math.max(MIN_W, Math.min(MAX_W, window.innerWidth));
-        const finalHeight = Math.max(MIN_H, Math.min(MAX_H, window.innerHeight));
-        if (!canceled) {
-          persistSize(finalWidth, finalHeight);
-        }
-        resizeHandle.removeEventListener('pointermove', onMove);
-        document.removeEventListener('keydown', onKeydown);
-      };
-
-      resizeHandle.addEventListener('pointermove', onMove);
-      resizeHandle.addEventListener('pointerup', endResize, { once: true });
-      resizeHandle.addEventListener('pointercancel', endResize, { once: true });
-    });
-
-    // Keyboard accessibility for resizer
-    resizeHandle.addEventListener('keydown', (e) => {
-      let stepW = 16; // width step
-      let stepH = 12; // height step
-      if (e.shiftKey) { stepW *= 4; stepH *= 4; }
-      let dw = 0;
-      let dh = 0;
-
-      switch (e.key) {
-        case 'ArrowRight':
-          dw = stepW; break;
-        case 'ArrowLeft':
-          dw = -stepW; break;
-        case 'ArrowDown':
-          dh = stepH; break;
-        case 'ArrowUp':
-          dh = -stepH; break;
-        case 'Enter':
-        case ' ': // Space
-          e.preventDefault();
-          // Snap to next preset width
-          const currentWidth = window.innerWidth;
-          const currentIndex = snapSizes.findIndex(s => Math.abs(s - currentWidth) < 8);
-          const nextIndex = currentIndex === -1
-            ? snapSizes.findIndex(s => s > currentWidth)
-            : (currentIndex + 1) % snapSizes.length;
-          const nextWidth = nextIndex === -1 ? snapSizes[0] : snapSizes[nextIndex];
-          snapToSize(nextWidth);
-          return;
-        default:
-          return; // ignore other keys
-      }
-
-      e.preventDefault();
-      const w = Math.max(MIN_W, Math.min(MAX_W, window.innerWidth + dw));
-      const h = Math.max(MIN_H, Math.min(MAX_H, window.innerHeight + dh));
-      throttledResize(w, h);
-
-      if (persistTimer) clearTimeout(persistTimer);
-      persistTimer = setTimeout(() => {
-        persistSize(w, h);
-      }, 200);
-    });
-    
-    // End of resize logic
-  </script>
+  });
+})();
+</script>
 </body>
 </html>
-

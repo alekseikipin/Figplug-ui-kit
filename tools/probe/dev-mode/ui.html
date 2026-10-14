@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>kit probe</title>
+<style>
+  body { margin: 0; padding: 12px; font: 11px/16px system-ui, sans-serif; background: var(--figma-color-bg, #fff); color: var(--figma-color-text, #000); }
+  h1 { font-size: 13px; line-height: 22px; margin: 0 0 4px; font-weight: 600; }
+  p { margin: 0 0 8px; color: var(--figma-color-text-secondary, #666); }
+  textarea { box-sizing: border-box; width: 100%; height: 300px; font: 10px/14px ui-monospace, monospace; background: var(--figma-color-bg-secondary, #f5f5f5); color: inherit; border: 1px solid var(--figma-color-border, #ccc); border-radius: 5px; padding: 6px; }
+  .row { display: flex; gap: 8px; margin-top: 8px; }
+  button { height: 24px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--figma-color-border, #ccc); background: var(--figma-color-bg, #fff); color: inherit; font: inherit; }
+  button.primary { background: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-onbrand, #fff); border-color: transparent; }
+  #status { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>kit probe</h1>
+<p>Status: <span id="status" role="status">running…</span> · Switch Figma's theme while this is open to capture both palettes.</p>
+<textarea id="out" aria-label="Probe report" readonly></textarea>
+<div class="row">
+  <button class="primary" id="copy">Copy report</button>
+  <button id="close">Close</button>
+  <span id="copied" aria-live="polite"></span>
+</div>
+<script>
+'use strict';
+const loadStartedAt = performance.now();
+const ui = {
+  earlyMessageArrived: false,
+  earlyMessageAtMs: null,
+  messagesBeforeLoad: 0,
+  htmlClassAtStart: document.documentElement.className,
+  figmaStylePresentAtStart: !!document.getElementById('figma-style'),
+  palettes: {},
+  themeChanges: [],
+};
+let finalReport = null;
+let loaded = false;
+
+function post(msg) { parent.postMessage({ pluginMessage: msg }, '*'); }
+
+function capturePalette() {
+  const el = document.getElementById('figma-style');
+  const cls = document.documentElement.className || '(no class)';
+  const text = el ? el.textContent : '';
+  const names = (text.match(/--[a-z0-9-]+(?=\s*:)/gi) || []);
+  ui.palettes[cls] = { capturedAt: new Date().toISOString(), varCount: names.length, figmaColorCount: names.filter(n => n.startsWith('--figma-color-')).length, otherVars: names.filter(n => !n.startsWith('--figma-color-')), styleText: text };
+  render();
+}
+
+function environment() {
+  const cs = getComputedStyle(document.documentElement);
+  return {
+    userAgent: navigator.userAgent,
+    origin: location.origin,
+    protocol: location.protocol,
+    referrer: document.referrer,
+    devicePixelRatio: window.devicePixelRatio,
+    colorScheme: cs.colorScheme,
+    prefersDark: matchMedia('(prefers-color-scheme: dark)').matches,
+    interAvailable11: document.fonts.check('11px Inter'),
+    interDisplayAvailable: document.fonts.check('11px "Inter Display"'),
+    systemUiFamilyResolved: getComputedStyle(document.body).fontFamily,
+    popoverSupported: typeof HTMLElement.prototype.togglePopover === 'function',
+    dialogSupported: typeof HTMLDialogElement === 'function',
+    hasSelectorSupported: CSS.supports('selector(:has(a))'),
+    anchorPositioning: CSS.supports('anchor-name: --a'),
+    clipboardApi: !!(navigator.clipboard && navigator.clipboard.writeText),
+    resizeObserver: typeof ResizeObserver === 'function',
+  };
+}
+
+function render() {
+  const out = { ui: Object.assign({}, ui, { environment: environment() }), main: finalReport };
+  document.getElementById('out').value = JSON.stringify(out, null, 2);
+}
+
+window.addEventListener('message', (event) => {
+  const msg = event.data && event.data.pluginMessage;
+  if (!msg) return;
+  if (!loaded) ui.messagesBeforeLoad += 1;
+  if (msg.type === 'probe:early') {
+    ui.earlyMessageArrived = true;
+    ui.earlyMessageAtMs = Math.round(performance.now() - loadStartedAt);
+    post({ type: 'probe:early-result', result: { arrived: true, sentAtMsFromStart: msg.sentAt, receivedAtMsFromUiStart: ui.earlyMessageAtMs, beforeLoad: !loaded } });
+  } else if (msg.type === 'probe:ping-request') {
+    post({ type: 'probe:ping', id: msg.id });
+    post({ type: 'probe:pong', id: msg.id });
+  } else if (msg.type === 'probe:measure') {
+    post({ type: 'probe:size', width: window.innerWidth, height: window.innerHeight });
+  } else if (msg.type === 'probe:report') {
+    finalReport = msg.report;
+    document.getElementById('status').textContent = 'done';
+    render();
+  }
+});
+
+new MutationObserver(() => {
+  ui.themeChanges.push({ at: Math.round(performance.now() - loadStartedAt), htmlClass: document.documentElement.className });
+  capturePalette();
+}).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+window.addEventListener('load', () => {
+  loaded = true;
+  ui.htmlClassAtLoad = document.documentElement.className;
+  ui.figmaStylePresentAtLoad = !!document.getElementById('figma-style');
+  const styleEl = document.getElementById('figma-style');
+  if (styleEl) new MutationObserver(capturePalette).observe(styleEl, { childList: true, characterData: true, subtree: true });
+  capturePalette();
+  post({ type: 'probe:ready' });
+});
+
+async function copyReport() {
+  const text = document.getElementById('out').value;
+  let how = 'none';
+  try { await navigator.clipboard.writeText(text); how = 'clipboard api'; }
+  catch (e) {
+    const ta = document.getElementById('out');
+    ta.focus(); ta.select();
+    how = document.execCommand('copy') ? 'execCommand' : 'failed (' + e.message + ')';
+  }
+  document.getElementById('copied').textContent = 'Copied ' + text.length + ' chars via ' + how;
+}
+document.getElementById('copy').addEventListener('click', copyReport);
+document.getElementById('close').addEventListener('click', () => post({ type: 'probe:close' }));
+</script>
+</body>
+</html>

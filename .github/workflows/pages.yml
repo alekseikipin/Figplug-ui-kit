@@ -1,0 +1,101 @@
+name: Pages
+
+# Publishes the browser preview (preview.html with ui.html, code.js and the fallback palette) to
+# GitHub Pages. Pages must be enabled once by the owner: Settings > Pages > Build and deployment >
+# Source: GitHub Actions.
+#
+# It runs only after CI has passed on a push to main in this repository (never for a pull request,
+# even one from a fork's own "main"), and deploys exactly the commit CI tested. A manual run
+# deploys main as it is.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy the preview
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/configure-pages@v6
+
+      # Only what the preview needs goes into _site: the files preview.html fetches (listed), plus
+      # any other repo file it names (src/href attributes, or a quoted file name such as 'x.css').
+      # Dotfiles and node_modules are never staged. The site root redirects to preview.html.
+      - name: Stage the preview in _site
+        run: |
+          node --input-type=module <<'EOF'
+          import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+          import { dirname, join, posix } from 'node:path';
+
+          const out = '_site';
+          const required = ['preview.html', 'ui.html', 'code.js', 'tokens.figma-fallback.css', 'manifest.json', 'LICENSE'];
+          const html = readFileSync('preview.html', 'utf8');
+          const patterns = [
+            /\b(?:src|href)\s*=\s*["']([^"']+)["']/gi,
+            /["'`]([\w./-]+\.(?:html|js|mjs|css|json|png|jpe?g|gif|svg|webp|woff2?|txt))["'`]/gi,
+          ];
+          const referenced = [];
+          for (const re of patterns) for (const m of html.matchAll(re)) referenced.push(m[1]);
+          const local = referenced
+            .filter((ref) => !/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(ref)) // http:, data:, blob:, //host, #anchor
+            .map((ref) => posix.normalize(ref.split(/[?#]/)[0]).replace(/^\/+/, ''))
+            .filter((ref) => ref && ref !== '.' && !ref.startsWith('..'))
+            .filter((ref) => !ref.split('/').some((part) => part.startsWith('.') || part === 'node_modules'));
+
+          for (const file of new Set([...required, ...local])) {
+            if (!existsSync(file) || !statSync(file).isFile()) {
+              if (required.includes(file)) {
+                console.log(`::error::${file} is missing; the preview cannot be published without it`);
+                process.exit(1);
+              }
+              console.log(`preview.html names ${file}, which is not a file in the repo; skipped`);
+              continue;
+            }
+            mkdirSync(join(out, dirname(file)), { recursive: true });
+            copyFileSync(file, join(out, file));
+            console.log(`staged ${file}`);
+          }
+
+          writeFileSync(join(out, 'index.html'), [
+            '<!doctype html>',
+            '<html lang="en">',
+            '<meta charset="utf-8">',
+            '<title>Kit preview</title>',
+            '<meta http-equiv="refresh" content="0; url=preview.html">',
+            '<a href="preview.html">Open the preview</a>',
+            '',
+          ].join('\n'));
+          EOF
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

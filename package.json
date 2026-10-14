@@ -1,0 +1,37 @@
+{
+  "name": "figplug-ui-kit",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Figplug UI Kit: a zero-build starter for Figma classic plugins with native-looking UI and window chrome.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alekseikipin/Figplug-ui-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alekseikipin/Figplug-ui-kit/issues"
+  },
+  "homepage": "https://github.com/alekseikipin/Figplug-ui-kit",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "audit": "node scripts/audit.mjs",
+    "check:ui": "node scripts/check-ui.mjs",
+    "test": "node --test \"test/*.test.mjs\"",
+    "test:e2e": "playwright test",
+    "preview": "node scripts/serve.mjs",
+    "check": "npm run build && npm run audit && npm run check:ui && npm test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@figma/plugin-typings": "^1.141.0",
+    "@playwright/test": "1.62.1",
+    "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "playwright-core": "$@playwright/test"
+  }
+}

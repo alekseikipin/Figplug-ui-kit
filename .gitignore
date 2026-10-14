@@ -1,5 +1,7 @@
-# PII scan reports (do not commit)
-PII-REPORT_*.md
-
-# Compiled plugin entry (built from code.ts in consumers)
-code.js
+node_modules/
+# Playwright output
+test-results/
+playwright-report/
+# Build info from tsc -b
+*.tsbuildinfo
+.DS_Store

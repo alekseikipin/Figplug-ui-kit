@@ -1,32 +1,55 @@
-<img width="1920" height="402" alt="Image" src="https://github.com/user-attachments/assets/b1fd628f-59ae-4052-994d-3e988df0489c" />
-Figplug UI Kit - theme-aware, resizable plugin UI you can drop into your own Figma plugin. This repo intentionally ships without build tooling or a manifest so it can be used as a lightweight reference or copied into an existing plugin setup.
+**Is this for you?** Quick internal tool: use Figma's agent. Network access, monetization, FigJam, Dev Mode or full UI control: start here.
 
+# Figplug UI Kit
 
-What’s Included
-- `code.ts`: Main thread logic (window resize + persistence)
-- `ui.html`: Theme-aware UI with resizer, keyboard support, and snap sizes
+Starter files for Figma classic plugins with native-looking UI and a resizable window, made to be built on with Claude Code or Cursor. Not [rsms/figplug](https://github.com/rsms/figplug) (the plugin build tool). Fallback name: TBD.
 
-What’s Not Included
-- No `manifest.json` (add this in your plugin project)
-- No `package.json`, bundler, or ESLint config
-- No build/watch scripts
+| Light | Dark |
+|---|---|
+| ![The starter plugin window, light theme](docs/img/starter-light.png) | ![The starter plugin window, dark theme](docs/img/starter-dark.png) |
 
-How To Use
-- Copy `code.ts` and `ui.html` into your plugin's source.
+_Rendered by the browser preview (`npm run preview`): a stand-in window frame and the fallback palette, not Figma itself. A side-by-side with Figma's own panel is pending a capture in the real Figma app ([steps](docs/release-checklist.md#a-side-by-side-with-figmas-own-panel-item-4))._
 
-Features
-- Theme-aware tokens using `--figma-color-*` and `themeColors: true`
-![Image](https://github.com/user-attachments/assets/3671e727-4939-481d-bd09-f4c80b4c2c2b)
-- Persistent window size via `figma.clientStorage`
-![Image](https://github.com/user-attachments/assets/b2a89621-674a-430c-a754-85ae32f7ade4)
-- Smooth resize with drag handle
-![Image](https://github.com/user-attachments/assets/0ebea3a1-ffdc-458a-b3b8-d1adad849adb)
-- Double-click snap widths (320, 480, 640px) and keyboard-accessible resizer
-![Image](https://github.com/user-attachments/assets/208c4976-b70d-4b17-ac77-f12c1fbcfeb0)
+Three hand-editable files and nothing to install: `manifest.json`, `code.ts` (compiled `code.js` included) and `ui.html`. Colours are Figma's own `--figma-color-*` tokens, so the UI follows light, dark and FigJam; controls are 24px like Figma's panels; the window fits its content, resizes from a corner grip and remembers the width. [`AGENTS.md`](AGENTS.md) tells your agent the rules, and `npm run audit` checks what it wrote.
 
-Configuration
-- Toggle size persistence: set `PERSIST_WINDOW_SIZE` in `code.ts`.
+## 60-second start
 
-Notes
-- For a full, ready-to-run plugin starter (with manifest and scripts), start from the official quickstart and then copy these files:
-  - https://www.figma.com/plugin-docs/plugin-quickstart-guide/
+1. **Code > Download ZIP** on this page and unzip it (or `git clone https://github.com/alekseikipin/Figplug-ui-kit.git`).
+2. In the **Figma desktop app**, open any file, then Figma menu > **Plugins > Development > Import plugin from manifest...** and pick `manifest.json`.
+3. Run **Plugins > Development > Kit starter**.
+
+No terminal, no build. If nothing happens or macOS asks about Documents, see the [import gotchas](docs/install.md#import-gotchas).
+
+## The one prompt
+
+Give Claude Code or Cursor this, with `<task>` filled in:
+
+```text
+Clone https://github.com/alekseikipin/Figplug-ui-kit, read AGENTS.md, build a plugin that <task> with kit classes only, then tell me how to import it.
+```
+
+For example, `<task>` = "exports the selected layers as PNG at 1x, 2x or 3x and downloads the files". Five pinned tasks and the one-shot log are in [docs/prompts.md](docs/prompts.md).
+
+## Your loop
+
+- **Changed `ui.html`?** No build: rerun the plugin with **Cmd+Opt+P** (Ctrl+Alt+P).
+- **Changed `code.ts`?** `npm run build` (or `npm run watch`), then rerun. A watch task started in VS Code stops when you reopen VS Code: start it again (Terminal > Run Build Task..., or `npm run watch`).
+- **Then check:** `npm run audit && npm run check:ui`. Your agent runs these for you.
+- **Errors:** Plugins > Development > Show/Hide console.
+- **Import gotchas:** the macOS Documents permission prompt, a file picker that does nothing, the Widgets menu's look-alike import item, and the example `id` that every copy shares until you change it. All in [docs/install.md](docs/install.md#import-gotchas); the loop in full is [docs/loop.md](docs/loop.md).
+
+## Limits, plainly
+
+- **Dropdowns are the native `<select>`.** The open list is your operating system's popup, not Figma's dark menu.
+- **FigJam is light only**, with a purple brand colour; FigJam has no dark mode.
+- **Slides has no variables** (nor components or styles), so plugins built on them don't work there.
+- **Inter, or system-ui.** The kit names Inter first and loads no font; where the plugin window lacks Inter, text falls back to the system font. To embed Inter yourself, see "Opt-in Inter" under [Kit tokens](docs/tokens.md#kit-tokens).
+- Dev Mode needs a second manifest, and Dev Mode and Buzz dock the plugin in a panel with no resize grip ([docs/surfaces.md](docs/surfaces.md)). What has not been measured in a real Figma client yet is marked UNVERIFIED in the docs.
+
+## Docs
+
+[Install](docs/install.md) · [Your loop](docs/loop.md) · [Prompts](docs/prompts.md) · [Components](docs/components.md) · [Tokens](docs/tokens.md) · [Window chrome](docs/window-chrome.md) · [Messages](docs/messages.md) · [Surfaces](docs/surfaces.md) · [Pitfalls](docs/pitfalls.md) · [Accessibility](docs/accessibility.md) · [All docs](docs/index.md) · [Changelog](CHANGELOG.md)
+
+Official Figma docs: [plugin quickstart](https://developers.figma.com/docs/plugins/plugin-quickstart-guide/), [CSS variables](https://developers.figma.com/docs/plugins/css-variables/).
+
+Bugs and questions: [issues](https://github.com/alekseikipin/Figplug-ui-kit/issues). MIT licence ([LICENSE](LICENSE)).
