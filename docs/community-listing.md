@@ -24,33 +24,34 @@ Figma's trademark guidelines ask not to put "Fig" (part of Figma's name) in a pr
 
 Paste as is, then make the lead-in of each paragraph bold, link the GitHub address and turn the "Good to know" lines into a bulleted list (Figma's description editor keeps only plain text when you paste). Every claim is from [the tour's README](../examples/kit-tour/README.md), its tests, and the kit's docs.
 
-> **Try every part of Figplug UI Kit here.** The kit is free starter code for Figma plugins that look like Figma's panels. Explore it in the plugin's three tabs, then build your own plugin with an AI agent.
+> **Try every part of Figplug UI Kit here.** The kit is free starter code for Figma plugins that look and work like Figma's own panels.
 >
-> **Components.** All 20 parts: buttons, text and number fields, a colour field, a dropdown, checkboxes, tabs, a menu, a dialog, notifications, a list and more.
+> **20 parts in six groups.** Open a group and try its parts in small working scenes: buttons, fields, menus, dialogs, toasts and more. A ring fills for each part you try.
 >
-> **Create.** Pick a number and a shape, press Create, and the plugin adds the shapes to your page and selects them. This is the only tab that changes your file.
+> **Create shapes.** Pick a number and a shape, press Create, and the plugin adds the shapes to your page and selects them. It's the only thing in the plugin that changes your file.
 >
-> **Window.** Switch tabs and watch the window fit its content. Drag the bottom-right corner to change the width. The plugin remembers it.
+> **The window.** It fits whatever is on screen. Drag the bottom-right corner to change the width. The plugin remembers it.
 >
-> **Get the files:** https://github.com/alekseikipin/Figplug-ui-kit. The page has a prompt to paste into an AI agent: describe your plugin in one sentence, and the agent builds it.
+> **Get the files:** https://github.com/alekseikipin/Figplug-ui-kit. Open them in an AI agent that can work with files on your computer, describe your plugin in one sentence, and the agent builds it with the kit.
 >
 > **Good to know**
 > - Dropdown lists open in your computer's style, not Figma's.
 > - FigJam has no dark mode, so the plugin is always light there.
 > - Figma gives plugins the Inter font in fixed weights only, so text can look a little bolder than Figma's panels.
 > - Works in Figma Design, FigJam, Slides and Buzz, but not in Dev Mode.
+> - In Buzz the plugin sits in a docked side panel that keeps its size, so there's no corner to drag.
 >
-> **No internet access.** The plugin sends nothing anywhere and collects no data. It only remembers the window width you chose, on your computer.
+> **No internet access.** The plugin sends nothing anywhere and collects no data. Open GitHub only opens the page in your browser. The plugin remembers the window width you chose, on your computer.
 >
 > MIT licence. Not made by or affiliated with Figma.
 
 The description keeps the kit's name ("Figplug UI Kit") because the files on GitHub carry it. If the name has to change ([Name](#name)), change it here too.
 
-### What's new in version 3
+### What's new in version 4
 
-For the release notes field of **Publish new version** (the listing's third version, replacing the 2025 one). Paste as is:
+Version 3 went live on 2026-10-14 with the tour's first design (three tabs: Components, Create, Window) and the earlier listing copy. Version 4 brings the redesigned tour and the copy above. For the release notes field of **Publish new version**, paste as is:
 
-> Version 3 lets you try all 20 parts of Figplug UI Kit, create shapes, and watch the window fit each tab. It now works in Figma Design, FigJam, Slides and Buzz. Get the files: https://github.com/alekseikipin/Figplug-ui-kit
+> Version 4 is a new tour: try all 20 parts in six groups, one small working scene at a time, then create shapes on your page. A ring fills for each part you try. Get the files: https://github.com/alekseikipin/Figplug-ui-kit
 
 ### Listing fields
 
@@ -71,16 +72,16 @@ Sources: [Publish classic plugins to the Figma Community](https://help.figma.com
 
 Captured in the Figma desktop app from the publish folder's plugin (step 3 below), never in the browser preview: the guidelines ask that screenshots show the plugin as it is, and the preview's colours and fonts are a stand-in. Up to nine images or videos; 1920 × 1080 px.
 
-Made on 2026-10-14 in Figma desktop 126.9.13 (macOS, Figma in its dark theme), in scratch files, and kept in [`docs/listing/kit-tour/`](listing/kit-tour/). Upload them after the illustrated cover, in this order:
+Made on 2026-10-14 in Figma desktop 126.9.13 (macOS, Figma in its dark theme) from the redesigned tour, in a scratch file, and kept in [`docs/listing/kit-tour/`](listing/kit-tour/). Upload them after the illustrated cover, in this order:
 
-1. **[`figplug-v3-tour.mp4`](listing/kit-tour/figplug-v3-tour.mp4), 17 s, no sound.** Real window captures, about 9 a second, played back in real time with still stretches cut to 1.6 s. The tour opens on Components. It switches to Create, where Create adds five rectangles on the canvas behind the window. It moves to Window, adds a line, which grows the window, and removes it. It ends back on Components with a toast. There is no pointer: the clicks came from an automation tool.
-2. **[`figplug-v3-1-components.jpg`](listing/kit-tour/figplug-v3-1-components.jpg):** the Components tab (buttons and overlays), Figma Design.
-3. **[`figplug-v3-2-overlays.jpg`](listing/kit-tour/figplug-v3-2-overlays.jpg):** the Actions menu open, the Rename frame dialog over the dimmed window, and a toast with Undo.
-4. **[`figplug-v3-3-create.jpg`](listing/kit-tour/figplug-v3-3-create.jpg):** five rectangles made and selected, with Figma's own Design panel beside the window.
-5. **[`figplug-v3-4-window.jpg`](listing/kit-tour/figplug-v3-4-window.jpg):** the Window tab, with the modes, the live size and the keys of the resize handle.
-6. **[`figplug-v3-5-editors.jpg`](listing/kit-tour/figplug-v3-5-editors.jpg):** the top of the window in Figma Design (dark), FigJam (light, purple) and Slides (dark, orange).
+1. **[`figplug-v4-tour.mp4`](listing/kit-tour/figplug-v4-tour.mp4), 20 s, no sound.** Real window captures, about 7 a second, played back in real time with still stretches cut to 1.4 s. Home at 0 of 20; Buttons, where pressing the live button shows its busy state; back to Home with the new rings filled; Pop-ups, a frame's menu, Delete and Undo; Create shapes, where Create adds five rectangles to the canvas; Get the files. There is no pointer: the clicks came from an automation tool. One cut removes a wrong turn.
+2. **[`figplug-v4-1-home.jpg`](listing/kit-tour/figplug-v4-1-home.jpg):** Home at 9 of 20, with Pop-ups finished.
+3. **[`figplug-v4-2-buttons.jpg`](listing/kit-tour/figplug-v4-2-buttons.jpg):** the live button on its scrap of canvas, with Properties under it.
+4. **[`figplug-v4-3-popups.jpg`](listing/kit-tour/figplug-v4-3-popups.jpg):** a frame's menu, the Rename frame dialog and the Undo toast.
+5. **[`figplug-v4-4-create.jpg`](listing/kit-tour/figplug-v4-4-create.jpg):** Create shapes after Create, with the five rectangles selected on the canvas.
+6. **[`figplug-v4-5-files.jpg`](listing/kit-tour/figplug-v4-5-files.jpg):** Get the files, with the colour swatches read from Figma's theme.
 
-The images frame crops of the captures on the cover's cream paper, with a title in the cover's lettering. Nothing inside a plugin window was edited. Every crop stays below Figma's tab bar and file-name row, so no other file names and no avatar show. The light theme in Figma Design was not captured, so as not to switch the owner's Figma theme. The raw captures and the script that frames them stay outside the repo, because the captures show the owner's other files.
+The images frame crops of the captures on the cover's cream paper, with a title in the cover's lettering. Nothing inside a plugin window was edited. Every crop stays below Figma's tab bar and file-name row, so no other file names and no avatar show. The raw captures and the framing script stay outside the repo, because the captures show the owner's other files. The version 3 media (the first tour) was removed from the repo.
 
 ### Republish steps (owner action)
 
@@ -104,10 +105,10 @@ The listing already exists, so this publishes a new version of plugin 1545605168
    `editorType` (`figma`, `figjam`, `slides`, `buzz`), `documentAccess: "dynamic-page"` and `networkAccess` (`"none"`) stay as they are, minus any editor that fails step 3. Check the folder with the repo's audit: `node scripts/audit.mjs ~/figma-publish/figplug` should print "no problems". Never change the repo's `examples/kit-tour/manifest.json` instead: importing the repo must never share an identity or `figma.clientStorage` with the installed Community plugin. For a later update, copy the new `code.js` and `ui.html` over the old ones and keep the folder's `manifest.json`.
 3. **Test it in Figma.** Import `~/figma-publish/figplug/manifest.json` (Plugins > Development > Import plugin from manifest...). The title bar and the Plugins menu should read "Figplug". Run it through the tour's rows of the [examples matrix](release-checklist.md#the-examples): Figma Design light and dark, FigJam, Slides and Buzz. If an editor fails, remove it from the folder's `editorType` and from the description's limits before publishing.
 4. **Capture the carousel** from that run ([carousel media](#carousel-media)).
-5. **Publish the new version.** In the desktop app: Plugins > Manage plugins, the menu next to Figplug > **Publish new version** (the exact labels are not verified here; [publishing.md](publishing.md#submit)). Paste the [version note](#whats-new-in-version-3) into the version notes field. On the listing: replace the tagline and the description with the copy above, keep the illustrated icon and cover, and replace the 2025 demo video in the carousel with the new captures. On the last page, check that the support contact is still the email already on the listing and that the label reads **No access to network**. The listing page itself can also be edited later without a new version (Manage resource > Edit this page).
+5. **Publish the new version.** In the desktop app: Plugins > Manage plugins, the menu next to Figplug > **Publish new version** (the exact labels are not verified here; [publishing.md](publishing.md#submit)). Paste the [version note](#whats-new-in-version-4) into the version notes field. On the listing: replace the tagline and the description with the copy above, keep the illustrated icon and cover, and replace the 2025 demo video in the carousel with the new captures. On the last page, check that the support contact is still the email already on the listing and that the label reads **No access to network**. The listing page itself can also be edited later without a new version (Manage resource > Edit this page).
 6. **Record.** Note the date, the commit or tag published, and the outcome in [release-checklist.md](release-checklist.md#outward-actions-waiting-for-the-owner) (action 2). An update to an approved plugin publishes at once, without a new review, although Figma may review a material update again ([publishing.md](publishing.md#review-and-after)).
 
-Review risks to know before submitting: the guidelines ask for no temporary content and an accurate description, and a kit demo may be read as sample content; the description therefore says plainly that the plugin is a tour of starter files and links to the docs. The guidelines also say a plugin whose core function changed substantially should be a new plugin: the 2025 version was a demo of the same kit (its themed, resizable window), and the tour demos that kit again, with more of it, so this reads as an update, but a reviewer may see it otherwise. If a reviewer objects to the name, switch to the fallback name above.
+Review risks to know before submitting: the guidelines ask for no temporary content and an accurate description, and a kit demo may be read as sample content; so the description says the plugin is the live demo of free starter code, and links the files on GitHub. The guidelines also say a plugin whose core function changed substantially should be a new plugin: the 2025 version was a demo of the same kit (its themed, resizable window), and the tour demos that kit again, with more of it, so this reads as an update, but a reviewer may see it otherwise. If a reviewer objects to the name, switch to the fallback name above.
 
 ## The two archetypes ("Built with Figplug")
 

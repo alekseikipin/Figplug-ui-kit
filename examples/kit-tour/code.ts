@@ -444,9 +444,10 @@ function installKitWindow(options: KitWindowOptions = {}): KitWindow {
 // ==== kit:window:end ====
 
 // ---- Your plugin starts here ----
-// The kit tour: the curated demo that the Community listing runs. ui.html shows every part of the
-// kit working in this window; the main thread only runs the starter's Create-shapes demo on the
-// Create tab. It needs no network, and it touches the document only when the person presses Create.
+// The kit tour: the curated demo that the Community listing runs ("Figplug"). ui.html shows the
+// kit's 20 parts working in this window; the main thread runs the Create shapes page (the only
+// thing that changes the file) and opens the kit's GitHub page from Get the files. It needs no
+// network: figma.openExternal opens the browser, it fetches nothing.
 
 installKitWindow({ mode: 'fit-content', size: { width: 360 }, bounds: { maxHeight: 720 } });
 
@@ -454,24 +455,28 @@ installKitWindow({ mode: 'fit-content', size: { width: 360 }, bounds: { maxHeigh
 const TOUR_MAX_SHAPES = 50;
 /** The created shapes sit in a row, this far apart (left edge to left edge). */
 const TOUR_SHAPE_STEP = 150;
+/** Their fill. ui.html draws its preview in the same colour (SHAPE_FILL there): keep the two in step. */
+const TOUR_SHAPE_FILL: RGB = { r: 1, g: 0.5, b: 0 };
+/** Get the files: the page Open GitHub opens. It lives here, never in a message. */
+const TOUR_GITHUB_URL = 'https://github.com/alekseikipin/Figplug-ui-kit';
 
 type TourShape = 'rectangle' | 'ellipse';
 
 // ---- UI -> main ----
 
-/** Create tab: the person pressed Create (or Enter in the Count field). */
+/** Create shapes: the person pressed Create (or Enter in the Count field). */
 interface TourCreateShapesMessage {
   type: 'create-shapes';
   count: number;
   shape: TourShape;
 }
 
-/** Create tab: the person pressed Close. */
-interface TourCloseMessage {
-  type: 'close';
+/** Get the files: the person pressed Open GitHub. The URL is TOUR_GITHUB_URL, never part of the message. */
+interface TourOpenGithubMessage {
+  type: 'open-github';
 }
 
-type TourUiToMain = TourCreateShapesMessage | TourCloseMessage;
+type TourUiToMain = TourCreateShapesMessage | TourOpenGithubMessage;
 
 // ---- main -> UI ----
 
@@ -509,13 +514,13 @@ function isTourCreateShapesMessage(msg: unknown): msg is TourCreateShapesMessage
   return typeof count === 'number' && Number.isFinite(count) && isTourShape(shape);
 }
 
-function isTourCloseMessage(msg: unknown): msg is TourCloseMessage {
-  return tourMessageType(msg) === 'close';
+function isTourOpenGithubMessage(msg: unknown): msg is TourOpenGithubMessage {
+  return tourMessageType(msg) === 'open-github';
 }
 
 /** The tour's own message, typed, or null for kit:* messages and anything malformed or unknown. */
 function tourReadMessage(msg: unknown): TourUiToMain | null {
-  if (isTourCloseMessage(msg) || isTourCreateShapesMessage(msg)) return msg;
+  if (isTourOpenGithubMessage(msg) || isTourCreateShapesMessage(msg)) return msg;
   return null;
 }
 
@@ -545,12 +550,12 @@ function tourCreateShapes(count: number, shape: TourShape): void {
       const node = shape === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
       node.x = Math.round(x) + i * TOUR_SHAPE_STEP;
       node.y = Math.round(y);
-      node.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
+      node.fills = [{ type: 'SOLID', color: TOUR_SHAPE_FILL }];
       nodes.push(node);
     }
   } catch (error) {
     // Not every editor can create every node: say so instead of failing silently in the console.
-    figma.notify('Could not create shapes: ' + tourErrorText(error), { error: true });
+    figma.notify('Couldn’t add shapes: ' + tourErrorText(error), { error: true });
   }
   if (nodes.length > 0) {
     // Selecting and zooming come after: the shapes exist even if this fails, so the notice says
@@ -560,19 +565,30 @@ function tourCreateShapes(count: number, shape: TourShape): void {
       figma.viewport.scrollAndZoomIntoView(nodes);
     } catch (error) {
       const made = nodes.length === 1 ? '1 shape' : nodes.length + ' shapes';
-      figma.notify('Created ' + made + ', but could not select them: ' + tourErrorText(error), { error: true });
+      figma.notify('Added ' + made + ', but couldn’t select them: ' + tourErrorText(error), { error: true });
     }
   }
   // Always answer, so the busy Create button never gets stuck.
   tourPost({ type: 'created', count: nodes.length, shape });
 }
 
+/** Opens the kit's GitHub page in the browser. Where the editor can't (UNVERIFIED in Slides and
+ *  Buzz), Figma's notice points at Copy link, next to the address on the page; the console gets why. */
+function tourOpenGithub(): void {
+  try {
+    figma.openExternal(TOUR_GITHUB_URL);
+  } catch (error) {
+    console.warn('openExternal failed: ' + tourErrorText(error));
+    figma.notify('Couldn’t open your browser. Use Copy link instead.', { error: true });
+  }
+}
+
 figma.ui.on('message', (raw: unknown) => {
   const msg = tourReadMessage(raw);
   if (!msg) return; // kit:* and anything else: the kit's own listener handles its messages
-  if (msg.type === 'close') {
-    figma.closePlugin();
-    return; // closePlugin does not stop this function
+  if (msg.type === 'open-github') {
+    tourOpenGithub();
+    return;
   }
   tourCreateShapes(tourClampCount(msg.count), msg.shape);
 });

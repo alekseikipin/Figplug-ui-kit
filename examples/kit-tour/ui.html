@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kit tour</title>
+<title>Figplug</title>
 <meta name="kit" content="kit v0.4.0 · protocol 1 · https://github.com/alekseikipin/Figplug-ui-kit">
 <style data-kit="tokens">
 /* kit tokens v0.4.0 · protocol 1 · MIT · https://github.com/alekseikipin/Figplug-ui-kit · issues: https://github.com/alekseikipin/Figplug-ui-kit/issues · re-paste all three data-kit blocks to upgrade */
@@ -946,562 +946,1065 @@ else boot();
 </script>
 <style>
 /* Your styles. Build with kit classes first; add rules here only for what they don't cover. */
-/* The tab bar is the window's first row. It sticks to the top while a long tab scrolls (the window
-   stops at its maximum height), and its 8px side padding lines the tab labels up with the text. */
-.tour { gap: 0; }
-.tour > .kit-tablist { position: sticky; top: 0; z-index: 2; padding: var(--kit-spacer-2); border-bottom: var(--kit-border-width) solid var(--figma-color-border); background-color: var(--figma-color-bg); }
-/* What the browser scrolls into view (focus moving back up, find in page) clears the sticky bar:
-   the bar's 41px (24 + 2 x 8 + 1) and 8px more. */
-:root:has(.tour > .kit-tablist) { scroll-padding-top: calc(var(--kit-control-height) + 3 * var(--kit-spacer-2) + var(--kit-border-width)); }
-/* The tour's last row keeps the kit's usual 8px clearance for the grip, as a last .kit-section would.
-   On Create the sticky footer is the last row, so the grip sits in its corner, as the kit does for a
-   footer that is the root's last child. */
-html[data-kit-chrome="on"] .kit-app:has(> .tour:last-child) { padding-bottom: var(--kit-spacer-2); }
-html[data-kit-chrome="on"] .kit-app:has(input[name="tour"][value="create"]:checked) { padding-bottom: 0; }
-.tour-cols { align-items: flex-start; }
+.tour-screen { display: flow-root; }
+.kit-app { overflow-x: clip; } /* the 8px slide never scrolls sideways */
+.tour-screen p { text-wrap: pretty; }
+.tour-screen h2[tabindex] { outline: none; }
+use { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+/* Hidden screens keep their footers: kit rules rewritten for the visible one. */
+html[data-kit-chrome="on"] .kit-app:has(> .tour-screen:not([hidden]) > .kit-section:last-child) { padding-bottom: var(--kit-spacer-2); }
+html[data-kit-chrome="on"] .kit-app:has(> .tour-screen:not([hidden]) > .kit-footer:last-child) { padding-bottom: 0; }
+:root:not(:has(.tour-screen:not([hidden]) > .kit-footer)) { scroll-padding-bottom: 0; }
+:root:not(:has(.tour-screen:not([hidden]) > .kit-footer)) .kit-toast-region { bottom: var(--kit-spacer-2); }
+:root:has(.tour-screen:not([hidden]) > .tour-bar) { scroll-padding-top: calc(var(--kit-spacer-6) + var(--kit-spacer-2)); }
+/* Toast lane: 40px of room while a toast shows, so it covers nothing. */
+:root:has(.kit-toast-region > .kit-toast) .kit-app:has(> .tour-screen:not([hidden]):not([data-footer])) { padding-bottom: 0; }
+/* A box, not padding: the kit refits on content-box changes. */
+:root:has(.kit-toast-region > .kit-toast) .kit-app:has(> .tour-screen:not([hidden]):not([data-footer]))::after { content: ""; display: block; height: var(--kit-spacer-6); }
+:root:has(.kit-toast-region > .kit-toast) .tour-screen:not([hidden]) > .kit-footer { margin-top: var(--kit-spacer-6); }
+.tour-bar { position: sticky; top: 0; z-index: 2; padding-left: var(--kit-spacer-2); border-bottom: var(--kit-border-width) solid var(--figma-color-border); background-color: var(--figma-color-bg); }
+.tour-bar + .kit-section { padding-top: var(--kit-spacer-2-5); }
+.tour-next { gap: 0; padding-right: var(--kit-spacer-1); }
+.tour-next > .kit-icon, .tour-chevron { color: var(--figma-color-icon-secondary); }
+.tour-page { display: flex; flex-direction: column; gap: var(--kit-spacer-3); }
+.tour-tight { padding-bottom: var(--kit-spacer-2); }
+.tour-tight:has(> .kit-notice:not([hidden])) { padding-bottom: var(--kit-spacer-3); }
+.tour-lead, .tour-intro { display: flex; flex-direction: column; gap: var(--kit-spacer-1); }
+.tour-lead > p, .tour-intro > p { margin: 0; }
+/* Leads break between sentences, legends two and two. */
+.tour-lead span { display: inline-block; }
+.tour-legend { margin: 0 calc(-1 * var(--kit-spacer-1)); text-wrap: balance; }
+.tour-part { display: inline-flex; align-items: center; gap: var(--kit-spacer-1); margin-right: var(--kit-spacer-0-5); padding: var(--kit-spacer-1); border: 0; border-radius: var(--kit-radius-medium); outline: var(--kit-focus-width) solid transparent; outline-offset: -1px; background-color: transparent; color: var(--figma-color-text-secondary); white-space: nowrap; vertical-align: top; }
+.tour-part:last-child { margin-right: 0; }
+.tour-part::before, .tour-rings > span { content: ""; flex: none; width: var(--kit-spacer-1-5); height: var(--kit-spacer-1-5); border: var(--kit-border-width) solid var(--figma-color-icon-secondary); border-radius: var(--kit-radius-full); }
+.tour-part[data-tried] { color: var(--figma-color-text); }
+.tour-part[data-tried]::before, .tour-rings > [data-tried] { border-color: var(--figma-color-bg-brand); background-color: var(--figma-color-bg-brand); }
+.tour-part[data-absent]::before { border-style: dashed; }
+.tour-part:hover:not(:disabled) { background-color: var(--figma-color-bg-hover); color: var(--figma-color-text); }
+.tour-part:focus-visible { outline-color: var(--figma-color-border-selected); }
+:root .tour-ring.tour-ring { outline: 2px solid var(--figma-color-border-selected); outline-offset: 2px; }
+/* Inset at the window's edges, so all four sides show. */
+:root :is(.kit-resize-handle, .kit-section-header, .kit-scroll, .kit-footer).tour-ring { outline-offset: -2px; }
+/* A ringed specimen's selection steps aside; an open menu hides its opener's tooltip. */
+.tour-sel:has(> .tour-ring) { outline-color: transparent; }
+.tour-sel:has(> .tour-ring) > :not(.tour-ring), .kit-tooltip-host:has(> [aria-expanded="true"]) > .kit-tooltip { visibility: hidden; transition: none; }
+.tour-title { margin: 0; font-size: var(--kit-font-size-large); line-height: var(--kit-line-height-large); letter-spacing: var(--kit-letter-spacing-large); font-weight: var(--kit-font-weight-strong); }
+.tour-done { margin-top: var(--kit-spacer-2-5); }
+.tour-groups { padding: var(--kit-spacer-2); }
+.tour-group { gap: var(--kit-spacer-2-5); padding-block: var(--kit-spacer-1-5); }
+.tour-tile { display: grid; flex: none; place-items: center; width: var(--kit-control-height-large); height: var(--kit-control-height-large); border-radius: var(--kit-radius-medium); background-color: var(--figma-color-bg-secondary); color: var(--figma-color-icon); }
+.tour-group[data-done] .tour-tile { background-color: var(--figma-color-bg-brand-tertiary); color: var(--figma-color-icon-brand); }
+.tour-group[aria-current="true"] .tour-tile { background-color: var(--figma-color-bg-onselected); }
+.tour-group .tour-brand { background-color: var(--figma-color-bg-brand); color: var(--figma-color-icon-onbrand); }
+.tour-group b { display: flex; align-items: center; gap: var(--kit-spacer-2); font-weight: var(--kit-font-weight-strong); }
+.tour-group i { overflow: hidden; color: var(--figma-color-text-secondary); font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.tour-group[aria-current="true"] i { color: var(--figma-color-text-onselected-secondary); }
+.tour-rings { display: flex; gap: var(--kit-spacer-1); }
+.tour-group[aria-current="true"] .tour-rings > span:not([data-tried]) { border-color: var(--figma-color-icon-onselected-secondary); }
+.tour-chevron { margin-right: calc(-1 * var(--kit-spacer-1)); }
+.tour-group[aria-current="true"] .tour-chevron { color: var(--figma-color-icon-onselected); }
+.tour-canvas { display: flex; align-items: center; justify-content: center; height: calc(2 * var(--kit-spacer-6) + var(--kit-spacer-2)); border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid var(--figma-color-border); outline-offset: -1px; background: radial-gradient(circle, var(--figma-color-border) 1px, transparent 1px) center / var(--kit-spacer-2-5) var(--kit-spacer-2-5), var(--figma-color-bg); overflow: hidden; }
+.tour-sel { position: relative; display: flex; gap: var(--kit-spacer-2-5); margin-bottom: calc(var(--kit-spacer-3) + var(--kit-spacer-1)); outline: var(--kit-border-width) solid var(--figma-color-border-selected); }
+.tour-sel:has(> .tour-name) { margin-bottom: 0; }
+.tour-sel > i { position: absolute; width: var(--kit-spacer-1-5); height: var(--kit-spacer-1-5); margin: calc(-0.5 * var(--kit-spacer-1-5)); border: var(--kit-border-width) solid var(--figma-color-border-selected); background-color: var(--figma-color-bg); }
+.tour-sel > i:nth-of-type(odd) { left: 0; }
+.tour-sel > i:nth-of-type(even) { right: 0; }
+.tour-sel > i:nth-of-type(-n+2) { top: 0; }
+.tour-sel > i:nth-of-type(n+3) { bottom: 0; }
+.tour-badge, .tour-name, .tour-swatches small, .tour-steps > li::before { font-size: var(--kit-font-size-small); line-height: var(--kit-line-height-small); letter-spacing: var(--kit-letter-spacing-small); }
+.tour-badge, .tour-name { position: absolute; white-space: nowrap; }
+.tour-badge { top: calc(100% + var(--kit-spacer-1-5)); left: 50%; translate: -50% 0; padding: 0 var(--kit-spacer-1); border-radius: var(--kit-radius-small); background-color: var(--figma-color-bg-brand); color: var(--figma-color-text-onbrand); }
+.tour-name { bottom: calc(100% + var(--kit-spacer-1-5)); left: 0; color: var(--figma-color-text-brand); }
+.tour-props { display: grid; grid-template-columns: calc(2 * var(--kit-spacer-5)) minmax(0, 1fr); align-items: center; gap: var(--kit-spacer-2); }
+/* Document fills are data: custom properties. */
+.tour-frame { width: calc(var(--tour-w) * 1px); height: calc(var(--tour-h) * 1px); background-color: var(--tour-fill); }
+.tour-shape { width: var(--kit-icon-size); height: var(--kit-icon-size); background-color: var(--tour-shape-fill); }
+[data-shape="ellipse"] > .tour-shape { border-radius: var(--kit-radius-full); }
+.tour-more { display: grid; place-items: center; min-width: var(--kit-icon-size); }
+.tour-more, .tour-url, .tour-swatches small, .tour-steps > li::before { color: var(--figma-color-text-secondary); }
+.tour-badge, .tour-more, .tour-size, .tour-rows .kit-list-row-meta, .tour-swatches small { font-variant-numeric: tabular-nums; }
+.tour-rows { padding: 0 var(--kit-spacer-2) var(--kit-spacer-2); }
+.tour-rows .kit-tooltip-host { margin-right: calc(-1 * var(--kit-spacer-1)); }
+.kit-scroll.tour-rows { --kit-scroll-max-height: calc(5.5 * var(--kit-control-height-large)); }
+.kit-scroll.tour-rows[data-scrolled] { border-top: var(--kit-border-width) solid var(--figma-color-border); }
+.tour-cols, .tour-nowrap { flex-wrap: nowrap; }
+.tour-cols { align-items: flex-start; gap: var(--kit-spacer-3); }
 .tour-cols > * { flex: 1 1 0; min-width: 0; }
-.tour-indent { margin-left: var(--kit-spacer-4); }
-/* Insets the rows by 8px, so their text lines up with the section header's title, as in UI3. */
-.tour-list { --kit-scroll-max-height: 176px; padding: 0 var(--kit-spacer-2) var(--kit-spacer-2); }
-.tour-modes { display: flex; flex-direction: column; gap: var(--kit-spacer-2); margin: 0; padding: 0; list-style: none; }
-.tour-mode-name { display: flex; align-items: center; gap: var(--kit-spacer-2); font-weight: var(--kit-font-weight-strong); }
-/* The selected list row's pair: 15.73:1 light, 8.27:1 dark (docs/accessibility.md). */
-.tour-here { padding: 0 var(--kit-spacer-1-5); border-radius: var(--kit-radius-full); background-color: var(--figma-color-bg-selected); color: var(--figma-color-text-onselected); font-weight: var(--kit-font-weight); }
-.tour-modes > li:not([aria-current="true"]) .tour-here { display: none; }
-.tour-size { flex: 1 1 0; min-width: 0; margin: 0; font-weight: var(--kit-font-weight-strong); font-variant-numeric: tabular-nums; }
-.tour-keys { width: 100%; border-collapse: collapse; }
-.tour-keys :is(th, td) { padding: var(--kit-spacer-1) 0; border-bottom: var(--kit-border-width) solid var(--figma-color-border); font-weight: inherit; text-align: start; vertical-align: top; }
-.tour-keys tr:last-child > * { border-bottom: 0; }
-.tour-keys th { width: 1%; padding-right: var(--kit-spacer-3); white-space: nowrap; }
-.tour-keys td { color: var(--figma-color-text-secondary); }
-.tour-keys kbd { display: inline-block; min-width: var(--kit-icon-size-small); padding: 0 var(--kit-spacer-1); border-radius: var(--kit-radius-small); background-color: var(--figma-color-bg-secondary); font: inherit; text-align: center; }
+.tour-cols > fieldset { display: flex; flex-direction: column; margin: 0; padding: 0; border: 0; }
+.tour-cols legend { margin-bottom: var(--kit-spacer-1); padding: 0; }
+.tour-cols > fieldset:first-child > label + label { margin-left: var(--kit-spacer-4); }
+.tour-tones { display: flex; flex-wrap: wrap; gap: 0 var(--kit-spacer-3); }
+@media (max-width: 319px) { .tour-tones { display: grid; grid-template-columns: 1fr 1fr; } }
+.tour-page > .kit-empty { padding-block: var(--kit-spacer-4); }
+.tour-steps, .tour-swatches { display: grid; gap: var(--kit-spacer-2-5); margin: 0; padding: 0; list-style: none; }
+.tour-steps { counter-reset: tour-step; }
+.tour-steps > li { display: flex; gap: var(--kit-spacer-2-5); counter-increment: tour-step; }
+.tour-steps > li::before { content: counter(tour-step); display: grid; flex: none; place-items: center; width: var(--kit-icon-size-small); height: var(--kit-icon-size-small); border-radius: var(--kit-radius-full); background-color: var(--figma-color-bg-secondary); font-weight: var(--kit-font-weight-strong); }
+.tour-group > span:nth-child(2), .tour-steps > li > span, .tour-swatches span:last-child { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; }
+.tour-steps b, .tour-subtitle { margin: 0; font: inherit; font-weight: var(--kit-font-weight-strong); }
+.tour-steps .kit-button { margin: calc(-1 * var(--kit-spacer-1)) calc(-1 * var(--kit-spacer-2)) 0 0; }
+.tour-url { overflow-wrap: anywhere; user-select: text; }
+.tour-swatches { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--kit-spacer-2); }
+.tour-swatches > li { display: flex; flex-direction: column; gap: var(--kit-spacer-1); min-width: 0; }
+.tour-swatches i { height: var(--kit-control-height); border-radius: var(--kit-radius-medium); outline: var(--kit-border-width) solid var(--figma-color-border); outline-offset: -1px; background-color: var(--tour-swatch); }
+.tour-swatches span:last-child { overflow: hidden; white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .tour-screen:not([hidden]) { animation: tour-in var(--kit-duration-medium) var(--kit-easing); }
+  [data-tour-dir="back"] .tour-screen:not([hidden]) { animation-name: tour-back; }
+  .tour-part[data-fresh]::before, .tour-rings > [data-fresh] { animation: tour-fill var(--kit-duration-medium) var(--kit-easing); }
+  :root .tour-ring { animation: tour-pulse calc(3 * var(--kit-duration-medium)) 2; }
+}
+@keyframes tour-in { from { opacity: 0; translate: var(--kit-spacer-2) 0; } }
+@keyframes tour-back { from { opacity: 0; translate: calc(-1 * var(--kit-spacer-2)) 0; } }
+@keyframes tour-fill { from { scale: 0.6; } }
+@keyframes tour-pulse { 50% { outline-color: transparent; } }
 </style>
 </head>
 <body>
+<svg hidden aria-hidden="true">
+<symbol id="i-back"><path d="M13.5 8.5 10 12l3.5 3.5"/></symbol>
+<symbol id="i-chev"><path d="m6.5 4.5 3.5 3.5-3.5 3.5"/></symbol>
+<symbol id="i-more"><path d="M7.5 12h.01M12 12h.01M16.5 12h.01" stroke-width="2"/></symbol>
+<symbol id="i-plus"><path d="M12 7.5v9M7.5 12h9"/></symbol>
+<symbol id="i-close"><path d="m8 8 8 8m0-8-8 8"/></symbol>
+<symbol id="i-frame"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11"/></symbol>
+<symbol id="i-lock"><rect x="8.5" y="11.5" width="7" height="5.5" rx="1"/><path d="M10 11.5V10a2 2 0 0 1 4 0v1.5"/></symbol>
+<symbol id="i-reset"><path d="M7.5 12a4.5 4.5 0 1 0 1.4-3.25M8.75 6.25v2.5h2.5"/></symbol>
+<symbol id="i-info"><circle cx="12" cy="12" r="5.5"/><path d="M12 11.5v3M12 9.25v.01"/></symbol>
+<symbol id="i-success"><circle cx="12" cy="12" r="5.5"/><path d="m9.75 12.1 1.5 1.5 3-3.1"/></symbol>
+<symbol id="i-warning"><path d="M12 6.75 17.75 16.75H6.25zM12 10.75v2.5M12 15v.01"/></symbol>
+<symbol id="i-danger"><circle cx="12" cy="12" r="5.5"/><path d="M12 9.5v3M12 14.5v.01"/></symbol>
+<symbol id="i-done"><circle cx="12" cy="12" r="6.5"/><path d="m9.5 12.25 1.75 1.75 3.25-3.5"/></symbol>
+<symbol id="g-buttons"><rect x="5.5" y="8.5" width="13" height="7" rx="2"/><path d="M9.5 12h5"/></symbol>
+<symbol id="g-fields"><rect x="4.5" y="8.5" width="15" height="7" rx="1.5"/><path d="M8 10.5v3"/></symbol>
+<symbol id="g-choices"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/><path d="m9.5 12 1.75 1.75L14.5 10.5"/></symbol>
+<symbol id="g-popups"><rect x="5.5" y="5.5" width="8" height="4" rx="1"/><rect x="8.5" y="11.5" width="10" height="7" rx="1.5"/><path d="M10.5 14h6M10.5 16h4"/></symbol>
+<symbol id="g-feedback"><path d="M6.5 7.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H11l-3 2.5v-2.5H6.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1zM12 9.75v2.5M12 13.75v.01"/></symbol>
+<symbol id="g-window"><rect x="5.5" y="6.5" width="13" height="11" rx="2"/><path d="M5.5 9.5h13M16.25 13.75l-2.5 2.5M16.25 15.5l-.75.75"/></symbol>
+<symbol id="g-create"><rect x="5.5" y="9.5" width="7" height="7" rx="0.5"/><circle cx="15.5" cy="9.5" r="3.5"/></symbol>
+</svg>
 <main class="kit-app" data-kit-root>
-  <h1 class="kit-visually-hidden">Kit tour</h1>
-  <div class="kit-tabs tour">
-    <div class="kit-tablist" role="radiogroup" aria-label="Tour">
-      <label class="kit-tab"><input type="radio" name="tour" value="components" checked>Components</label>
-      <label class="kit-tab"><input type="radio" name="tour" value="create">Create</label>
-      <label class="kit-tab"><input type="radio" name="tour" value="window">Window</label>
-    </div>
+<h1 class="kit-visually-hidden">Figplug</h1>
 
-    <div id="panel-components">
-      <div class="kit-section">
-        <p class="kit-text-secondary">Every kit component, working. Each tab fits the window to its content.</p>
-      </div>
-      <header class="kit-section-header"><h2>Buttons</h2></header>
-      <div class="kit-section kit-stack">
-        <p class="kit-text-secondary">Save shows the busy state. Snap to grid and the lock are toggles.</p>
-        <div class="kit-row">
-          <button class="kit-button kit-button-primary" type="button">Primary</button>
-          <button class="kit-button kit-button-secondary" type="button">Secondary</button>
-          <button class="kit-button kit-button-tertiary" type="button">Tertiary</button>
-          <button class="kit-button kit-button-danger" type="button">Danger</button>
-        </div>
-        <div class="kit-row">
-          <button class="kit-button kit-button-primary kit-button-large" type="button">Large</button>
-          <button class="kit-button kit-button-secondary" type="button" disabled>Disabled</button>
-          <button class="kit-button kit-button-secondary" id="save" type="button">Save</button>
-          <button class="kit-button kit-button-secondary" id="snap" type="button" aria-pressed="true">Snap to grid</button>
-        </div>
-        <div class="kit-row">
-          <span class="kit-tooltip-host">
-            <button class="kit-icon-button" type="button" aria-label="Add layer" aria-describedby="tip-add"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.5v9M7.5 12h9" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button>
-            <span class="kit-tooltip kit-tooltip-start" role="tooltip" id="tip-add">Adds an empty frame</span>
-          </span>
-          <span class="kit-tooltip-host">
-            <button class="kit-icon-button" id="lock" type="button" aria-label="Lock ratio" aria-pressed="false" aria-describedby="tip-lock"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11h8v6H8z M9.5 11V9.5a2.5 2.5 0 0 1 5 0V11" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg></button>
-            <span class="kit-tooltip kit-tooltip-start" role="tooltip" id="tip-lock">Keeps width and height in proportion</span>
-          </span>
-          <span class="kit-tooltip-host">
-            <button class="kit-icon-button" type="button" aria-label="Delete" aria-disabled="true" aria-describedby="tip-delete"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 8.5h9M10.5 8.5V7h3v1.5M8.75 8.5l.5 8.5h5.5l.5-8.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-            <span class="kit-tooltip kit-tooltip-start" role="tooltip" id="tip-delete">Nothing to delete</span>
-          </span>
-        </div>
-      </div>
-      <hr class="kit-divider">
-      <header class="kit-section-header"><h2>Overlays</h2></header>
-      <div class="kit-section kit-stack">
-        <p class="kit-text-secondary">Open the menu or the dialog, or show a toast.</p>
-        <div class="kit-row">
-          <button class="kit-button kit-button-secondary" type="button" popovertarget="tour-menu" aria-haspopup="menu" aria-expanded="false">Actions</button>
-          <button class="kit-button kit-button-secondary" id="open-dialog" type="button">Rename frame…</button>
-        </div>
-        <div class="kit-menu" id="tour-menu" popover role="menu" aria-label="Actions">
-          <button class="kit-menu-item" role="menuitem" type="button" data-tour-toast="Duplicated 3 layers">Duplicate</button>
-          <button class="kit-menu-item" role="menuitem" type="button" data-tour-toast="Grouped 3 layers">Group selection</button>
-          <hr class="kit-menu-separator">
-          <button class="kit-menu-item" role="menuitem" type="button" disabled>Delete</button>
-        </div>
-        <span class="kit-label" id="toasts-label">Toasts</span>
-        <div class="kit-stack" role="group" aria-labelledby="toasts-label">
-          <div class="kit-row">
-            <button class="kit-button kit-button-secondary" id="toast-info" type="button">Info</button>
-            <button class="kit-button kit-button-secondary" id="toast-success" type="button">Success</button>
-            <button class="kit-button kit-button-secondary" id="toast-warning" type="button">Warning</button>
-            <button class="kit-button kit-button-secondary" id="toast-danger" type="button">Danger</button>
-          </div>
-          <div class="kit-row">
-            <button class="kit-button kit-button-secondary" id="toast-undo" type="button">With Undo</button>
-            <button class="kit-button kit-button-secondary" id="toast-queue" type="button">Two in a row</button>
-          </div>
-        </div>
-        <dialog class="kit-dialog kit-dialog-small" id="tour-dialog" aria-labelledby="tour-dialog-title">
-          <header class="kit-dialog-header">
-            <h2 id="tour-dialog-title">Rename frame</h2>
-            <button class="kit-icon-button" type="button" data-kit-dialog-close aria-label="Close"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button>
-          </header>
-          <div class="kit-dialog-body kit-stack">
-            <div class="kit-field">
-              <label class="kit-label" for="dialog-name">Name</label>
-              <input class="kit-input" id="dialog-name" type="text" value="Hero" autocomplete="off">
-            </div>
-          </div>
-          <footer class="kit-dialog-footer">
-            <button class="kit-button kit-button-secondary" type="button" data-kit-dialog-close value="cancel">Cancel</button>
-            <button class="kit-button kit-button-primary" id="dialog-ok" type="button" data-kit-dialog-close value="rename">Rename</button>
-          </footer>
-        </dialog>
-      </div>
-      <hr class="kit-divider">
-      <header class="kit-section-header"><h2>Fields</h2></header>
-      <div class="kit-section kit-stack">
-        <p class="kit-text-secondary">Pick a fill or type its hex code: the two stay in step.</p>
-        <div class="kit-field">
-          <label class="kit-label" for="layer-name">Layer name</label>
-          <input class="kit-input" id="layer-name" type="text" placeholder="Frame" autocomplete="off" aria-describedby="layer-name-help">
-          <p class="kit-help" id="layer-name-help">Used for every new layer.</p>
-        </div>
-        <div class="kit-input-icon">
-          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11.5" cy="11.5" r="4" fill="none" stroke="currentColor"/><path d="m14.5 14.5 3 3" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
-          <input class="kit-input" type="search" placeholder="Search layers" aria-label="Search layers">
-        </div>
-        <div class="kit-row">
-          <div class="kit-field">
-            <label class="kit-label" for="width">Width</label>
-            <div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">W</span><input class="kit-input" id="width" type="number" value="320" min="1" step="1"></div>
-          </div>
-          <div class="kit-field">
-            <label class="kit-label" for="height">Height</label>
-            <div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">H</span><input class="kit-input" id="height" type="number" value="240" min="1" step="1"></div>
-          </div>
-          <div class="kit-field">
-            <label class="kit-label" for="scale">Scale</label>
-            <div class="kit-select"><select id="scale"><option value="1">1x</option><option value="2" selected>2x</option><option value="3">3x</option></select></div>
-          </div>
-        </div>
-        <div class="kit-field">
-          <label class="kit-label" for="fill-hex">Fill</label>
-          <div class="kit-color">
-            <input class="kit-color-swatch" id="fill-swatch" type="color" value="#0d99ff" aria-label="Pick the fill colour">
-            <input class="kit-input" id="fill-hex" type="text" value="0D99FF" spellcheck="false" autocomplete="off" aria-describedby="fill-help">
-          </div>
-          <p class="kit-help" id="fill-help">A hex code, like 0D99FF or F0A.</p>
-        </div>
-        <div class="kit-field">
-          <label class="kit-label" for="notes">Notes</label>
-          <textarea class="kit-textarea" id="notes" rows="2" placeholder="One name per line"></textarea>
-        </div>
-        <div class="kit-field">
-          <label class="kit-label" for="prefix">Prefix</label>
-          <input class="kit-input" id="prefix" type="text" value="#Frame" autocomplete="off" aria-invalid="true" aria-describedby="prefix-help">
-          <p class="kit-help" id="prefix-help">Use only letters, numbers and dashes.</p>
-        </div>
-      </div>
-      <hr class="kit-divider">
-      <header class="kit-section-header"><h2>Choices</h2></header>
-      <div class="kit-section kit-stack">
-        <p class="kit-text-secondary">All shows a dash while only some are on.</p>
-        <div class="kit-row tour-cols">
-          <div class="kit-stack" role="group" aria-labelledby="include-label">
-            <span class="kit-label" id="include-label">Include</span>
-            <label class="kit-checkbox"><input type="checkbox" id="include-all">All</label>
-            <label class="kit-checkbox tour-indent"><input type="checkbox" data-tour-part checked>Frames</label>
-            <label class="kit-checkbox tour-indent"><input type="checkbox" data-tour-part checked>Text</label>
-            <label class="kit-checkbox tour-indent"><input type="checkbox" data-tour-part>Hidden layers</label>
-          </div>
-          <div class="kit-stack" role="radiogroup" aria-labelledby="scope-label">
-            <span class="kit-label" id="scope-label">Scope</span>
-            <label class="kit-radio"><input type="radio" name="scope" value="selection" checked>Selection</label>
-            <label class="kit-radio"><input type="radio" name="scope" value="page">Current page</label>
-            <label class="kit-radio"><input type="radio" name="scope" value="file" disabled>All pages</label>
-          </div>
-        </div>
-      </div>
-      <hr class="kit-divider">
-      <header class="kit-section-header">
-        <h2>Feedback</h2>
-        <span class="kit-tooltip-host">
-          <button class="kit-icon-button" id="restore" type="button" aria-label="Show hidden notices" aria-disabled="true" aria-describedby="tip-restore"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12s2.5-4.5 6.5-4.5 6.5 4.5 6.5 4.5-2.5 4.5-6.5 4.5S5.5 12 5.5 12z" fill="none" stroke="currentColor" stroke-linejoin="round"/><circle cx="12" cy="12" r="2" fill="none" stroke="currentColor"/></svg></button>
-          <span class="kit-tooltip kit-tooltip-end kit-tooltip-above" role="tooltip" id="tip-restore">Dismiss a notice first</span>
-        </span>
-      </header>
-      <div class="kit-section kit-stack">
-        <p class="kit-text-secondary">Dismiss the first notice; the eye button in this header brings it back.</p>
-        <div class="kit-notice" id="notice-info" data-kit-tone="info" role="status">
-          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="M12 11.5v3M12 9.25v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
-          <p class="kit-notice-text">Hidden layers are skipped.</p>
-          <button class="kit-icon-button" id="dismiss-info" type="button" aria-label="Dismiss notice"><svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button>
-        </div>
-        <div class="kit-notice" data-kit-tone="success">
-          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="m9.75 12.25 1.5 1.5 3-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <p class="kit-notice-text">Renamed 12 layers.</p>
-        </div>
-        <div class="kit-notice" data-kit-tone="warning">
-          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.75 17.75 17H6.25z" fill="none" stroke="currentColor" stroke-linejoin="round"/><path d="M12 10.75v2.5M12 15.25v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
-          <p class="kit-notice-text">3 names are duplicates.</p>
-        </div>
-        <div class="kit-notice" data-kit-tone="danger">
-          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor"/><path d="M12 9.25v3.25M12 14.75v.01" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
-          <p class="kit-notice-text">2 layers are locked.</p>
-        </div>
-        <div class="kit-empty">
-          <svg class="kit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 9.5h6v6h-6z" fill="none" stroke="currentColor" stroke-linejoin="round"/><circle cx="15.5" cy="10.5" r="3" fill="none" stroke="currentColor"/></svg>
-          <h3 class="kit-empty-title">No shapes yet</h3>
-          <p class="kit-empty-text">Make some on the Create tab.</p>
-          <button class="kit-button kit-button-secondary" id="go-create" type="button">Go to Create</button>
-        </div>
-      </div>
-      <hr class="kit-divider">
-      <header class="kit-section-header"><h2>List</h2></header>
-      <div class="tour-list">
-        <div class="kit-scroll">
-          <ul class="kit-list" id="frames" aria-label="Frames">
-            <li><button class="kit-list-row" type="button" aria-current="true"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Cover</span><span class="kit-list-row-meta">1920 × 1080</span></button></li>
-            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Hero</span><span class="kit-list-row-meta">1440 × 720</span></button></li>
-            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Features</span><span class="kit-list-row-meta">1440 × 960</span></button></li>
-            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Pricing</span><span class="kit-list-row-meta">1440 × 880</span></button></li>
-            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Reviews</span><span class="kit-list-row-meta">1440 × 640</span></button></li>
-            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Questions</span><span class="kit-list-row-meta">1440 × 720</span></button></li>
-            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Sign up</span><span class="kit-list-row-meta">1440 × 560</span></button></li>
-            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Footer</span><span class="kit-list-row-meta">1440 × 320</span></button></li>
-            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Mobile hero</span><span class="kit-list-row-meta">390 × 844</span></button></li>
-            <li><button class="kit-list-row" type="button"><svg class="kit-icon kit-list-row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5v11M14.5 6.5v11M6.5 9.5h11M6.5 14.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/></svg><span class="kit-list-row-label">Mobile menu</span><span class="kit-list-row-meta">390 × 844</span></button></li>
-          </ul>
-        </div>
-      </div>
-    </div>
+<section class="tour-screen" id="screen-home" data-screen="home" data-footer aria-labelledby="title-home">
+<div class="kit-section tour-intro" id="home-intro">
+  <h2 class="tour-title" id="title-home" tabindex="-1">20 parts for your Figma plugin</h2>
+  <p class="kit-text-secondary">They look and work like Figma’s own panels.<br>This plugin is built with them.</p>
+</div>
+<hr class="kit-divider">
+<ul class="kit-list tour-groups" id="groups" aria-label="Parts, by group"></ul>
+<hr class="kit-divider">
+<ul class="kit-list tour-groups" id="canvas-rows" aria-label="On the canvas"></ul>
+<footer class="kit-footer">
+  <p class="kit-text-secondary tour-count">You’ve tried 0 of 20 parts</p>
+  <button class="kit-button kit-button-primary" id="home-files" type="button" data-go="files">Get the files</button>
+</footer>
+</section>
 
-    <div id="panel-create">
-      <div class="kit-section kit-stack">
-        <p class="kit-text-secondary">Adds real shapes to the page you are on.</p>
-        <div class="kit-field">
-          <label class="kit-label" for="count">Count</label>
-          <input class="kit-input" id="count" type="text" inputmode="numeric" autocomplete="off" value="5" aria-describedby="count-help">
-          <p class="kit-help" id="count-help">From 1 to 50, placed in a row.</p>
-        </div>
-        <div class="kit-field">
-          <label class="kit-label" for="shape">Shape</label>
-          <div class="kit-select"><select id="shape"><option value="rectangle">Rectangle</option><option value="ellipse">Ellipse</option></select></div>
-        </div>
-      </div>
-      <footer class="kit-footer">
-        <p class="kit-text-secondary" id="status" role="status">Nothing selected</p>
-        <div class="kit-row">
-          <button class="kit-button kit-button-secondary" id="close" type="button">Close</button>
-          <button class="kit-button kit-button-primary" id="create" type="button">Create</button>
-        </div>
-      </footer>
-    </div>
-
-    <div id="panel-window">
-      <header class="kit-section-header"><h2>Modes</h2></header>
-      <div class="kit-section">
-        <ul class="tour-modes">
-          <li data-tour-mode="fit-content"><span class="tour-mode-name">fit-content <span class="tour-here">In use</span></span><span class="kit-text-secondary">The height follows the content. You drag the width.</span></li>
-          <li data-tour-mode="resizable"><span class="tour-mode-name">resizable <span class="tour-here">In use</span></span><span class="kit-text-secondary">You drag both sides. kit.fit() fits the content on request.</span></li>
-          <li data-tour-mode="fixed"><span class="tour-mode-name">fixed <span class="tour-here">In use</span></span><span class="kit-text-secondary">One size, set in code. No handle.</span></li>
-        </ul>
-      </div>
-      <hr class="kit-divider">
-      <header class="kit-section-header"><h2>This window</h2></header>
-      <div class="kit-section kit-stack">
-        <div class="kit-row">
-          <p class="tour-size"><span class="kit-visually-hidden">Size: </span><span id="size">360 × 360</span></p>
-          <button class="kit-button kit-button-secondary" id="grow" type="button">Add a line</button>
-        </div>
-        <p class="kit-text-secondary" id="grow-line" hidden>A new line of content: the window grew to fit it.</p>
-        <p class="kit-text-secondary" id="window-note">Drag the corner to change the width; the plugin remembers it for each editor.</p>
-      </div>
-      <div id="handle-part">
-        <hr class="kit-divider">
-        <header class="kit-section-header"><h2>Resize handle</h2></header>
-        <div class="kit-section kit-stack">
-          <table class="tour-keys">
-            <caption class="kit-visually-hidden">Resize handle keys</caption>
-            <tbody>
-              <tr><th scope="row"><kbd>←</kbd> <kbd>→</kbd></th><td>8 px narrower or wider</td></tr>
-              <tr><th scope="row"><kbd>Shift</kbd> + <kbd>←</kbd> <kbd>→</kbd></th><td>32 px at a time</td></tr>
-              <tr><th scope="row"><kbd>Enter</kbd> or <kbd>Space</kbd></th><td>Snap to the next width</td></tr>
-              <tr><th scope="row">Double-click</th><td>Snap to the next width</td></tr>
-              <tr><th scope="row"><kbd>Home</kbd></th><td>Default width, fitted</td></tr>
-              <tr><th scope="row"><kbd>End</kbd></th><td>Widest snap width</td></tr>
-              <tr><th scope="row"><kbd>Esc</kbd></th><td>Cancels a drag</td></tr>
-            </tbody>
-          </table>
-          <p class="kit-text-secondary">Tab to the grip in the corner to try them.</p>
-        </div>
-      </div>
-      <hr class="kit-divider">
-      <div class="kit-section">
-        <p class="kit-text-secondary">Get the files and docs from this plugin's Community page.</p>
-      </div>
+<section class="tour-screen" id="screen-buttons" data-screen="buttons" data-title="Buttons" hidden>
+<div class="kit-section tour-page">
+  <div class="tour-lead"><p class="kit-text-secondary"><span>Change its properties.</span> <span>Point at an icon for its tooltip.</span></p></div>
+  <div class="tour-canvas" role="group" aria-label="Preview">
+    <div class="tour-sel">
+      <button class="kit-button kit-button-primary" id="specimen" type="button">Save</button>
+      <i></i><i></i><i></i><i></i><span class="tour-badge" id="specimen-size" aria-hidden="true">42 × 24</span>
     </div>
   </div>
+</div>
+<hr class="kit-divider">
+<header class="kit-section-header">
+  <h3>Properties</h3>
+  <span class="kit-tooltip-host"><button class="kit-icon-button" id="reset" type="button" aria-label="Reset properties" aria-describedby="tip-reset" aria-disabled="true"><svg class="kit-icon" aria-hidden="true"><use href="#i-reset"/></svg></button><span class="kit-tooltip kit-tooltip-end kit-tooltip-above" role="tooltip" id="tip-reset">Nothing to reset</span></span>
+</header>
+<div class="kit-section">
+  <div class="tour-props">
+    <label class="kit-label" for="p-variant">Variant</label>
+    <div class="kit-select"><select id="p-variant" data-tries="select"><option value="primary">Primary</option><option value="secondary">Secondary</option><option value="tertiary">Tertiary</option><option value="danger">Danger</option></select></div>
+    <label class="kit-label" for="p-size">Size</label>
+    <div class="kit-select"><select id="p-size" data-tries="select"><option value="default">Default · 24</option><option value="large">Large · 32</option></select></div>
+    <label class="kit-label" for="p-state">State</label>
+    <div class="kit-select"><select id="p-state" data-tries="select"><option value="default">Default</option><option value="toggled">Toggled on</option><option value="off">Toggled off</option><option value="busy">Busy</option><option value="disabled">Disabled</option></select></div>
+    <label class="kit-label" for="p-label">Label</label>
+    <input class="kit-input" id="p-label" type="text" value="Save" autocomplete="off" spellcheck="false" data-tries="text-input">
+  </div>
+</div>
+</section>
+
+<section class="tour-screen" id="screen-fields" data-screen="fields" data-title="Fields" hidden>
+<div class="kit-section tour-page">
+  <div class="tour-lead"><p class="kit-text-secondary"><span>Edit the frame.</span> <span>Clear its name to see an error.</span></p></div>
+  <div class="tour-canvas" aria-hidden="true">
+    <div class="tour-sel" id="frame"><span class="tour-name" id="frame-name">Hero banner</span><span class="tour-frame"></span><i></i><i></i><i></i><i></i><span class="tour-badge" id="frame-size">1440 × 720</span></div>
+  </div>
+  <div class="kit-stack">
+    <div class="kit-field">
+      <label class="kit-label" for="f-name">Name</label>
+      <input class="kit-input" id="f-name" type="text" value="Hero banner" autocomplete="off" spellcheck="false" aria-describedby="f-name-help" data-tries="text-input">
+      <p class="kit-help" id="f-name-help">Shown above the frame on the canvas.</p>
+    </div>
+    <div class="kit-field">
+      <span class="kit-label" id="f-size-label">Size</span>
+      <div class="kit-row tour-nowrap" role="group" aria-labelledby="f-size-label">
+        <div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">W</span><input class="kit-input" id="f-w" type="number" value="1440" min="1" max="10000" aria-label="Width" aria-describedby="f-size-help" data-tries="number-field"></div>
+        <span class="kit-tooltip-host"><button class="kit-icon-button" id="f-lock" type="button" aria-label="Keep the ratio" aria-pressed="false" aria-describedby="tip-lock"><svg class="kit-icon" aria-hidden="true"><use href="#i-lock"/></svg></button><span class="kit-tooltip" role="tooltip" id="tip-lock">Keep the ratio</span></span>
+        <div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">H</span><input class="kit-input" id="f-h" type="number" value="720" min="1" max="10000" aria-label="Height" aria-describedby="f-size-help" data-tries="number-field"></div>
+      </div>
+      <p class="kit-help" id="f-size-help" hidden>Enter a whole number from 1 to 10,000.</p>
+    </div>
+    <div class="kit-field">
+      <label class="kit-label" for="f-fill">Fill</label>
+      <div class="kit-color"><input class="kit-color-swatch" id="f-swatch" type="color" value="#ff7262" aria-label="Pick the fill colour"><input class="kit-input" id="f-fill" type="text" value="FF7262" spellcheck="false" autocomplete="off" maxlength="7" aria-describedby="f-fill-help"></div>
+      <p class="kit-help" id="f-fill-help" hidden>Use a hex code, like FF7262.</p>
+    </div>
+    <div class="kit-field">
+      <label class="kit-label" for="f-notes">Notes</label>
+      <textarea class="kit-textarea" id="f-notes" rows="2" placeholder="Anything your team should know" data-tries="textarea"></textarea>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="tour-screen" id="screen-choices" data-screen="choices" data-title="Choices" hidden>
+<div class="kit-section tour-page">
+  <div class="tour-lead"><p class="kit-text-secondary">Tick Hidden and watch All change.</p></div>
+  <div class="kit-tabs" id="find">
+    <div class="kit-tablist" id="find-tabs" role="radiogroup" aria-label="Find">
+      <label class="kit-tab"><input type="radio" name="find" checked data-tries="tabs">Layers</label>
+      <label class="kit-tab"><input type="radio" name="find" data-tries="tabs">Styles</label>
+      <label class="kit-tab"><input type="radio" name="find" data-tries="tabs">Variables</label>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="tour-screen" id="screen-popups" data-screen="popups" data-title="Pop-ups" hidden>
+<div class="kit-section tour-page tour-tight">
+  <div class="tour-lead"><p class="kit-text-secondary"><span>Open a sample frame’s menu.</span> <span>Deleting can be undone.</span></p></div>
+</div>
+<div class="tour-rows">
+  <ul class="kit-list" id="frames" aria-label="Sample frames"></ul>
+  <div class="kit-empty" id="frames-empty" role="status" hidden>
+    <svg class="kit-icon" aria-hidden="true"><use href="#i-frame"/></svg>
+    <p class="kit-empty-title">No frames left</p>
+    <p class="kit-empty-text">You deleted every sample frame.</p>
+    <button class="kit-button kit-button-secondary" id="frames-back" type="button">Put them back</button>
+  </div>
+</div>
+<div id="menus"></div>
+<dialog class="kit-dialog kit-dialog-small" id="rename" aria-labelledby="rename-title">
+  <header class="kit-dialog-header">
+    <h2 id="rename-title">Rename frame</h2>
+    <button class="kit-icon-button" type="button" data-kit-dialog-close aria-label="Close"><svg class="kit-icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </header>
+  <div class="kit-dialog-body kit-stack">
+    <div class="kit-field">
+      <label class="kit-label" for="rename-name">Name</label>
+      <input class="kit-input" id="rename-name" type="text" autocomplete="off" spellcheck="false" aria-describedby="rename-help" data-tries="text-input">
+      <p class="kit-help" id="rename-help">Shown in the list.</p>
+    </div>
+  </div>
+  <footer class="kit-dialog-footer">
+    <button class="kit-button kit-button-secondary" type="button" data-kit-dialog-close value="cancel">Cancel</button>
+    <button class="kit-button kit-button-primary" id="rename-ok" type="button" data-kit-dialog-close value="rename">Rename</button>
+  </footer>
+</dialog>
+</section>
+
+<section class="tour-screen" id="screen-feedback" data-screen="feedback" data-title="Feedback" hidden>
+<div class="kit-section tour-page">
+  <div class="tour-lead"><p class="kit-text-secondary"><span>Pick a tone.</span> <span>A notice stays put; a toast comes and goes.</span></p></div>
+  <div class="kit-stack" id="fb-stack">
+    <div class="tour-tones" role="radiogroup" aria-label="Tone" data-tries="radio notice">
+      <label class="kit-radio"><input type="radio" name="tone" value="info">Info</label>
+      <label class="kit-radio"><input type="radio" name="tone" value="success">Success</label>
+      <label class="kit-radio"><input type="radio" name="tone" value="warning" checked>Warning</label>
+      <label class="kit-radio"><input type="radio" name="tone" value="danger">Danger</label>
+    </div>
+    <div class="kit-notice" id="fb-notice" data-kit-tone="warning" role="status"><svg class="kit-icon" aria-hidden="true"><use href="#i-warning"/></svg><p class="kit-notice-text">3 names are duplicates.</p><button class="kit-icon-button" id="fb-dismiss" type="button" aria-label="Dismiss notice" data-tries="notice"><svg class="kit-icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+    <div class="kit-row"><button class="kit-button kit-button-secondary" id="fb-toast" type="button">Show it as a toast</button></div>
+  </div>
+  <div class="kit-empty" id="fb-empty" role="status" hidden>
+    <svg class="kit-icon" aria-hidden="true"><use href="#i-done"/></svg>
+    <p class="kit-empty-title">No notices</p>
+    <p class="kit-empty-text">You dismissed the last one.</p>
+    <button class="kit-button kit-button-secondary" id="fb-back" type="button">Bring it back</button>
+  </div>
+</div>
+</section>
+
+<section class="tour-screen" id="screen-window" data-screen="window" data-title="Window" data-footer hidden>
+<div class="kit-section tour-page tour-tight">
+  <div class="tour-lead"><p class="kit-text-secondary"><span id="win-lead">Add frames and the window grows.</span> <span id="win-drag">Drag the corner.</span></p></div>
+  <div class="kit-notice" id="win-notice" role="status" hidden><svg class="kit-icon" aria-hidden="true"><use href="#i-info"/></svg><p class="kit-notice-text" id="win-note"></p></div>
+</div>
+<hr class="kit-divider">
+<header class="kit-section-header">
+  <h3>Frames</h3>
+  <span class="kit-tooltip-host"><button class="kit-icon-button" id="win-add" type="button" aria-label="Add a frame" aria-describedby="tip-add" data-tries="list"><svg class="kit-icon" aria-hidden="true"><use href="#i-plus"/></svg></button><span class="kit-tooltip kit-tooltip-end" role="tooltip" id="tip-add">Add a frame</span></span>
+</header>
+<div class="kit-scroll tour-rows"><ul class="kit-list" id="win-list" aria-label="Frames"></ul></div>
+<footer class="kit-footer">
+  <p class="kit-text-secondary tour-size" id="win-size">This window: 360 × 290</p>
+  <button class="kit-button kit-button-secondary" id="win-reset" type="button">Start over</button>
+</footer>
+</section>
+
+<section class="tour-screen" id="screen-create" data-screen="create" data-title="Create shapes" data-footer hidden>
+<div class="kit-section tour-page" id="cr-page">
+  <div class="tour-lead"><p class="kit-text-secondary">Adds real shapes to this page, in a row, and selects them.</p></div>
+  <div class="kit-field">
+    <div class="kit-row tour-cols">
+      <div class="kit-field">
+        <label class="kit-label" for="cr-count">Count</label>
+        <div class="kit-number"><span class="kit-number-prefix" aria-hidden="true">#</span><input class="kit-input" id="cr-count" type="number" value="5" min="1" max="50" aria-describedby="cr-count-help" data-tries="number-field"></div>
+      </div>
+      <div class="kit-field">
+        <label class="kit-label" for="cr-shape">Shape</label>
+        <div class="kit-select"><select id="cr-shape" data-tries="select"><option value="rectangle">Rectangle</option><option value="ellipse">Ellipse</option></select></div>
+      </div>
+    </div>
+    <p class="kit-help" id="cr-count-help">From 1 to 50.</p>
+  </div>
+  <div class="tour-canvas" aria-hidden="true">
+    <div class="tour-sel" id="shapes" data-shape="rectangle"><i></i><i></i><i></i><i></i><span class="tour-badge" id="shapes-size">700 × 100</span></div>
+  </div>
+</div>
+<footer class="kit-footer">
+  <p class="kit-text-secondary" id="cr-status" role="status">Nothing selected</p>
+  <button class="kit-button kit-button-primary" id="cr-create" type="button">Create 5 rectangles</button>
+</footer>
+</section>
+
+<section class="tour-screen" id="screen-files" data-screen="files" data-title="Get the files" data-footer hidden>
+<div class="kit-section tour-page">
+  <div class="tour-intro">
+    <h3 class="tour-title">Build your own plugin</h3>
+    <p class="kit-text-secondary">Free starter code with all 20 parts.<br>Describe your plugin, and an AI agent builds it with them.</p>
+  </div>
+  <ol class="tour-steps">
+    <li><span><b>Get the files</b><span class="tour-url" id="files-url">github.com/alekseikipin/<wbr>Figplug-ui-kit</span></span><button class="kit-button kit-button-tertiary" id="copy-link" type="button">Copy link</button></li>
+    <li><span><b>Describe your plugin</b><span class="kit-text-secondary">Open the folder in an AI agent that can edit files on your computer, and say what your plugin should do.</span></span></li>
+    <li><span><b>Import it into Figma</b><span class="kit-text-secondary">In the desktop app: Plugins › Development › Import plugin from manifest</span></span></li>
+  </ol>
+</div>
+<hr class="kit-divider">
+<div class="kit-section tour-page">
+  <div class="tour-lead">
+    <h3 class="tour-subtitle">Colours from Figma</h3>
+    <p class="kit-text-secondary"><span>Every colour comes from your theme.</span> <span id="theme-line">Right now: light theme.</span></p>
+  </div>
+  <ul class="tour-swatches" id="swatches" aria-label="Colours from Figma"></ul>
+</div>
+<footer class="kit-footer">
+  <p class="kit-text-secondary tour-count">You’ve tried 0 of 20 parts</p>
+  <button class="kit-button kit-button-primary" id="open-github" type="button">Open GitHub</button>
+</footer>
+</section>
 </main>
 <button class="kit-resize-handle" type="button" data-kit-resize hidden aria-label="Resize window"></button>
+<div class="kit-visually-hidden" id="tour-say" role="status"></div>
+<template id="tpl-bar"><header class="kit-section-header tour-bar"><span class="kit-tooltip-host"><button class="kit-icon-button" type="button" data-go="home" aria-label="Back to all parts"><svg class="kit-icon" aria-hidden="true"><use href="#i-back"/></svg></button><span class="kit-tooltip kit-tooltip-start" role="tooltip">All parts</span></span><h2 tabindex="-1"></h2><button class="kit-button kit-button-tertiary tour-next" type="button"><span></span><svg class="kit-icon kit-icon-small" aria-hidden="true"><use href="#i-chev"/></svg></button></header></template>
+<template id="tpl-group"><li><button class="kit-list-row tour-group" type="button"><span class="tour-tile"><svg class="kit-icon" aria-hidden="true"><use/></svg></span><span><b><span></span><span class="kit-visually-hidden">. </span><span class="tour-rings" aria-hidden="true"></span></b><i><span></span><span class="kit-visually-hidden"></span></i></span><svg class="kit-icon kit-icon-small tour-chevron" aria-hidden="true"><use href="#i-chev"/></svg></button></li></template>
+<template id="tpl-frame"><li class="kit-list-row"><svg class="kit-icon kit-list-row-icon" aria-hidden="true"><use href="#i-frame"/></svg><span class="kit-list-row-label"></span><span class="kit-list-row-meta"></span><span class="kit-tooltip-host"><button class="kit-icon-button" type="button" aria-haspopup="menu" aria-expanded="false"><svg class="kit-icon" aria-hidden="true"><use href="#i-more"/></svg></button><span class="kit-tooltip kit-tooltip-end" role="tooltip">More actions</span></span></li><div class="kit-menu" popover role="menu"><button class="kit-menu-item" role="menuitem" type="button" data-action="rename">Rename…</button><button class="kit-menu-item" role="menuitem" type="button" data-action="duplicate">Duplicate</button><hr class="kit-menu-separator"><button class="kit-menu-item" role="menuitem" type="button" data-action="delete">Delete</button></div></template>
+<template id="tpl-row"><li><button class="kit-list-row" type="button" data-tries="list"><svg class="kit-icon kit-list-row-icon" aria-hidden="true"><use href="#i-frame"/></svg><span class="kit-list-row-label"></span><span class="kit-list-row-meta"></span></button></li></template>
+<template id="tpl-notice"><div class="kit-notice"><svg class="kit-icon" aria-hidden="true"><use/></svg><p class="kit-notice-text"></p></div></template>
 <script>
 'use strict';
-// The tour: the Create tab talks to code.ts (the starter's demo, docs/messages.md); every other
-// tab runs in this window only. The tabs themselves are CSS: no script switches them.
+// The Figplug tour, one screen at a time. Only Create shapes and Open GitHub talk to code.ts.
+// Progress lasts for the session (no storage).
 (() => {
-/** @param {string} id */
-const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
-/** @param {{ type: string } & Record<string, unknown>} message */
+/** @returns {any} */
+const $ = (id) => document.getElementById(id);
+/** @returns {any} */
+const q = (sel, scope = document) => scope.querySelector(sel);
+/** @returns {any[]} */
+const $$ = (sel, scope = document) => [...scope.querySelectorAll(sel)];
+/** @returns {any} */
+const make = (tag, props) => Object.assign(document.createElement(tag), props);
+/** @returns {any} */
+const stamp = (id) => $(id).content.cloneNode(true);
+const on = (id, type, fn) => $(id).addEventListener(type, fn);
+const onDoc = (type, fn, capture) => document.addEventListener(type, fn, capture);
+const setInvalid = (node, wrong) => { node.ariaInvalid = wrong ? 'true' : null; }; // ARIA reflection: null removes it
+const root = document.documentElement;
 const post = (message) => parent.postMessage({ pluginMessage: message }, '*');
-/** @param {number} n @param {string} word */
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
-/** @param {Element} el @param {boolean} invalid */
-const setInvalid = (el, invalid) => { if (invalid) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); };
+const hex = (rgb) => rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase();
+const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const GITHUB = 'https://github.com/alekseikipin/Figplug-ui-kit';
+const SHAPE_FILL = [1, 0.5, 0]; // as code.ts's { r: 1, g: 0.5, b: 0 }: keep the two in step
 
-// A held Enter repeats its keydown, and a focused button clicks on every repeat: without this, one
-// long press on Create makes a batch of shapes per repeat. One press, one action. (Space clicks on
-// keyup, so it never repeats.)
-const app = /** @type {HTMLElement} */ (document.querySelector('[data-kit-root]'));
-app.addEventListener('keydown', (event) => {
+// ---- The 20 parts in six groups: Home, the legends and the counting read this.
+const GROUPS = [
+  { id: 'buttons', name: 'Buttons', teaser: 'Button, icon button, tooltip', parts: ['Button', 'Icon button', 'Tooltip'] },
+  { id: 'fields', name: 'Fields', teaser: 'Text, number, colour, textarea', parts: ['Text input', 'Number field', 'Colour field', 'Textarea'] },
+  { id: 'choices', name: 'Choices', teaser: 'Select, checkbox, radio, tabs', parts: ['Select', 'Checkbox', 'Radio', 'Tabs'] },
+  { id: 'popups', name: 'Pop-ups', teaser: 'Menu, dialog, toast', parts: ['Menu', 'Dialog', 'Toast'] },
+  { id: 'feedback', name: 'Feedback', teaser: 'Notice, empty state', parts: ['Notice', 'Empty state'] },
+  { id: 'window', name: 'Window', teaser: 'Header, list, footer, corner', parts: ['Section header', 'List', 'Sticky footer', 'Resize handle'] },
+];
+const ORDER = ['buttons', 'fields', 'choices', 'popups', 'feedback', 'window', 'create', 'files'];
+const slug = (name) => name.toLowerCase().replace(/ /g, '-');
+const NAMES = {};
+for (const g of GROUPS) for (const p of g.parts) NAMES[slug(p)] = p;
+const TOTAL = Object.keys(NAMES).length;
+const tried = new Set();
+let current = 'home', editorType = '', created = false;
+let quiet = false, quietMenu = null; // Show me's focus, and a menu it opened, count nothing
+
+for (const s of $$('[data-title]')) {
+  const id = s.dataset.screen, bar = stamp('tpl-bar'), next = q('.tour-next', bar);
+  const to = ORDER[ORDER.indexOf(id) + 1], g = GROUPS.find((x) => x.id === id);
+  q('[data-go]', bar).setAttribute('aria-describedby', 'tip-back-' + id);
+  q('.kit-tooltip', bar).id = 'tip-back-' + id;
+  Object.assign(q('h2', bar), { id: 'title-' + id, textContent: s.dataset.title });
+  s.setAttribute('aria-labelledby', 'title-' + id);
+  if (to) { next.dataset.go = to; q('span', next).textContent = 'Next: ' + $('screen-' + to).dataset.title; } else next.remove();
+  if (g) {
+    const legend = make('div', { className: 'tour-legend', role: 'group', ariaLabel: 'Parts on this page. Press one to see where it is.' });
+    legend.append(...g.parts.map((p) => make('button', { className: 'tour-part', type: 'button', textContent: p, value: slug(p) })));
+    q('.tour-lead', s).append(legend);
+  }
+  s.prepend(bar);
+}
+// Home: a row per group, and Create set apart, with no rings and the only brand tile.
+for (const g of [...GROUPS, { id: 'create', name: 'Create shapes', teaser: 'Adds real shapes to this page', parts: [] }]) {
+  const li = stamp('tpl-group'), rings = q('.tour-rings', li);
+  Object.assign(q('button', li), { id: 'group-' + g.id }).dataset.go = g.id;
+  q('use', li).setAttribute('href', '#g-' + g.id);
+  q('b > span', li).textContent = g.name;
+  q('i > span', li).textContent = g.teaser;
+  rings.append(...g.parts.map(() => make('span')));
+  if (!g.parts.length) { rings.remove(); q('.tour-tile', li).classList.add('tour-brand'); }
+  $(g.parts.length ? 'groups' : 'canvas-rows').append(li);
+}
+
+// ---- Progress: a part counts the first time it does its job, on any page.
+let saying = [], sayTimer = 0;
+// One polite region; what is said together is read together.
+function say(text) {
+  saying.push(text);
+  if (sayTimer) return;
+  $('tour-say').textContent = '';
+  sayTimer = setTimeout(() => { $('tour-say').textContent = saying.join(' '); saying = []; sayTimer = 0; }, 100);
+}
+// ", tried" as a label: hidden text would read "Button , tried".
+const partName = (item) => { item.ariaLabel = item.hasAttribute('data-tried') ? item.textContent + ', tried' : null; };
+function tryPart(part) {
+  if (quiet || tried.has(part) || !(part in NAMES)) return;
+  tried.add(part);
+  for (const item of $$(`.tour-part[value="${part}"]`)) {
+    item.dataset.tried = item.dataset.fresh = '';
+    partName(item);
+  }
+  say(`Tried: ${NAMES[part]}. ${tried.size} of ${TOTAL}.`);
+  progress();
+}
+function complete(page) {
+  const g = GROUPS.find((x) => x.id === page);
+  return page === 'create' ? created : !!g && g.parts.every((p) => tried.has(slug(p)));
+}
+function progress() {
+  for (const p of $$('.tour-count')) p.textContent = `You’ve tried ${tried.size === TOTAL ? 'all' : tried.size + ' of'} ${TOTAL} parts`;
+  for (const next of $$('.tour-next')) {
+    const done = complete(next.closest('.tour-screen').dataset.screen);
+    next.classList.toggle('kit-button-secondary', done);
+    next.classList.toggle('kit-button-tertiary', !done);
+  }
+  if (tried.size === TOTAL && !$('home-done')) {
+    $('home-intro').append(Object.assign(notice('success', 'That’s the whole kit. Get the files and build your own.'), { id: 'home-done', className: 'kit-notice tour-done' }));
+  }
+  if (current === 'home') renderHome();
+}
+// The rings earned since Home was last shown fill one after another.
+function renderHome() {
+  let k = 0;
+  for (const g of GROUPS) {
+    const row = $('group-' + g.id), rings = $$('.tour-rings > span', row), n = g.parts.filter((p) => tried.has(slug(p))).length;
+    g.parts.forEach((p, i) => {
+      const ring = rings[i];
+      if (!tried.has(slug(p)) || ring.matches('[data-tried], [data-soon]')) return;
+      const fill = () => { delete ring.dataset.soon; ring.dataset.tried = ring.dataset.fresh = ''; };
+      if (calm()) fill();
+      else { ring.dataset.soon = ''; setTimeout(fill, 60 * k++); }
+    });
+    row.toggleAttribute('data-done', n === g.parts.length);
+    q('i > .kit-visually-hidden', row).textContent = `. ${n} of ${g.parts.length} tried`;
+  }
+}
+onDoc('animationend', (event) => { if (event.target instanceof Element) event.target.removeAttribute('data-fresh'); });
+function notice(tone, text) {
+  const box = stamp('tpl-notice').firstElementChild;
+  box.dataset.kitTone = tone;
+  box.role = tone === 'danger' ? 'alert' : 'status';
+  q('use', box).setAttribute('href', '#i-' + tone);
+  q('p', box).textContent = text;
+  return box;
+}
+// A press counts for the button and what it sits in; navigation never does.
+onDoc('click', (event) => {
+  const b = event.target.closest('button');
+  if (!b || b.disabled || b.matches('[data-go], .tour-part, .kit-menu-item, [aria-disabled="true"], [aria-busy="true"]') || !b.closest('.tour-screen, .kit-toast')) return;
+  const parts = (b.getAttribute('data-tries') || '').split(' ');
+  if (b.matches('.kit-button')) parts.push('button');
+  if (b.matches('.kit-icon-button')) parts.push('icon-button');
+  if (b.closest('.kit-footer')) parts.push('sticky-footer');
+  if (b.closest('.kit-section-header:not(.tour-bar)')) parts.push('section-header');
+  parts.forEach(tryPart);
+}, true);
+const countControl = (event) => {
+  const tries = event.target.closest('[data-tries]');
+  if (tries && tries.localName !== 'button') tries.getAttribute('data-tries').split(' ').forEach(tryPart);
+};
+onDoc('input', countControl, true);
+onDoc('change', countControl, true);
+// A tooltip counts when it shows: after the 400ms hover delay, or on keyboard focus.
+const tipShown = (host) => getComputedStyle(q('.kit-tooltip', host)).visibility === 'visible';
+let tipTimer = 0;
+onDoc('mouseover', (event) => {
+  const host = event.target.closest('.kit-tooltip-host');
+  if (!host || host.contains(event.relatedTarget)) return;
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(() => { if (tipShown(host)) tryPart('tooltip'); }, 450);
+});
+onDoc('focusin', (event) => {
+  const host = event.target.closest('.kit-tooltip-host');
+  // Escape in a menu Show me opened focuses its ⋯: that tooltip is Show me's too.
+  const shown = quietMenu && event.target.getAttribute('popovertarget') === quietMenu.id;
+  if (host && !quiet && !shown) requestAnimationFrame(() => { if (tipShown(host)) tryPart('tooltip'); });
+});
+onDoc('toggle', (event) => {
+  if (!event.target.matches('.kit-menu')) return;
+  if (event.target !== quietMenu) { if (event.newState === 'open') tryPart('menu'); }
+  else if (event.newState === 'closed') quietMenu = null;
+}, true);
+// A held Enter clicks a focused button on every repeat: one press, one action.
+onDoc('keydown', (event) => {
   if (event.key === 'Enter' && event.repeat && event.target instanceof HTMLButtonElement) event.preventDefault();
 }, true);
 
-// ---- Toasts. One shows at a time, first in, first out. The Undo toast has no timer (duration 0:
-// an action the person needs is not timed, docs/components.md#toast), so the tour takes it away
-// before it shows any other toast, and when the person leaves the Components tab.
-/** @type {KitToastHandle | null} */
-let undoToast = null;
-/** @param {string} message @param {KitToastOptions} [options] */
-function tourToast(message, options) {
-  if (undoToast) { undoToast.dismiss(); undoToast = null; }
-  return kit.toast(message, options);
+// ---- Toasts: one at a time, at once (the kit would queue it). The Undo toast has no timer: it goes
+// when another toast shows, and when the page changes.
+let lastToast = null;
+const dropToast = () => { lastToast?.dismiss(); lastToast = null; };
+function tourToast(message, options, count = true) {
+  dropToast();
+  if (count) tryPart('toast');
+  lastToast = kit.toast(message, options);
 }
-const tabs = /** @type {HTMLInputElement[]} */ ([...document.querySelectorAll('input[name="tour"]')]);
-/** @param {string} value */
-function showTab(value) {
-  const tab = tabs.find((t) => t.value === value);
-  if (!tab) return;
-  tab.checked = true;
-  tab.focus();
-  leaveComponents();
-}
-function leaveComponents() {
-  const current = tabs.find((t) => t.checked);
-  if (undoToast && current && current.value !== 'components') { undoToast.dismiss(); undoToast = null; }
-}
-for (const tab of tabs) tab.addEventListener('change', leaveComponents);
 
-// ---- Create: count, shape, the selection count and the created reply ----
-const count = /** @type {HTMLInputElement} */ ($('count'));
-const shape = /** @type {HTMLSelectElement} */ ($('shape'));
-const create = $('create');
+// ---- Screens. Back goes Home, with focus on the row the person came from.
+function go(to) {
+  const from = current;
+  q('.kit-menu:popover-open')?.hidePopover();
+  dropToast();
+  current = to;
+  root.dataset.tourDir = to === 'home' ? 'back' : 'in';
+  for (const s of $$('.tour-screen')) s.hidden = s.dataset.screen !== to;
+  scrollTo(0, 0);
+  let focus = $('title-' + to);
+  if (to === 'home') {
+    const row = $('group-' + from);
+    renderHome();
+    if (row) {
+      for (const r of $$('.tour-group[aria-current]')) r.ariaCurrent = null;
+      row.ariaCurrent = 'true';
+    }
+    focus = row || (from === 'files' ? $('home-files') : focus);
+  }
+  focus.focus({ preventScroll: true });
+  if (to === 'buttons') measure();
+  if (to === 'window' && noGrip()) tryPart('resize-handle');
+  showSize();
+  paintSwatches();
+  kit.fit(); // fit-content follows by itself; resizable needs this
+}
+onDoc('click', (event) => {
+  const to = event.target.closest('[data-go]'), part = event.target.closest('.tour-part');
+  if (to) go(to.dataset.go);
+  else if (part) showMe(part.value);
+});
 
+// ---- Show me: a legend item rings its part, focuses it and says where. It never counts.
+let ringTimer = 0, ringed = null;
+function ring(el) {
+  clearTimeout(ringTimer);
+  ringed?.classList.remove('tour-ring');
+  ringed = el;
+  if (!el) return;
+  el.getBoundingClientRect(); // restarts the pulse
+  el.classList.add('tour-ring');
+  el.scrollIntoView({ block: 'nearest' });
+  ringTimer = setTimeout(() => el.classList.remove('tour-ring'), 1200);
+}
+// Show me's focus shows the tooltip, as keyboard focus does.
+function quietFocus(el, plain) {
+  quiet = true;
+  el?.blur();
+  el?.focus(plain ? undefined : { preventScroll: true, focusVisible: true });
+  quiet = false;
+}
+// Where a part is: [element to ring, what to say, element to focus].
+function target(part) {
+  const more = q('#frames .kit-icon-button'), tabs = $('find-tabs'), empty = !$('fb-empty').hidden;
+  const panel = $$('.tour-find')[Math.max(0, $$('input', tabs).findIndex((t) => t.checked))], set = $$('fieldset', panel)[1];
+  const ids = {
+    button: ['specimen', 'The button on the canvas'], 'icon-button': ['reset', 'Reset, next to Properties'], tooltip: ['reset', 'Reset’s tooltip'],
+    'text-input': ['f-name', 'The Name field'], 'number-field': ['f-w', 'The width field'], 'colour-field': ['f-fill', 'The Fill field'], textarea: ['f-notes', 'The Notes field'],
+  };
+  if (ids[part]) return [$(ids[part][0]), ids[part][1]];
+  switch (part) {
+    case 'select': q('input', tabs).checked = true; return [$('c-sort'), 'Sort by, on the Layers tab'];
+    case 'checkbox': return [q('label', panel), 'The All checkbox', q('[data-all]', panel)];
+    case 'radio': return [set, q('legend', set).textContent + ', on the right', q(':checked', set)];
+    case 'tabs': return [tabs, 'The tabs', q(':checked', tabs)];
+    case 'menu': case 'dialog': case 'toast': {
+      if (!more) return [$('frames-back'), 'Put the frames back first'];
+      if (part === 'menu') return [more, 'The first frame’s menu button'];
+      const menu = $(more.getAttribute('popovertarget')), item = q(`[data-action="${part === 'dialog' ? 'rename' : 'delete'}"]`, menu);
+      const show = () => { ring(item); quietFocus(item); };
+      if (menu.matches(':popover-open')) show();
+      else { quietMenu = menu; menu.addEventListener('toggle', show, { once: true }); menu.showPopover({ source: more }); }
+      return [null, part === 'dialog' ? 'Rename… in the frame’s menu' : 'Delete in the frame’s menu'];
+    }
+    case 'notice': return empty ? [$('fb-back'), 'Bring the notice back first'] : [$('fb-notice'), 'The notice under the tones', $('fb-dismiss')];
+    case 'empty-state': return empty ? [$('fb-empty'), 'The empty state', $('fb-back')] : [$('fb-dismiss'), 'Dismiss the notice to see it'];
+    case 'section-header': return [$('win-add').closest('header'), 'The Frames header', $('win-add')];
+    case 'list': return [winScroll, 'The frames list', q('[aria-current="true"]', winList) || q('button', winList)];
+    case 'sticky-footer': return [$('win-reset').parentElement, 'The footer', $('win-reset')];
+    default: return noGrip() ? [$('win-notice'), 'There’s no corner here. The notice says why.'] : [handle, 'The corner at the bottom right'];
+  }
+}
+function showMe(part) {
+  const [el, where, focus = el] = target(part);
+  ring(el);
+  quietFocus(focus);
+  if (focus && focus !== el) focus.scrollIntoView({ block: 'nearest' }); // a row down a list
+  say(where);
+}
+
+// ---- Buttons: one live button on the canvas, driven by its Properties.
+const spec = $('specimen'), pVariant = $('p-variant'), pSize = $('p-size'), pState = $('p-state'), pLabel = $('p-label');
+let pressing = false;
+function measure() {
+  const r = spec.getBoundingClientRect();
+  if (r.width) $('specimen-size').textContent = `${Math.round(r.width)} × ${Math.round(r.height)}`;
+}
+function apply() {
+  const state = pState.value;
+  spec.className = `kit-button kit-button-${pVariant.value}${pSize.value === 'large' ? ' kit-button-large' : ''}`;
+  spec.disabled = state === 'disabled';
+  spec.ariaBusy = state === 'busy' || pressing ? 'true' : null;
+  spec.ariaPressed = state === 'toggled' || state === 'off' ? String(state === 'toggled') : null;
+  spec.textContent = pLabel.value.trim() || 'Button';
+  measure();
+  const plain = pVariant.value === 'primary' && pSize.value === 'default' && state === 'default' && pLabel.value === 'Save';
+  $('reset').ariaDisabled = String(plain);
+  $('tip-reset').textContent = plain ? 'Nothing to reset' : 'Back to the defaults';
+}
+q('.tour-props').addEventListener('input', apply);
+on('specimen', 'click', () => {
+  if (spec.ariaBusy) return; // aria-busy stops the mouse, not Enter or Space
+  if (spec.ariaPressed) pState.value = pState.value === 'toggled' ? 'off' : 'toggled';
+  else { pressing = true; setTimeout(() => { pressing = false; apply(); if (current === 'buttons') tourToast('Pressed ' + spec.textContent); }, 1200); }
+  apply();
+});
+on('reset', 'click', () => {
+  if ($('reset').ariaDisabled === 'true') return;
+  pVariant.value = 'primary';
+  pSize.value = pState.value = 'default';
+  pLabel.value = 'Save';
+  apply();
+});
+
+// ---- Fields: a frame on the canvas that follows its name, size and fill.
+const fName = $('f-name'), fW = $('f-w'), fH = $('f-h'), fLock = $('f-lock'), fSwatch = $('f-swatch'), fFill = $('f-fill');
+let size = { w: 1440, h: 720 }, ratio = 2, fill = 'FF7262';
+function drawFrame() {
+  const scale = Math.min(128 / size.w, 40 / size.h), frame = $('frame'); // fits 128 × 40 at its ratio
+  frame.style.setProperty('--tour-w', String(Math.max(2, Math.round(size.w * scale))));
+  frame.style.setProperty('--tour-h', String(Math.max(2, Math.round(size.h * scale))));
+  frame.style.setProperty('--tour-fill', '#' + fill);
+  $('frame-size').textContent = `${size.w} × ${size.h}`;
+}
+on('f-name', 'input', () => {
+  const name = fName.value.trim();
+  setInvalid(fName, !name);
+  $('f-name-help').textContent = name ? 'Shown above the frame on the canvas.' : 'Give the frame a name.';
+  if (name) $('frame-name').textContent = name;
+});
+const side = (input) => {
+  const n = Number(input.value);
+  return input.value !== '' && Number.isInteger(n) && n >= 1 && n <= 10000 ? n : null;
+};
+function onSide(input, other) {
+  const n = side(input);
+  setInvalid(input, n === null);
+  if (n !== null && fLock.ariaPressed === 'true') {
+    other.value = String(Math.min(10000, Math.max(1, Math.round(input === fW ? n / ratio : n * ratio))));
+    setInvalid(other, false);
+  }
+  const w = side(fW), h = side(fH);
+  $('f-size-help').hidden = w !== null && h !== null;
+  if (w !== null && h !== null) { size = { w, h }; drawFrame(); } // else the last valid size stays
+}
+on('f-w', 'input', () => onSide(fW, fH));
+on('f-h', 'input', () => onSide(fH, fW));
+on('f-lock', 'click', () => {
+  fLock.ariaPressed = String(fLock.ariaPressed !== 'true');
+  ratio = size.w / size.h;
+});
+// Six digits apply as you type (the text is left alone, so the caret stays); on change the text is
+// tidied and three digits expand (F0A is FF00AA), as in Figma. Anything else is an error.
+const HEX6 = /^#?([0-9a-f]{6})$/i, HEX3 = /^#?([0-9a-f]{3})$/i;
+function setFill(hex, tidy) {
+  fill = hex;
+  if (tidy) fFill.value = hex;
+  fSwatch.value = '#' + hex.toLowerCase();
+  setInvalid(fFill, false);
+  $('f-fill-help').hidden = true;
+  drawFrame();
+  tryPart('colour-field');
+}
+on('f-swatch', 'input', () => setFill(fSwatch.value.slice(1).toUpperCase(), true));
+on('f-fill', 'input', () => { const six = HEX6.exec(fFill.value.trim()); if (six) setFill(six[1].toUpperCase()); });
+on('f-fill', 'change', () => {
+  const t = fFill.value.trim(), six = HEX6.exec(t), three = HEX3.exec(t);
+  if (six || three) setFill(six ? six[1].toUpperCase() : three[1].replace(/./g, (d) => d + d).toUpperCase(), true);
+  else { setInvalid(fFill, true); $('f-fill-help').hidden = false; }
+});
+
+// ---- Choices: three tabs of one shape. All is mixed while only some types are on.
+/** @type {any[]} */
+const FIND = [
+  ['layer', [['Frames', 'frames', 1], ['Text', 'text', 1], ['Hidden', 'hidden layers']], 'Look in', [['This page', ' on this page', 1], ['All pages', ' on all pages']]],
+  ['style', [['Colour', 'colour', 1], ['Text', 'text', 1], ['Effects', 'effect', 1]], 'From', [['This file', ' in this file', 1], ['Libraries', ' from libraries']]],
+  ['variable', [['Colours', 'colour', 1], ['Numbers', 'number', 1], ['Strings', 'string', 1]], 'Modes', [['Current mode', ', in the current mode', 1], ['All modes', ', in all modes']]],
+];
+for (const [kind, types, legend, wheres] of FIND) {
+  const boxes = types.map(([label, type, on]) => `<label class="kit-checkbox"><input type="checkbox" data-type="${type}"${on ? ' checked' : ''}>${label}</label>`);
+  const radios = wheres.map(([label, say, on]) => `<label class="kit-radio"><input type="radio" name="${kind}" data-say="${say}"${on ? ' checked' : ''}>${label}</label>`);
+  const panel = make('div', { className: 'kit-stack tour-find', innerHTML: `<div class="kit-row tour-cols"><fieldset data-tries="checkbox"><legend class="kit-label">Include</legend><label class="kit-checkbox"><input type="checkbox" data-all>All</label>${boxes.join('')}</fieldset>`
+    + `<fieldset data-tries="radio"><legend class="kit-label">${legend}</legend>${radios.join('')}</fieldset></div><p class="kit-text-secondary" role="status"></p>` });
+  panel.dataset.kind = kind;
+  $('find').append(panel);
+}
+// Layers also has Selection (off, with its reason, while nothing is selected) and Sort by.
+q('.tour-find fieldset + fieldset label').insertAdjacentHTML('beforebegin', '<label class="kit-radio"><input type="radio" name="layer" id="c-sel" data-say=" in the selection" disabled aria-describedby="c-sel-help">Selection</label><p class="kit-help" id="c-sel-help">Nothing selected</p>');
+q('.tour-find [role="status"]').insertAdjacentHTML('beforebegin', '<div class="kit-field"><label class="kit-label" for="c-sort">Sort by</label><div class="kit-select"><select id="c-sort" data-tries="select"><option data-say=", in layer order">Layer order</option><option data-say=", by name">Name</option><option data-say=", by size">Size</option></select></div></div>');
+function summarize(panel) {
+  const kind = panel.dataset.kind, types = $$('[data-type]', panel), all = q('[data-all]', panel), sort = q('select', panel);
+  const ticked = types.filter((t) => t.checked).map((t) => t.dataset.type), last = ticked.pop();
+  all.checked = !!last && ticked.length + 1 === types.length;
+  all.indeterminate = !!last && !all.checked;
+  const what = all.checked && kind !== 'layer' ? 'every ' + kind : (ticked.length ? ticked.join(', ') + ' and ' : '') + last + (kind === 'layer' ? '' : ` ${kind}s`);
+  const text = last ? `Finds ${what}${q(':checked[data-say]', panel).dataset.say}${sort ? sort.selectedOptions[0].dataset.say : ''}.` : `Finds nothing. Tick a ${kind} type.`;
+  const line = q('[role="status"]', panel);
+  if (line.textContent !== text) line.textContent = text;
+}
+for (const panel of $$('.tour-find')) {
+  panel.addEventListener('change', (event) => {
+    if (event.target.hasAttribute('data-all')) for (const box of $$('[data-type]', panel)) box.checked = event.target.checked;
+    summarize(panel);
+  });
+  summarize(panel);
+}
+function onSelection(count) {
+  const sel = $('c-sel');
+  $('cr-status').textContent = count ? `${plural(count, 'layer')} selected` : 'Nothing selected';
+  sel.disabled = !count;
+  $('c-sel-help').hidden = !!count;
+  if (count) sel.removeAttribute('aria-describedby'); else sel.setAttribute('aria-describedby', 'c-sel-help');
+  if (!count && sel.checked) { q('#c-sel-help + label input').checked = true; summarize(sel.closest('.tour-find')); }
+}
+
+// ---- Pop-ups: a menu per frame (a shared one would mark every opener expanded).
+const FRAMES = [['Cover', '1920 × 1080'], ['Hero banner', '1440 × 720'], ['Features', '1440 × 960'], ['Pricing', '1440 × 880'], ['Footer', '1440 × 320']];
+const frames = $('frames'), menuOf = new WeakMap(), rowOf = new WeakMap();
+let seq = 0;
+const rowName = (li) => q('.kit-list-row-label', li).textContent;
+function nameRow(li, name) {
+  q('.kit-list-row-label', li).textContent = name;
+  q('button', li).ariaLabel = `${name}: more actions`;
+  menuOf.get(li).ariaLabel = name;
+}
+function frameRow(name, size) {
+  const k = ++seq, parts = stamp('tpl-frame'), li = q('li', parts), menu = q('.kit-menu', parts), more = q('button', li);
+  more.setAttribute('popovertarget', 'menu-' + k);
+  more.setAttribute('aria-describedby', 'tip-more-' + k);
+  q('.kit-tooltip', li).id = 'tip-more-' + k;
+  menu.id = 'menu-' + k;
+  q('.kit-list-row-meta', li).textContent = size;
+  menuOf.set(li, menu);
+  rowOf.set(menu, li);
+  nameRow(li, name);
+  return li;
+}
+function putRow(li, before) {
+  frames.insertBefore(li, before);
+  $('menus').append(menuOf.get(li));
+  framesChanged();
+}
+function framesChanged() {
+  const n = frames.children.length, was = !$('frames-empty').hidden;
+  frames.hidden = !n;
+  $('frames-empty').hidden = !!n;
+  if (!n && !was) tryPart('empty-state');
+  // The last row's tooltip opens above: below, it would leave the window (Buzz has no bottom padding).
+  for (const li of frames.children) q('.kit-tooltip', li).classList.toggle('kit-tooltip-above', li === frames.lastElementChild);
+  // Eight rows at most, so the window never scrolls.
+  for (const item of $$('[data-action="duplicate"]', $('menus'))) Object.assign(item, { disabled: n > 7, textContent: n > 7 ? 'Duplicate (list is full)' : 'Duplicate' });
+}
+function fillFrames() {
+  frames.replaceChildren();
+  $('menus').replaceChildren();
+  for (const [name, size] of FRAMES) putRow(frameRow(name, size), null);
+}
+function removeRow(li) {
+  const name = rowName(li), next = li.nextElementSibling, near = next || li.previousElementSibling;
+  li.remove();
+  menuOf.get(li).remove();
+  framesChanged();
+  (near ? q('button', near) : $('frames-back')).focus();
+  tourToast(`Deleted ${name}`, { duration: 0, action: { label: 'Undo', onClick: () => {
+    putRow(li, next && next.isConnected ? next : null);
+    tourToast(`Restored ${name}`, { tone: 'success' });
+    setTimeout(() => quietFocus(q('button', li), true), 0); // after the kit hands focus back
+  } } });
+}
+const renameInput = $('rename-name'), renameOk = $('rename-ok');
+function checkRename() {
+  const ok = renameInput.value.trim() !== '';
+  renameOk.disabled = !ok;
+  setInvalid(renameInput, !ok);
+  $('rename-help').textContent = ok ? 'Shown in the list.' : 'A frame needs a name.';
+}
+async function rename(li) {
+  renameInput.value = rowName(li);
+  checkRename();
+  const closed = kit.dialog('rename'); // the runtime closes the menu first, so focus goes back to ⋯
+  tryPart('dialog');
+  renameInput.select();
+  const choice = await closed, name = renameInput.value.trim();
+  if (choice !== 'rename' || !name) return;
+  nameRow(li, name);
+  tourToast(`Renamed to “${name}”`, { tone: 'success' });
+}
+on('rename-name', 'input', checkRename);
+// Enter renames. No <form>: the iframe may block its submit (docs/pitfalls.md#17-smaller-traps).
+on('rename-name', 'keydown', (event) => {
+  if (event.key !== 'Enter' || event.isComposing) return;
+  event.preventDefault();
+  if (!event.repeat && !renameOk.disabled) renameOk.click();
+});
+on('menus', 'click', (event) => {
+  const item = event.target.closest('.kit-menu-item'), li = item && rowOf.get(item.parentElement);
+  if (!li) return;
+  const action = item.dataset.action, name = rowName(li);
+  tryPart('menu');
+  if (action === 'rename') return rename(li);
+  // Duplicate and Delete wait until the runtime has closed the menu and refocused ⋯.
+  setTimeout(() => {
+    if (action === 'delete') return removeRow(li);
+    putRow(frameRow(name + ' copy', q('.kit-list-row-meta', li).textContent), li.nextElementSibling);
+    tourToast(`Duplicated ${name}`, { tone: 'success' });
+  }, 0);
+});
+on('frames-back', 'click', () => {
+  dropToast();
+  fillFrames();
+  q('button', frames).focus();
+});
+
+// ---- Feedback: one notice in the tone picked; dismissing it leaves the empty state.
+const TONES = { info: 'Hidden layers are skipped.', success: 'Renamed 12 layers.', warning: '3 names are duplicates.', danger: '2 layers are locked, so they were skipped.' };
+const tone = () => q('[name="tone"]:checked').value;
+q('.tour-tones').addEventListener('change', () => {
+  const t = tone(), box = $('fb-notice');
+  box.dataset.kitTone = t;
+  box.role = t === 'danger' ? 'alert' : 'status';
+  q('use', box).setAttribute('href', '#i-' + t);
+  q('p', box).textContent = TONES[t];
+});
+on('fb-toast', 'click', () => tourToast(TONES[tone()], { tone: tone() }));
+function noticeGone(gone) {
+  $('fb-stack').hidden = gone;
+  $('fb-empty').hidden = !gone;
+  if (gone) tryPart('empty-state');
+  $(gone ? 'fb-back' : 'fb-dismiss').focus();
+}
+on('fb-dismiss', 'click', () => noticeGone(true));
+on('fb-back', 'click', () => noticeGone(false));
+
+// ---- Window: rows grow it up to the list's cap; the kit keeps a width set with the corner (persist).
+const handle = q('[data-kit-resize]'), winList = $('win-list'), winScroll = winList.parentElement;
+const noGrip = () => root.dataset.kitChrome === 'off';
+let frameNo = 3, kept = 0, dragging = false, dragFrom = 0, gripAt = 0, lastWidth = innerWidth;
+function winRow(name, size) {
+  const li = stamp('tpl-row').firstElementChild;
+  q('.kit-list-row-label', li).textContent = name;
+  q('.kit-list-row-meta', li).textContent = size;
+  return li;
+}
+function markRow(row) {
+  for (const r of $$('[aria-current]', winList)) r.ariaCurrent = null;
+  row.ariaCurrent = 'true';
+}
+const startOver = () => { frameNo = 3; winList.replaceChildren(...FRAMES.slice(0, 3).map(([name, size]) => winRow(name, size))); };
+// A line under the header while scrolled, so the row cut at the top reads as scrolled.
+const edge = () => winScroll.toggleAttribute('data-scrolled', winScroll.scrollTop > 0);
+winScroll.addEventListener('scroll', edge);
+on('win-add', 'click', () => {
+  kept = 0; // the next fit shows the live size again
+  const li = winRow(`Frame ${++frameNo}`, '1440 × 900');
+  winList.append(li);
+  markRow(li.firstElementChild);
+  li.scrollIntoView({ block: 'nearest' });
+});
+on('win-list', 'click', (event) => { const row = event.target.closest('button'); if (row) markRow(row); });
+on('win-reset', 'click', () => { kept = 0; startOver(); edge(); });
+function showSize() {
+  $('win-size').textContent = document.activeElement === handle && handle.matches(':focus-visible') ? '← → 8 px · Shift 32 px · Enter: next width'
+    : kept ? `Opens at ${kept} px wide next time` : `${editorType === 'buzz' ? 'This panel' : 'This window'}: ${innerWidth} × ${innerHeight}`;
+}
+function resizedByHand() {
+  kept = innerWidth;
+  tryPart('resize-handle');
+  showSize();
+}
+const grip = (types, fn) => { for (const type of types.split(' ')) handle.addEventListener(type, fn); };
+grip('pointerdown', () => { dragging = true; dragFrom = innerWidth; kept = 0; });
+grip('pointerup pointercancel lostpointercapture', () => {
+  if (dragging) setTimeout(() => (innerWidth !== dragFrom ? resizedByHand() : showSize()), 50);
+  dragging = false;
+});
+grip('keydown dblclick', () => { gripAt = Date.now(); });
+grip('focus blur', showSize);
+addEventListener('resize', () => {
+  if (innerWidth !== lastWidth && !dragging && Date.now() - gripAt < 1000) resizedByHand();
+  lastWidth = innerWidth;
+  showSize();
+});
+// No corner (Buzz's docked panel, a fixed window): the runtime turns the chrome off.
+function applyChrome() {
+  const off = noGrip(), buzz = editorType === 'buzz';
+  $('win-lead').textContent = off ? 'Add frames to the list.' : 'Add frames and the window grows.';
+  $('win-drag').hidden = off;
+  $('win-notice').hidden = !off;
+  $('win-note').textContent = buzz ? 'Buzz docks this panel, so it keeps its size and has no corner to drag. In Figma Design, FigJam and Slides the corner is at the bottom right.'
+    : 'This window keeps the size it opened at, so there’s no corner to drag here.';
+  for (const item of $$('.tour-part[value="resize-handle"]')) {
+    item.toggleAttribute('data-absent', off);
+    item.textContent = off ? `Resize handle: not ${buzz ? 'in Buzz' : 'here'}` : 'Resize handle';
+    partName(item);
+  }
+  // The page that says why counts for the handle, so it is always out of 20.
+  if (off && current === 'window') tryPart('resize-handle');
+  showSize();
+}
+new MutationObserver(applyChrome).observe(root, { attributes: true, attributeFilter: ['data-kit-chrome'] });
+
+// ---- Create shapes: the one thing that changes the file (code.ts does it).
+const crCount = $('cr-count'), crShape = $('cr-shape'), crCreate = $('cr-create'), shapesBox = $('shapes');
+let shapes = 5;
+shapesBox.style.setProperty('--tour-shape-fill', '#' + hex(SHAPE_FILL.map((v) => v * 255)));
 function readCount() {
-  const text = count.value.trim(), n = Number(text);
+  const text = crCount.value.trim(), n = Number(text);
   return /^\d+$/.test(text) && n >= 1 && n <= 50 ? n : null; // code.ts clamps to the same range
 }
-
-function validateCount() {
-  const ok = readCount() !== null;
-  setInvalid(count, !ok);
-  $('count-help').textContent = ok ? 'From 1 to 50, placed in a row.' : 'Enter a whole number from 1 to 50.';
-}
-
-function createShapes() {
-  if (create.getAttribute('aria-busy') === 'true') return; // aria-busy stops the mouse, not Enter or Space
+function syncCreate() {
   const n = readCount();
-  if (n === null) { validateCount(); count.focus(); return; }
-  create.setAttribute('aria-busy', 'true');
-  post({ type: 'create-shapes', count: n, shape: shape.value });
+  setInvalid(crCount, n === null);
+  $('cr-count-help').textContent = n === null ? 'Enter a whole number from 1 to 50.' : 'From 1 to 50.';
+  crCreate.textContent = n === null ? 'Create' : `Create ${plural(n, crShape.value)}`;
+  shapes = n || shapes;
+  // The row main will add (six, or five and "+N"); the badge is its real size.
+  shapesBox.dataset.shape = crShape.value;
+  for (const old of $$('.tour-shape, .tour-more', shapesBox)) old.remove();
+  shapesBox.prepend(...Array.from({ length: shapes > 6 ? 5 : shapes }, () => make('span', { className: 'tour-shape' })));
+  if (shapes > 6) shapesBox.children[4].after(make('span', { className: 'tour-more', textContent: '+' + (shapes - 5) }));
+  $('shapes-size').textContent = `${150 * (shapes - 1) + 100} × 100`;
 }
-
-count.addEventListener('input', validateCount);
-// Enter creates too. No <form>: a sandboxed iframe may block its submit (docs/pitfalls.md#17-smaller-traps).
-count.addEventListener('keydown', (event) => {
+function createShapes() {
+  if (crCreate.ariaBusy) return;
+  const n = readCount();
+  if (n === null) { syncCreate(); crCount.focus(); return; }
+  crCreate.ariaBusy = 'true';
+  post({ type: 'create-shapes', count: n, shape: crShape.value });
+}
+on('cr-count', 'input', syncCreate);
+on('cr-shape', 'change', syncCreate);
+on('cr-count', 'keydown', (event) => {
   if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); if (!event.repeat) createShapes(); }
 });
-create.addEventListener('click', createShapes);
-$('close').addEventListener('click', () => post({ type: 'close' }));
-
-// The status line says what main reports: the selection, then the last result on a second line
-// (the window grows for it). A result, not a toast, so nothing covers Create and Close.
-let selected = 0, result = '';
-window.addEventListener('message', (event) => {
-  const msg = event.data && event.data.pluginMessage;
-  if (!msg || typeof msg !== 'object' || typeof msg.count !== 'number') return;
-  if (msg.type === 'selection') selected = msg.count;
-  else if (msg.type === 'created') {
-    create.removeAttribute('aria-busy'); // code.ts always answers, with 0 when it failed
-    result = msg.count > 0 ? `Created ${plural(msg.count, msg.shape === 'ellipse' ? 'ellipse' : 'rectangle')}` : 'Nothing created';
-  } else return;
-  const selection = selected === 0 ? 'Nothing selected' : `${plural(selected, 'layer')} selected`;
-  $('status').replaceChildren(selection, ...(result ? [document.createElement('br'), result] : []));
-});
-
-// ---- Components: buttons ----
-const save = $('save');
-save.addEventListener('click', () => {
-  if (save.getAttribute('aria-busy') === 'true') return;
-  save.setAttribute('aria-busy', 'true');
-  setTimeout(() => { save.removeAttribute('aria-busy'); tourToast('Saved', { tone: 'success' }); }, 1500);
-});
-for (const toggle of [$('snap'), $('lock')]) {
-  toggle.addEventListener('click', () => toggle.setAttribute('aria-pressed', String(toggle.getAttribute('aria-pressed') !== 'true')));
+on('cr-create', 'click', createShapes);
+// code.ts always answers, with count 0 when it could not create.
+function onCreated(count, shape) {
+  crCreate.ariaBusy = null;
+  $('cr-result')?.remove();
+  const result = count ? notice('success', `Added ${plural(count, shape === 'ellipse' ? 'ellipse' : 'rectangle')} to this page.`) : notice('danger', 'Couldn’t add shapes here.');
+  result.id = 'cr-result';
+  $('cr-page').append(result);
+  if (count && !created) { created = true; progress(); }
 }
 
-// ---- Components: fields. The swatch and the hex field stay in step. While typing, the swatch
-// follows only six digits (three could be the start of six); on change, three count too and expand
-// as in Figma's own hex field (F0A is FF00AA). Anything else is an error, '#' or not.
-const swatch = /** @type {HTMLInputElement} */ ($('fill-swatch'));
-const hex = /** @type {HTMLInputElement} */ ($('fill-hex'));
-const HEX6 = /^#?([0-9a-f]{6})$/i;
-const HEX3 = /^#?([0-9a-f]{3})$/i;
-/** @param {string} text @returns {string | null} six upper-case digits, or null */
-function readHex(text) {
-  const t = text.trim();
-  const six = HEX6.exec(t);
-  if (six) return six[1].toUpperCase();
-  const three = HEX3.exec(t);
-  return three ? three[1].replace(/./g, (d) => d + d).toUpperCase() : null;
+// ---- Get the files: the link, and the colours painting this window now.
+on('copy-link', 'click', () => {
+  // The copy event puts the full link on the clipboard (focus stays here); blocked, the address stays selected.
+  const put = (event) => { event.clipboardData.setData('text/plain', GITHUB); event.preventDefault(); }, selection = getSelection();
+  let copied = false;
+  selection?.selectAllChildren($('files-url'));
+  onDoc('copy', put);
+  try { copied = document.execCommand('copy'); } catch (error) { copied = false; }
+  document.removeEventListener('copy', put);
+  if (!copied) return tourToast(`Link selected. Press ${/Win/.test(navigator.userAgent) ? 'Ctrl+C' : '⌘C'} to copy.`);
+  selection?.removeAllRanges();
+  tourToast('Link copied', { tone: 'success' });
+});
+on('open-github', 'click', () => post({ type: 'open-github' }));
+for (const [name, token] of [['Brand', 'bg-brand'], ['Panel', 'bg'], ['Field', 'bg-secondary'], ['Border', 'border'], ['Tooltip', 'bg-inverse']]) {
+  const li = make('li', { innerHTML: '<i></i><span><span></span><small></small></span>' });
+  q('i', li).style.setProperty('--tour-swatch', `var(--figma-color-${token})`);
+  q('span > span', li).textContent = name;
+  $('swatches').append(li);
 }
-/** @param {boolean} invalid */
-function setHexError(invalid) {
-  setInvalid(hex, invalid);
-  $('fill-help').textContent = invalid ? 'Enter a hex code, like 0D99FF or F0A.' : 'A hex code, like 0D99FF or F0A.';
-}
-swatch.addEventListener('input', () => { hex.value = swatch.value.slice(1).toUpperCase(); setHexError(false); });
-hex.addEventListener('input', () => {
-  const m = HEX6.exec(hex.value.trim());
-  if (!m) return; // half-typed: say nothing until the field is left
-  swatch.value = '#' + m[1].toLowerCase();
-  setHexError(false);
-});
-hex.addEventListener('change', () => {
-  const code = readHex(hex.value);
-  setHexError(code === null);
-  if (code !== null) { hex.value = code; swatch.value = '#' + code.toLowerCase(); }
-});
-
-const prefix = /** @type {HTMLInputElement} */ ($('prefix'));
-prefix.addEventListener('input', () => {
-  const ok = /^[A-Za-z0-9-]*$/.test(prefix.value);
-  setInvalid(prefix, !ok);
-  $('prefix-help').textContent = ok ? 'Letters, numbers and dashes.' : 'Use only letters, numbers and dashes.';
-});
-
-// ---- Components: choices. "All" is indeterminate while only some parts are checked.
-const all = /** @type {HTMLInputElement} */ ($('include-all'));
-const parts = /** @type {HTMLInputElement[]} */ ([...document.querySelectorAll('[data-tour-part]')]);
-function syncAll() {
-  const on = parts.filter((p) => p.checked).length;
-  all.checked = on === parts.length;
-  all.indeterminate = on > 0 && on < parts.length;
-}
-all.addEventListener('change', () => { for (const p of parts) p.checked = all.checked; syncAll(); });
-for (const p of parts) p.addEventListener('change', syncAll);
-syncAll();
-
-// ---- Components: feedback. Dismissing the info notice enables the header's button that brings
-// it back; the tooltip says why the button is off until then. Focus moves to the control that
-// undoes the step, both ways, so it never stays on a hidden or an inert button.
-const notice = $('notice-info');
-const restore = $('restore');
-/** @param {boolean} hidden */
-function setNoticeHidden(hidden) {
-  notice.hidden = hidden;
-  if (hidden) restore.removeAttribute('aria-disabled'); else restore.setAttribute('aria-disabled', 'true');
-  $('tip-restore').textContent = hidden ? '1 notice is hidden' : 'Dismiss a notice first';
-}
-$('dismiss-info').addEventListener('click', () => { setNoticeHidden(true); restore.focus(); });
-restore.addEventListener('click', () => {
-  if (restore.getAttribute('aria-disabled') === 'true') return;
-  setNoticeHidden(false);
-  $('dismiss-info').focus();
-});
-$('go-create').addEventListener('click', () => showTab('create'));
-
-// ---- Components: list. One current row; a click moves it.
-const frames = $('frames');
-frames.addEventListener('click', (event) => {
-  const row = /** @type {Element} */ (event.target).closest('.kit-list-row');
-  if (!row) return;
-  for (const r of frames.querySelectorAll('[aria-current]')) r.removeAttribute('aria-current');
-  row.setAttribute('aria-current', 'true');
-});
-
-// ---- Components: overlays. The runtime opens, places and closes the menu and the dialog.
-$('tour-menu').addEventListener('click', (event) => {
-  const item = /** @type {Element} */ (event.target).closest('.kit-menu-item');
-  const message = item && item.getAttribute('data-tour-toast');
-  if (message) tourToast(message, { tone: 'success' });
-});
-const dialogName = /** @type {HTMLInputElement} */ ($('dialog-name'));
-$('open-dialog').addEventListener('click', async () => {
-  const value = await kit.dialog('tour-dialog'); // the clicked button's value: 'rename', 'cancel', or '' after Escape or ×
-  const name = dialogName.value.trim();
-  if (value === 'rename') tourToast(name ? `Renamed to “${name}”` : 'Kept the old name: the new one was empty', { tone: name ? 'success' : 'info' });
-  else tourToast(value === 'cancel' ? 'Cancelled' : 'Closed without renaming');
-});
-dialogName.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); if (!event.repeat) $('dialog-ok').click(); }
-});
-/** @type {Array<[string, 'info' | 'success' | 'warning' | 'danger', string]>} */
-const TOASTS = [
-  ['toast-info', 'info', 'Hidden layers are skipped'],
-  ['toast-success', 'success', 'Renamed 3 layers'],
-  ['toast-warning', 'warning', '3 names are duplicates'],
-  ['toast-danger', 'danger', '2 layers are locked'],
-];
-for (const [id, tone, message] of TOASTS) $(id).addEventListener('click', () => tourToast(message, { tone }));
-$('toast-undo').addEventListener('click', () => {
-  undoToast = tourToast('Deleted 2 layers', { duration: 0, action: { label: 'Undo', onClick: () => { undoToast = null; tourToast('Restored 2 layers', { tone: 'success' }); } } });
-});
-$('toast-queue').addEventListener('click', () => { tourToast('First of two'); tourToast('Second of two'); });
-
-// ---- Window: the mode in use, the live size, and content that grows ----
-const root = document.documentElement;
-const grow = $('grow');
-const growLine = $('grow-line');
-/** @param {boolean} on */
-function setGrown(on) {
-  if (growLine.hidden !== on) return; // already as asked
-  growLine.hidden = !on;
-  grow.textContent = on ? 'Remove the line' : 'Add a line';
-  // fit-content follows its content on its own; a resizable window fits only when asked.
-  if (root.dataset.kitMode === 'resizable') kit.fit();
-}
-grow.addEventListener('click', () => setGrown(growLine.hidden === true));
-function showMode() {
-  const mode = root.dataset.kitMode;
-  const fixed = mode === 'fixed';
-  // The chrome is off in a fixed window, and in the panels Figma docks and sizes itself (Buzz, Dev Mode).
-  const docked = root.dataset.kitChrome === 'off' && !fixed;
-  for (const item of document.querySelectorAll('[data-tour-mode]')) {
-    if (!docked && item.getAttribute('data-tour-mode') === mode) item.setAttribute('aria-current', 'true');
-    else item.removeAttribute('aria-current');
+function paintSwatches() {
+  for (const li of $$('#swatches > li')) {
+    q('small', li).textContent = hex((getComputedStyle(q('i', li)).backgroundColor.match(/[\d.]+/g) || []).slice(0, 3).map(Number));
   }
-  $('handle-part').hidden = docked || fixed;
-  grow.hidden = docked || fixed;
-  if (grow.hidden) setGrown(false);
-  $('window-note').textContent = docked ? 'Figma docks the plugin in a panel here and sets its size, so the modes and the handle don’t apply.'
-    : fixed ? 'A fixed window keeps the size set in code, and has no handle.'
-    : mode === 'resizable' ? 'Drag the corner to change the size; the plugin remembers it for each editor.'
-    : 'Drag the corner to change the width; the plugin remembers it for each editor.';
+  const theme = root.classList.contains('figma-dark') ? 'dark theme' : 'light theme';
+  const where = { figjam: 'FigJam, always light', slides: 'Slides, ' + theme, buzz: 'Buzz, ' + theme };
+  $('theme-line').textContent = `Right now: ${where[editorType] || theme}.`;
 }
-new MutationObserver(showMode).observe(root, { attributes: true, attributeFilter: ['data-kit-mode', 'data-kit-chrome'] });
-showMode();
-const showSize = () => { $('size').textContent = `${window.innerWidth} × ${window.innerHeight}`; };
-window.addEventListener('resize', showSize);
+// A theme switch: the colours follow, and a toast says so once, never over an Undo toast. It counts nothing.
+let dark = root.classList.contains('figma-dark'), themeSaid = false, settled = false;
+setTimeout(() => { settled = true; }, 1000);
+new MutationObserver(() => {
+  if (root.classList.contains('figma-dark') === dark) return;
+  dark = !dark;
+  paintSwatches();
+  if (!settled || themeSaid || q('.kit-toast .kit-button')) return;
+  themeSaid = true;
+  tourToast(`Switched to ${dark ? 'dark' : 'light'}, like Figma. Every colour changed with it.`, undefined, false);
+}).observe(root, { attributes: true, attributeFilter: ['class'] });
+
+// ---- Messages from code.ts, and the kit's kit:init for the editor.
+addEventListener('message', (event) => {
+  const msg = event.data && event.data.pluginMessage;
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'kit:init') { editorType = String(msg.editorType); applyChrome(); paintSwatches(); }
+  else if (msg.type === 'selection' && typeof msg.count === 'number') onSelection(msg.count);
+  else if (msg.type === 'created' && typeof msg.count === 'number') onCreated(msg.count, msg.shape);
+});
+fillFrames();
+startOver();
+syncCreate();
+drawFrame();
+progress();
+paintSwatches();
 showSize();
 })();
 </script>
+
 </body>
 </html>

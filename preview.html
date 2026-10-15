@@ -2204,6 +2204,11 @@ Card 2</textarea></div>
         if (alive()) toast(String(message), !!(options && options.error));
         return { cancel() {} };
       },
+      // Figma opens the address in the person's browser; the stub opens nothing and logs it.
+      openExternal(/** @type {string} */ url) {
+        call('openExternal', url);
+        log('host', `figma.openExternal(${JSON.stringify(String(url))}): Figma would open this in the browser`);
+      },
       closePlugin(/** @type {string | undefined} */ message) {
         if (!alive()) return;
         call('closePlugin');

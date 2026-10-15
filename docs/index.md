@@ -53,7 +53,7 @@ Six plugins in [`examples/`](../examples/), each with its own `manifest.json` to
 | [content-fill](../examples/content-fill/README.md) | `fixed` | Fonts loaded before text edits, `figma.mixed`, the native select |
 | [variables-sync](../examples/variables-sync/README.md) | `resizable` | `dynamic-page` variable getters, hex input with validation, aliases |
 | [a11y-contrast](../examples/a11y-contrast/README.md) | `fit-content` | Contrast maths in main, a results list, error and success states |
-| [kit-tour](../examples/kit-tour/README.md) | `fit-content` | All 20 components working in three CSS-only tabs, the window refitting to each tab, `kit.dialog()` and `kit.toast()` (an Undo toast with `duration: 0`), the starter's Create demo |
+| [kit-tour](../examples/kit-tour/README.md) | `fit-content` | All 20 components working on a Home screen and eight small pages, the window refitting to each screen, `kit.dialog()` and `kit.toast()` (an Undo toast with `duration: 0`), the starter's Create demo, `figma.openExternal` |
 
 ## Outside docs/
 
