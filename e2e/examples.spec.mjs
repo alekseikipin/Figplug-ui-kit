@@ -872,6 +872,7 @@ test.describe('examples/kit-tour: the tour', () => {
   });
 
   test('Pop-ups: a menu per row, the rename dialog, Duplicate, and Delete with an Undo toast in its own lane', async ({ page }) => {
+    test.slow(); // about 15 s here and 40 s on CI's runners: three times the default timeout
     const frame = await openTour(page);
     await openPage(frame, 'popups');
     const rows = frame.locator('#frames > li');
@@ -1500,6 +1501,7 @@ test.describe('examples/kit-tour: the tour', () => {
 
   for (const theme of ['light', 'dark', 'figjam']) {
     test(`axe: no WCAG 2.1 A/AA violations on any screen, or with the menu, the dialog, a toast or an empty state (${theme})`, async ({ page }) => {
+      test.slow(); // nine screens and four overlays: about 15 s here and 40 s on CI's runners
       const frame = await openTour(page, theme === 'figjam' ? { theme, editor: 'figjam' } : { theme });
       const check = async (what) => {
         await page.waitForTimeout(250); // past the screen's 200 ms slide
