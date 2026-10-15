@@ -26,7 +26,7 @@ Paste as is, then make the lead-in of each paragraph bold, link the GitHub addre
 
 > **Try every part of Figplug UI Kit here.** The kit is free starter code for Figma plugins that look and work like Figma's own panels.
 >
-> **20 parts in six groups.** Open a group and try its parts in small working scenes: buttons, fields, menus, dialogs, toasts and more. A ring fills for each part you try.
+> **20 parts in six groups.** Open a group and try its parts in small working scenes: buttons, fields, menus, dialogs, notifications and more. A ring fills for each part you try.
 >
 > **Create shapes.** Pick a number and a shape, press Create, and the plugin adds the shapes to your page and selects them. It's the only thing in the plugin that changes your file.
 >
